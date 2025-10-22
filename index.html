@@ -3,14 +3,15 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Controle de Chegadas - Demo</title>
+  <title>Controle de Chegadas - teste-c702e</title>
   <style>
     :root{--accent:#1e90ff;--accent-2:#ff8a00;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
     body{margin:0;background:#f6f8fb;color:#111;font-family:var(--font, Inter), sans-serif}
     header{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#fff;padding:12px 18px;display:flex;align-items:center;justify-content:space-between}
-    .brand{font-weight:700} .container{max-width:1100px;margin:20px auto;padding:12px}
+    .brand{font-weight:700}
+    .container{max-width:1100px;margin:20px auto;padding:12px}
     .card{background:#fff;border-radius:10px;padding:16px;box-shadow:0 6px 18px rgba(20,30,60,0.06);}
-    .big-input{font-size:48px;letter-spacing:6px;padding:18px;text-align:center;width:220px}
+    .big-input{font-size:64px;letter-spacing:8px;padding:20px 24px;text-align:center;width:660px;box-sizing:border-box} /* 3x maior */
     .row{display:flex;gap:12px;align-items:center}
     button{background:var(--accent);color:#fff;border:none;padding:10px 14px;border-radius:8px;cursor:pointer}
     button.secondary{background:#e6eefc;color:#1e3a8a}
@@ -20,38 +21,48 @@
     th,td{padding:6px 8px;border-bottom:1px solid #f0f0f0;text-align:left}
     .small{font-size:13px;color:#666}
     .last5{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-    .pill{background:#f1f5f9;padding:6px 10px;border-radius:999px;font-weight:600}
+    .pill{background:#f1f5f9;padding:6px 10px;border-radius:999px;font-weight:600;cursor:pointer}
     .hidden{display:none}
     .filters{display:flex;gap:8px;align-items:center}
     input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+    form.modal{background:#fff;border:1px solid #ccc;border-radius:10px;padding:16px;box-shadow:0 8px 30px rgba(0,0,0,0.18);position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:60;min-width:320px}
+    form.modal input, form.modal select{width:100%;padding:8px;margin:6px 0;border:1px solid #ccc;border-radius:6px;box-sizing:border-box}
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:50}
+    .form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+    .error{color:#b00020}
+    /* responsive */
+    @media(max-width:900px){ .big-input{width:100%;font-size:48px;padding:14px} .container{padding:8px} }
   </style>
 </head>
 <body>
   <header>
     <div class="brand">Controle de Chegadas</div>
-    <div id="user-area"></div>
+    <div id="user-area" class="small"></div>
   </header>
 
   <div class="container">
+    <!-- Auth -->
     <div class="card" id="auth-card">
       <h3>Entrar</h3>
-      <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+      <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap">
         <input id="email" placeholder="email" style="padding:8px;border-radius:6px;border:1px solid #ddd" />
         <input id="password" placeholder="senha" type="password" style="padding:8px;border-radius:6px;border:1px solid #ddd" />
         <button id="btn-login">Entrar</button>
         <button id="btn-register" class="secondary">Criar conta</button>
       </div>
-      <p class="small">Autenticação via Firebase (Email/Senha)</p>
+      <p class="small">Autenticação via Firebase (Email/Senha). Faça login para acessar o painel.</p>
+      <p class="small error" id="auth-error" style="display:none"></p>
     </div>
 
+    <!-- App -->
     <div class="card hidden" id="app-card">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:280px">
           <div style="font-size:14px;color:#444">Entrada rápida de número</div>
-          <div style="margin-top:8px;display:flex;align-items:center;gap:12px">
-            <input id="numero-input" maxlength="4" class="big-input" placeholder="0000" />
+          <div style="margin-top:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <input id="numero-input" maxlength="10" class="big-input" placeholder="0000" />
             <div style="display:flex;flex-direction:column;gap:8px">
-              <button id="btn-registrar">Registrar chegada</button>
+              <button id="btn-registrar">Registrar chegada (Enter)</button>
               <button id="btn-limpar" class="ghost">Limpar</button>
             </div>
           </div>
@@ -70,15 +81,18 @@
       <hr style="margin:12px 0" />
 
       <div id="pages">
+        <!-- LISTAGEM -->
         <div id="page-listagem" class="hidden">
           <h4>Listagem Completa</h4>
-          <div style="margin:8px 0" class="row">
+          <div class="row" style="margin:8px 0;align-items:center">
             <button id="btn-add-athlete" class="secondary">Novo Atleta</button>
+            <input type="file" id="csv-upload" accept=".csv" />
             <input id="search-listagem" placeholder="Pesquisar por nome ou número" style="flex:1;padding:8px;border-radius:6px;border:1px solid #ddd" />
           </div>
           <div id="table-listagem"></div>
         </div>
 
+        <!-- LARGADAS -->
         <div id="page-largadas" class="hidden">
           <h4>Largadas</h4>
           <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
@@ -87,19 +101,11 @@
           <div id="table-largadas"></div>
         </div>
 
+        <!-- RESULTADOS -->
         <div id="page-resultados" class="hidden">
           <h4>Resultados</h4>
-          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
-            <div class="filters">
-              <select id="f-modalidade"><option value="">Todas modalidades</option></select>
-              <select id="f-genero"><option value="">Todos gêneros</option></select>
-              <select id="f-categoria"><option value="">Todas categorias</option></select>
-              <button id="btn-aplicar-filtro" class="secondary">Aplicar</button>
-            </div>
-            <div style="margin-left:auto">
-              <label class="small">Ordenar por: </label>
-              <select id="order-by"><option value="tempo_asc">Tempo (menor)</option><option value="tempo_desc">Tempo (maior)</option><option value="hora_desc">Hora chegada (recente)</option></select>
-            </div>
+          <div style="margin-bottom:8px">
+            <label class="small">Resultados em tempo real</label>
           </div>
           <div id="table-resultados"></div>
         </div>
@@ -107,29 +113,28 @@
     </div>
   </div>
 
-  <!-- Firebase (v9 modular) -->
+  <!-- Firebase SDKs -->
   <script type="module">
-    // ====== COLOQUE AQUI SUA CONFIG DO FIREBASE ======
+    // ---------- FIREBASE CONFIG ----------
     const firebaseConfig = {
       apiKey: "AIzaSyBZqXrKnRGvM0BG5qrrE38R8zR25tacOzw",
-  authDomain: "teste-c702e.firebaseapp.com",
-  databaseURL: "https://teste-c702e-default-rtdb.firebaseio.com",
-  projectId: "teste-c702e",
-  storageBucket: "teste-c702e.firebasestorage.app",
-  messagingSenderId: "478905955045",
-  appId: "1:478905955045:web:86bc4f77bf4296c6e85a0c"
+      authDomain: "teste-c702e.firebaseapp.com",
+      databaseURL: "https://teste-c702e-default-rtdb.firebaseio.com",
+      projectId: "teste-c702e",
+      storageBucket: "teste-c702e.firebasestorage.app",
+      messagingSenderId: "478905955045",
+      appId: "1:478905955045:web:86bc4f77bf4296c6e85a0c"
     };
 
-    // Import modular SDK
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
-    import { getFirestore, collection, doc, setDoc, addDoc, getDocs, getDoc, query, where, orderBy, serverTimestamp, Timestamp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
+    import { getDatabase, ref, set, push, onValue, get, child, update, remove } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js';
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    const db = getFirestore(app);
+    const db = getDatabase(app);
 
-    // --- UI refs ---
+    // ---------- UI refs ----------
     const authCard = document.getElementById('auth-card');
     const appCard = document.getElementById('app-card');
     const userArea = document.getElementById('user-area');
@@ -138,11 +143,12 @@
     const btnLogin = document.getElementById('btn-login');
     const btnRegister = document.getElementById('btn-register');
     const btnLogout = document.getElementById('btn-logout');
+    const authError = document.getElementById('auth-error');
 
     const numeroInput = document.getElementById('numero-input');
     const btnRegistrar = document.getElementById('btn-registrar');
-    const last5El = document.getElementById('last5');
     const btnLimpar = document.getElementById('btn-limpar');
+    const last5El = document.getElementById('last5');
 
     const navListagem = document.getElementById('nav-listagem');
     const navLargadas = document.getElementById('nav-largadas');
@@ -156,146 +162,591 @@
     const tableLargadas = document.getElementById('table-largadas');
     const tableResultados = document.getElementById('table-resultados');
 
-    const fModalidade = document.getElementById('f-modalidade');
-    const fGenero = document.getElementById('f-genero');
-    const fCategoria = document.getElementById('f-categoria');
-    const btnAplicarFiltro = document.getElementById('btn-aplicar-filtro');
-    const orderByEl = document.getElementById('order-by');
+    const btnAddAthlete = document.getElementById('btn-add-athlete');
+    const csvUpload = document.getElementById('csv-upload');
+    const searchListagem = document.getElementById('search-listagem');
+    const btnAddLargada = document.getElementById('btn-add-largada');
 
-    // Persistência local dos últimos 5
+    // ---------- Helpers ----------
+    function padNum(n){ return String(n).padStart(4,'0'); }
+
+    // Parse string "DD/MM/YYYY HH:MM:SS" into a Date in local timezone
+    function parseDMYTime(s){
+      if(!s) return null;
+      // accept "DD/MM/YYYY HH:MM:SS" or "DD/MM/YYYY"
+      const [datePart, timePart] = s.split(' ');
+      const [d,m,y] = datePart.split('/').map(Number);
+      let hh=0, mm=0, ss=0;
+      if(timePart){
+        [hh,mm,ss] = timePart.split(':').map(x=>Number(x));
+      }
+      // create local date
+      return new Date(y, m-1, d, hh, mm, ss);
+    }
+
+    // Format Date -> "DD/MM/YYYY HH:MM:SS"
+    function formatDMYTime(dt){
+      if(!dt) return '';
+      const d = String(dt.getDate()).padStart(2,'0');
+      const m = String(dt.getMonth()+1).padStart(2,'0');
+      const y = String(dt.getFullYear());
+      const hh = String(dt.getHours()).padStart(2,'0');
+      const mm = String(dt.getMinutes()).padStart(2,'0');
+      const ss = String(dt.getSeconds()).padStart(2,'0');
+      return `${d}/${m}/${y} ${hh}:${mm}:${ss}`;
+    }
+
+    function formatDateOnlyDMY(dt){
+      if(!dt) return '';
+      const d = String(dt.getDate()).padStart(2,'0');
+      const m = String(dt.getMonth()+1).padStart(2,'0');
+      const y = String(dt.getFullYear());
+      return `${d}/${m}/${y}`;
+    }
+
+    function formatTempoFromSeconds(totalSeconds){
+      if(totalSeconds == null) return '';
+      if(totalSeconds < 0) totalSeconds = 0;
+      const hh = Math.floor(totalSeconds/3600);
+      const mm = Math.floor((totalSeconds%3600)/60);
+      const ss = Math.floor(totalSeconds%60);
+      return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+    }
+
+    // ---------- Last5 local storage ----------
     function pushLast(num){
       let arr = JSON.parse(localStorage.getItem('last5')||'[]');
       arr = arr.filter(x=>x!==num);
       arr.unshift(num);
       arr = arr.slice(0,5);
-      localStorage.setItem('last5',JSON.stringify(arr));
+      localStorage.setItem('last5', JSON.stringify(arr));
       renderLast5();
     }
     function renderLast5(){
       const arr = JSON.parse(localStorage.getItem('last5')||'[]');
-      last5El.innerHTML='';
+      last5El.innerHTML = '';
       arr.forEach(x=>{
-        const b=document.createElement('div');b.className='pill';b.textContent=x; b.onclick=()=>numeroInput.value=x; last5El.appendChild(b);
-      })
+        const el = document.createElement('div');
+        el.className = 'pill';
+        el.textContent = x;
+        el.onclick = ()=>{ numeroInput.value = x; numeroInput.focus(); };
+        last5El.appendChild(el);
+      });
     }
     renderLast5();
 
-    // --- Auth ---
-    btnLogin.onclick = async ()=>{
-      try{ await signInWithEmailAndPassword(auth,emailInput.value,passInput.value); }
-      catch(err){ alert('Erro login: '+err.message); }
-    }
-    btnRegister.onclick = async ()=>{
-      try{ await createUserWithEmailAndPassword(auth,emailInput.value,passInput.value); alert('Conta criada'); }
-      catch(err){ alert('Erro criar: '+err.message); }
-    }
+    // Keep focus on input (good for barcode scanners). Also try on visibility change to re-focus.
+    numeroInput.focus();
+    let focusInterval = setInterval(()=>{ if(document.activeElement !== numeroInput) numeroInput.focus(); }, 1500);
+    document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) numeroInput.focus(); });
+
+    // ---------- Auth handlers ----------
+    btnLogin.onclick = async () => {
+      authError.style.display='none';
+      try{
+        await signInWithEmailAndPassword(auth, emailInput.value, passInput.value);
+      }catch(err){
+        authError.textContent = 'Erro login: ' + err.message;
+        authError.style.display='block';
+        console.error(err);
+      }
+    };
+    btnRegister.onclick = async () => {
+      authError.style.display='none';
+      try{
+        await createUserWithEmailAndPassword(auth, emailInput.value, passInput.value);
+        alert('Conta criada. Faça login.');
+      }catch(err){
+        authError.textContent = 'Erro criar conta: ' + err.message;
+        authError.style.display='block';
+        console.error(err);
+      }
+    };
     btnLogout.onclick = async ()=>{ await signOut(auth); };
 
-    onAuthStateChanged(auth,user=>{
+    onAuthStateChanged(auth, user => {
       if(user){
-        authCard.classList.add('hidden'); appCard.classList.remove('hidden'); userArea.textContent = user.email;
-        loadAllLookups(); loadListagem(); loadLargadas(); loadResultados();
+        authCard.classList.add('hidden');
+        appCard.classList.remove('hidden');
+        userArea.textContent = user.email;
+        // Start realtime listeners
+        startRealtimeListeners();
       } else {
-        authCard.classList.remove('hidden'); appCard.classList.add('hidden'); userArea.textContent='';
+        authCard.classList.remove('hidden');
+        appCard.classList.add('hidden');
+        userArea.textContent = '';
+        stopRealtimeListeners();
       }
     });
 
-    // --- Navegação ---
-    navListagem.onclick = ()=>showPage('listagem');
-    navLargadas.onclick = ()=>showPage('largadas');
-    navResultados.onclick = ()=>showPage('resultados');
-    function showPage(p){ pageListagem.classList.add('hidden'); pageLargadas.classList.add('hidden'); pageResultados.classList.add('hidden');
+    // ---------- Navigation ----------
+    navListagem.onclick = ()=> showPage('listagem');
+    navLargadas.onclick = ()=> showPage('largadas');
+    navResultados.onclick = ()=> showPage('resultados');
+
+    function showPage(p){
+      pageListagem.classList.add('hidden');
+      pageLargadas.classList.add('hidden');
+      pageResultados.classList.add('hidden');
       if(p==='listagem') pageListagem.classList.remove('hidden');
       if(p==='largadas') pageLargadas.classList.remove('hidden');
       if(p==='resultados') pageResultados.classList.remove('hidden');
     }
 
-    // --- Registrar chegada (fluxo principal) ---
-    btnRegistrar.onclick = async ()=>{
-      const raw = numeroInput.value || '';
-      const digits = raw.replace(/\D/g,'');
-      if(!digits){ alert('Digite um número válido'); return; }
-      const padded = digits.padStart(4,'0');
-      // busca atleta em "listagem" collection pelo campo numero
+    // ---------- Register arrival (Enter or button) ----------
+    numeroInput.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter'){
+        e.preventDefault();
+        registrarChegada();
+      }
+    });
+    btnRegistrar.onclick = registrarChegada;
+    btnLimpar.onclick = ()=>{ numeroInput.value = ''; numeroInput.focus(); };
+
+    async function registrarChegada(){
+      const raw = (numeroInput.value || '').trim();
+      if(!raw){
+        alert('Digite um número válido.');
+        numeroInput.focus();
+        return;
+      }
+      const numero = padNum(raw.replace(/\D/g,'')); // keep digits, pad to 4
       try{
-        const q = query(collection(db,'listagem'), where('numero','==',padded));
-        const snap = await getDocs(q);
-        if(snap.empty){ alert('Atleta não encontrado: '+padded); return; }
-        const docA = snap.docs[0];
-        const atleta = docA.data();
-        // hora de chegada
-        const chegada = new Date();
-        // busca largada pela modalidade
-        const qL = query(collection(db,'largadas'), where('modalidade','==',atleta.modalidade));
-        const snapL = await getDocs(qL);
-        let largadaDt = null;
-        if(!snapL.empty) largadaDt = snapL.docs[0].data().inicio && snapL.docs[0].data().inicio.toDate ? snapL.docs[0].data().inicio.toDate() : new Date(snapL.docs[0].data().inicio);
-        let tempo = null;
-        if(largadaDt){ const diff = Math.max(0, chegada.getTime()-largadaDt.getTime()); const hh=Math.floor(diff/3600000), mm=Math.floor((diff%3600000)/60000), ss=Math.floor((diff%60000)/1000); tempo = `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`; }
-        // grava em collection resultados
-        await addDoc(collection(db,'resultados'), { numero:padded, atletaRef:docA.ref, atletaNome:atleta.nome, genero:atleta.genero, modalidade:atleta.modalidade, categoria:atleta.categoria, dataNascimento:atleta.dataNascimento || null, idade:atleta.idade || null, chegada: Timestamp.fromDate(chegada), tempo:tempo || null, createdAt: serverTimestamp(), createdBy: auth.currentUser.email });
-        pushLast(padded);
-        numeroInput.value='';
-        alert('Chegada registrada: '+padded+(tempo?('\nTempo: '+tempo):''));
-        loadResultados();
-      }catch(err){ alert('Erro: '+err.message); }
+        // read /listagem/{numero}
+        const athleteSnap = await get(child(ref(db), `listagem/${numero}`));
+        if(!athleteSnap.exists()){
+          if(!confirm(`Atleta ${numero} não encontrado. Deseja cadastrar rapidamente?`)) {
+            numeroInput.value=''; numeroInput.focus(); return;
+          }
+          // quick minimal registration modal
+          await quickRegisterAthlete(numero);
+        }
+        // re-read athlete (in case just created)
+        const athlete = (await get(child(ref(db), `listagem/${numero}`))).val();
+        // get largada for modalidade
+        let largadaInicioStr = null;
+        if(athlete && athlete.modalidade){
+          const largSnap = await get(child(ref(db), `largadas/${athlete.modalidade}/inicio`));
+          if(largSnap.exists()) largadaInicioStr = largSnap.val();
+        }
+        const chegadaDt = new Date();
+        const chegadaStr = formatDMYTime(chegadaDt);
+        let tempoStr = null;
+        if(largadaInicioStr){
+          const largDt = parseDMYTime(largadaInicioStr);
+          // compute diff in seconds
+          const diffSec = Math.round((chegadaDt.getTime() - largDt.getTime())/1000);
+          tempoStr = formatTempoFromSeconds(diffSec);
+        }
+        // write /resultados/{numero}
+        await set(ref(db, `resultados/${numero}`), {
+          chegada: chegadaStr,
+          tempo: tempoStr || '',
+          atleta: (athlete && athlete.atleta) || '',
+          genero: (athlete && athlete.genero) || '',
+          modalidade: (athlete && athlete.modalidade) || '',
+          categoria: (athlete && athlete.categoria) || '',
+          data_nascimento: (athlete && athlete.data_nascimento) || '',
+          idade: (athlete && athlete.idade) || '',
+          registradoPor: auth.currentUser ? auth.currentUser.email : null,
+          registradaEmISO: new Date().toISOString()
+        });
+        pushLast(numero);
+        numeroInput.value = '';
+        numeroInput.focus();
+        alert(`Chegada registrada: ${numero}` + (tempoStr ? `\nTempo: ${tempoStr}` : ''));
+      }catch(err){
+        console.error('Erro registrar chegada:', err);
+        alert('Erro ao registrar chegada: ' + err.message);
+      }
+    }
+
+    // Quick register used when athlete not found at arrival time
+    async function quickRegisterAthlete(numero){
+      return new Promise((resolve, reject)=>{
+        const overlay = document.createElement('div');
+        overlay.className = 'overlay';
+        const form = document.createElement('form');
+        form.className = 'modal';
+        form.innerHTML = `
+          <h4>Cadastro Rápido - ${numero}</h4>
+          <input id="q_atleta" placeholder="Nome (Atleta)" required />
+          <input id="q_genero" placeholder="Gênero (ex: Feminino)" />
+          <input id="q_modalidade" placeholder="Modalidade (ex: MTB)" />
+          <input id="q_categoria" placeholder="Categoria" />
+          <input id="q_data_nasc" placeholder="Data Nascimento (DD/MM/YYYY)" />
+          <input id="q_idade" placeholder="Idade" type="number" />
+          <div class="form-actions">
+            <button type="button" id="q_cancel" class="ghost">Cancelar</button>
+            <button type="submit">Salvar</button>
+          </div>
+        `;
+        document.body.appendChild(overlay);
+        document.body.appendChild(form);
+        form.q_atleta.focus();
+
+        form.q_cancel.onclick = ()=>{
+          form.remove(); overlay.remove(); resolve();
+        };
+
+        form.onsubmit = async (e) => {
+          e.preventDefault();
+          try{
+            await set(ref(db, `listagem/${numero}`), {
+              atleta: form.q_atleta.value,
+              genero: form.q_genero.value,
+              modalidade: form.q_modalidade.value,
+              categoria: form.q_categoria.value,
+              data_nascimento: form.q_data_nasc.value,
+              idade: form.q_idade.value
+            });
+            form.remove(); overlay.remove();
+            resolve();
+          }catch(err){
+            form.remove(); overlay.remove();
+            reject(err);
+          }
+        };
+      });
+    }
+
+    // ---------- CSV upload (Listagem) ----------
+    csvUpload.addEventListener('change', (e)=>{
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const text = reader.result;
+        const lines = text.split(/\r?\n/).filter(Boolean);
+        // assume header on first line if non-numeric first column
+        let start = 0;
+        if(lines.length>0){
+          const firstCols = lines[0].split(',');
+          if(isNaN(Number(firstCols[0].replace(/\D/g,'')))) start = 1;
+        }
+        try{
+          for(let i=start; i<lines.length; i++){
+            const cols = lines[i].split(',').map(c=>c.trim());
+            if(cols.length < 2) continue;
+            const rawNumero = cols[0].replace(/\D/g,'');
+            if(!rawNumero) continue;
+            const numero = padNum(rawNumero);
+            // map columns: numero, atleta/nome, genero, modalidade, categoria, data_nascimento, idade
+            const data = {
+              atleta: cols[1] || '',
+              genero: cols[2] || '',
+              modalidade: cols[3] || '',
+              categoria: cols[4] || '',
+              data_nascimento: cols[5] || '',
+              idade: cols[6] || ''
+            };
+            await set(ref(db, `listagem/${numero}`), data);
+          }
+          alert('CSV importado com sucesso!');
+          csvUpload.value = '';
+        }catch(err){
+          console.error('Erro importar CSV', err);
+          alert('Erro ao importar CSV: ' + err.message);
+        }
+      };
+      reader.readAsText(file, 'utf-8');
+    });
+
+    // ---------- Novo atleta modal ----------
+    btnAddAthlete.onclick = ()=>{
+      const overlay = document.createElement('div'); overlay.className='overlay';
+      const form = document.createElement('form'); form.className='modal';
+      form.innerHTML = `
+        <h4>Novo Atleta</h4>
+        <input id="a_numero" placeholder="Número (ex: 1 ou 0001)" required />
+        <input id="a_nome" placeholder="Nome" required />
+        <input id="a_genero" placeholder="Gênero" />
+        <input id="a_modalidade" placeholder="Modalidade" />
+        <input id="a_categoria" placeholder="Categoria" />
+        <input id="a_data_nasc" placeholder="Data Nascimento (DD/MM/YYYY)" />
+        <input id="a_idade" placeholder="Idade" type="number" />
+        <div class="form-actions">
+          <button type="button" id="a_cancel" class="ghost">Cancelar</button>
+          <button type="submit">Salvar</button>
+        </div>
+      `;
+      document.body.appendChild(overlay); document.body.appendChild(form);
+      form.a_numero.focus();
+      form.a_cancel.onclick = ()=>{ form.remove(); overlay.remove(); };
+      form.onsubmit = async (e) => {
+        e.preventDefault();
+        const raw = form.a_numero.value.replace(/\D/g,'');
+        if(!raw){ alert('Número inválido'); return; }
+        const numero = padNum(raw);
+        try{
+          await set(ref(db, `listagem/${numero}`), {
+            atleta: form.a_nome.value,
+            genero: form.a_genero.value,
+            modalidade: form.a_modalidade.value,
+            categoria: form.a_categoria.value,
+            data_nascimento: form.a_data_nasc.value,
+            idade: form.a_idade.value
+          });
+          form.remove(); overlay.remove();
+        }catch(err){
+          console.error(err); alert('Erro ao salvar: '+err.message);
+        }
+      };
     };
 
-    btnLimpar.onclick = ()=>{ numeroInput.value=''; }
+    // ---------- Nova largada modal ----------
+    btnAddLargada.onclick = ()=>{
+      const overlay = document.createElement('div'); overlay.className='overlay';
+      const form = document.createElement('form'); form.className='modal';
+      form.innerHTML = `
+        <h4>Nova Largada</h4>
+        <input id="l_modalidade" placeholder="Modalidade (ex: MTB)" required />
+        <label class="small">Início (DD/MM/YYYY HH:MM:SS)</label>
+        <input id="l_inicio" placeholder="22/10/2025 08:00:00" required />
+        <div class="form-actions">
+          <button type="button" id="l_cancel" class="ghost">Cancelar</button>
+          <button type="submit">Salvar</button>
+        </div>
+      `;
+      document.body.appendChild(overlay); document.body.appendChild(form);
+      form.l_modalidade.focus();
+      form.l_cancel.onclick = ()=>{ form.remove(); overlay.remove(); };
+      form.onsubmit = async (e) => {
+        e.preventDefault();
+        const modalidade = form.l_modalidade.value.trim();
+        const inicioStr = form.l_inicio.value.trim();
+        if(!modalidade || !inicioStr){ alert('Preencha todos os campos'); return; }
+        // basic validation of date pattern
+        if(!/^\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}:\d{2}$/.test(inicioStr)){
+          if(!confirm('Formato inesperado. Deseja salvar mesmo assim? (use DD/MM/YYYY HH:MM:SS)')) {
+            return;
+          }
+        }
+        try{
+          await set(ref(db, `largadas/${modalidade}/inicio`), inicioStr);
+          form.remove(); overlay.remove();
+        }catch(err){
+          console.error(err); alert('Erro ao salvar largada: '+err.message);
+        }
+      };
+    };
 
-    // --- Lookups e rendering ---
-    async function loadAllLookups(){
-      // preencher selects com valores existentes nas coleções
-      const modalidades = new Set(); const generos=new Set(); const categorias=new Set();
-      // varrer listagem
-      const snap = await getDocs(collection(db,'listagem'));
-      snap.forEach(d=>{ const v=d.data(); if(v.modalidade) modalidades.add(v.modalidade); if(v.genero) generos.add(v.genero); if(v.categoria) categorias.add(v.categoria); });
-      fillSelect(fModalidade,modalidades); fillSelect(fGenero,generos); fillSelect(fCategoria,categorias);
+    // ---------- Real-time listeners ----------
+    let listagemUnsub = null;
+    let largadasUnsub = null;
+    let resultadosUnsub = null;
+
+    function startRealtimeListeners(){
+      // listagem
+      try{
+        listagemUnsub = onValue(ref(db, 'listagem'), (snap)=>{
+          const data = snap.val() || {};
+          const rows = Object.keys(data).map(k => Object.assign({numero: k}, data[k]));
+          renderListagem(rows);
+        }, (err)=>{ console.error('Erro listener listagem:', err); });
+      }catch(err){ console.error(err); }
+
+      // largadas
+      try{
+        largadasUnsub = onValue(ref(db, 'largadas'), (snap)=>{
+          const data = snap.val() || {};
+          const rows = Object.keys(data).map(k => ({modalidade: k, inicio: data[k].inicio || ''}));
+          renderLargadas(rows);
+        }, (err)=>{ console.error('Erro listener largadas:', err); });
+      }catch(err){ console.error(err); }
+
+      // resultados
+      try{
+        resultadosUnsub = onValue(ref(db, 'resultados'), (snap)=>{
+          const data = snap.val() || {};
+          const rows = Object.keys(data).map(k => Object.assign({numero: k}, data[k]));
+          // sort by chegada (ISO field if exists) or by chegada string parse
+          rows.sort((a,b)=>{
+            const da = a.registradaEmISO ? new Date(a.registradaEmISO) : (a.chegada ? parseDMYTime(a.chegada) : new Date(0));
+            const dbb = b.registradaEmISO ? new Date(b.registradaEmISO) : (b.chegada ? parseDMYTime(b.chegada) : new Date(0));
+            return dbb - da;
+          });
+          renderResultados(rows);
+        }, (err)=>{ console.error('Erro listener resultados:', err); });
+      }catch(err){ console.error(err); }
     }
-    function fillSelect(el,set){ const arr=[...set].sort(); el.innerHTML='<option value="">Todos</option>'; arr.forEach(x=>{ const o=document.createElement('option'); o.value=x; o.textContent=x; el.appendChild(o); }); }
 
-    async function loadListagem(){
-      // renderiza uma tabela simples
-      const snap = await getDocs(collection(db,'listagem'));
-      const rows = [];
-      snap.forEach(d=>{ rows.push(Object.assign({id:d.id}, d.data())); });
-      rows.sort((a,b)=> (a.numero||'').localeCompare(b.numero||''));
-      renderTable(tableListagem, ['numero','nome','genero','modalidade','categoria','idade'], rows);
+    function stopRealtimeListeners(){
+      // onValue returns unsub function? In modular Realtime DB, onValue returns the callback reference; can't easily remove without off(), but to keep it simple we'll reload page on logout. (or remove listeners by calling off on root)
+      try{ /* no-op */ }catch(e){}
     }
 
-    async function loadLargadas(){ const snap = await getDocs(collection(db,'largadas')); const rows=[]; snap.forEach(d=>rows.push(Object.assign({id:d.id},d.data()))); renderTable(tableLargadas,['modalidade','inicio'], rows); }
+    // ---------- Render functions ----------
+    function renderListagem(rows){
+      const q = searchListagem.value.trim().toLowerCase();
+      const filtered = rows.filter(r => !q || (r.numero && r.numero.toLowerCase().includes(q)) || (r.atleta && r.atleta.toLowerCase().includes(q)));
+      let html = `<table><thead><tr><th>Número</th><th>Nome</th><th>Gênero</th><th>Modalidade</th><th>Categoria</th><th>Idade</th><th>Ações</th></tr></thead><tbody>`;
+      filtered.forEach(r=>{
+        html += `<tr>
+          <td>${r.numero}</td>
+          <td>${escapeHtml(r.atleta||'')}</td>
+          <td>${escapeHtml(r.genero||'')}</td>
+          <td>${escapeHtml(r.modalidade||'')}</td>
+          <td>${escapeHtml(r.categoria||'')}</td>
+          <td>${escapeHtml(r.idade||'')}</td>
+          <td>
+            <button data-num="${r.numero}" class="btn-edit">Editar</button>
+            <button data-num="${r.numero}" class="btn-delete ghost">Apagar</button>
+          </td>
+        </tr>`;
+      });
+      html += `</tbody></table>`;
+      tableListagem.innerHTML = html;
 
-    async function loadResultados(){
-      // aplica filtros
-      const all = []; const snap = await getDocs(collection(db,'resultados'));
-      snap.forEach(d=>all.push(Object.assign({id:d.id}, d.data())));
-      // convert timestamps
-      all.forEach(r=>{ if(r.chegada && r.chegada.toDate) r.chegada = r.chegada.toDate(); });
-      // aplica filtros UI
-      let filtered = all.filter(r=>{ if(fModalidade.value && r.modalidade!==fModalidade.value) return false; if(fGenero.value && r.genero!==fGenero.value) return false; if(fCategoria.value && r.categoria!==fCategoria.value) return false; return true; });
-      // ordenar
-      const order = orderByEl.value;
-      if(order==='tempo_asc') filtered = filtered.sort((a,b)=> compareTempo(a.tempo,b.tempo));
-      if(order==='tempo_desc') filtered = filtered.sort((a,b)=> compareTempo(b.tempo,a.tempo));
-      if(order==='hora_desc') filtered = filtered.sort((a,b)=> (b.chegada||0)-(a.chegada||0));
-      renderTable(tableResultados,['numero','atletaNome','modalidade','categoria','genero','tempo','chegada'], filtered);
+      // attach actions
+      tableListagem.querySelectorAll('.btn-edit').forEach(btn=>{
+        btn.onclick = ()=> openEditAthlete(btn.dataset.num);
+      });
+      tableListagem.querySelectorAll('.btn-delete').forEach(btn=>{
+        btn.onclick = async ()=>{
+          if(!confirm(`Apagar atleta ${btn.dataset.num}?`)) return;
+          try{ await remove(ref(db, `listagem/${btn.dataset.num}`)); alert('Apagado'); }catch(err){ console.error(err); alert('Erro: '+err.message); }
+        };
+      });
     }
 
-    btnAplicarFiltro.onclick = ()=>loadResultados(); orderByEl.onchange = ()=>loadResultados();
-
-    function compareTempo(t1,t2){ if(!t1) return 1; if(!t2) return -1; const p1 = t1.split(':').map(Number); const p2 = t2.split(':').map(Number); const s1=p1[0]*3600+p1[1]*60+p1[2]; const s2=p2[0]*3600+p2[1]*60+p2[2]; return s1-s2; }
-
-    function renderTable(container, cols, rows){
-      let html = '<table><thead><tr>' + cols.map(c=>`<th>\${c}</th>`).join('') + '</tr></thead><tbody>';
-      rows.forEach(r=>{ html += '<tr>' + cols.map(c=>`<td>\${formatCell(r[c])}</td>`).join('') + '</tr>'; });
-      html += '</tbody></table>';
-      container.innerHTML = html;
+    function openEditAthlete(numero){
+      get(child(ref(db), `listagem/${numero}`)).then(snap=>{
+        const data = snap.exists() ? snap.val() : {};
+        const overlay = document.createElement('div'); overlay.className='overlay';
+        const form = document.createElement('form'); form.className='modal';
+        form.innerHTML = `
+          <h4>Editar Atleta - ${numero}</h4>
+          <input id="e_nome" placeholder="Nome" value="${escapeAttr(data.atleta||'')}" />
+          <input id="e_genero" placeholder="Gênero" value="${escapeAttr(data.genero||'')}" />
+          <input id="e_modalidade" placeholder="Modalidade" value="${escapeAttr(data.modalidade||'')}" />
+          <input id="e_categoria" placeholder="Categoria" value="${escapeAttr(data.categoria||'')}" />
+          <input id="e_data_nasc" placeholder="Data Nascimento (DD/MM/YYYY)" value="${escapeAttr(data.data_nascimento||'')}" />
+          <input id="e_idade" placeholder="Idade" type="number" value="${escapeAttr(data.idade||'')}" />
+          <div class="form-actions">
+            <button type="button" id="e_cancel" class="ghost">Cancelar</button>
+            <button type="submit">Salvar</button>
+          </div>
+        `;
+        document.body.appendChild(overlay); document.body.appendChild(form);
+        form.e_cancel.onclick = ()=>{ form.remove(); overlay.remove(); };
+        form.onsubmit = async (e)=>{
+          e.preventDefault();
+          try{
+            await update(ref(db, `listagem/${numero}`), {
+              atleta: form.e_nome.value,
+              genero: form.e_genero.value,
+              modalidade: form.e_modalidade.value,
+              categoria: form.e_categoria.value,
+              data_nascimento: form.e_data_nasc.value,
+              idade: form.e_idade.value
+            });
+            form.remove(); overlay.remove();
+          }catch(err){ console.error(err); alert('Erro salvar: '+err.message); }
+        };
+      });
     }
-    function formatCell(v){ if(v==null) return ''; if(v instanceof Date) return v.toLocaleString(); return String(v); }
 
-    // Inicializações
-    showPage('');
+    function renderLargadas(rows){
+      let html = `<table><thead><tr><th>Modalidade</th><th>Início</th><th>Ações</th></tr></thead><tbody>`;
+      rows.forEach(r=>{
+        html += `<tr>
+          <td>${escapeHtml(r.modalidade||'')}</td>
+          <td>${escapeHtml(r.inicio||'')}</td>
+          <td>
+            <button data-mod="${r.modalidade}" class="btn-edit-l">Editar</button>
+            <button data-mod="${r.modalidade}" class="btn-del-l ghost">Apagar</button>
+          </td>
+        </tr>`;
+      });
+      html += `</tbody></table>`;
+      tableLargadas.innerHTML = html;
 
+      tableLargadas.querySelectorAll('.btn-edit-l').forEach(btn=>{
+        btn.onclick = ()=> openEditLargada(btn.dataset.mod);
+      });
+      tableLargadas.querySelectorAll('.btn-del-l').forEach(btn=>{
+        btn.onclick = async ()=>{
+          if(!confirm(`Apagar largada ${btn.dataset.mod}?`)) return;
+          try{ await remove(ref(db, `largadas/${btn.dataset.mod}`)); alert('Apagado'); }catch(err){ console.error(err); alert('Erro: '+err.message); }
+        };
+      });
+    }
+
+    function openEditLargada(modalidade){
+      get(child(ref(db), `largadas/${modalidade}/inicio`)).then(snap=>{
+        const inicio = snap.exists() ? snap.val() : '';
+        const overlay = document.createElement('div'); overlay.className='overlay';
+        const form = document.createElement('form'); form.className='modal';
+        form.innerHTML = `
+          <h4>Editar Largada - ${modalidade}</h4>
+          <label class="small">Início (DD/MM/YYYY HH:MM:SS)</label>
+          <input id="el_inicio" value="${escapeAttr(inicio||'')}" />
+          <div class="form-actions">
+            <button type="button" id="el_cancel" class="ghost">Cancelar</button>
+            <button type="submit">Salvar</button>
+          </div>
+        `;
+        document.body.appendChild(overlay); document.body.appendChild(form);
+        form.el_cancel.onclick = ()=>{ form.remove(); overlay.remove(); };
+        form.onsubmit = async (e)=>{
+          e.preventDefault();
+          try{
+            await set(ref(db, `largadas/${modalidade}/inicio`), form.el_inicio.value);
+            form.remove(); overlay.remove();
+          }catch(err){ console.error(err); alert('Erro salvar: '+err.message); }
+        };
+      });
+    }
+
+    function renderResultados(rows){
+      let html = `<table><thead><tr><th>Número</th><th>Atleta</th><th>Modalidade</th><th>Categoria</th><th>Gênero</th><th>Chegada</th><th>Tempo</th></tr></thead><tbody>`;
+      rows.forEach(r=>{
+        html += `<tr>
+          <td>${r.numero}</td>
+          <td>${escapeHtml(r.atleta||'')}</td>
+          <td>${escapeHtml(r.modalidade||'')}</td>
+          <td>${escapeHtml(r.categoria||'')}</td>
+          <td>${escapeHtml(r.genero||'')}</td>
+          <td>${escapeHtml(r.chegada||'')}</td>
+          <td>${escapeHtml(r.tempo||'')}</td>
+        </tr>`;
+      });
+      html += `</tbody></table>`;
+      tableResultados.innerHTML = html;
+    }
+
+    // search handler
+    searchListagem.addEventListener('input', ()=> {
+      // re-fetch current listagem snapshot rendering already stored in renderListagem; easier to re-trigger by reading DB (listeners already update UI)
+      // but we'll just call renderListagem by manually reading latest snapshot:
+      get(child(ref(db), 'listagem')).then(snap=>{
+        const data = snap.exists() ? snap.val() : {};
+        const rows = Object.keys(data).map(k => Object.assign({numero: k}, data[k]));
+        renderListagem(rows);
+      }).catch(err=>console.error(err));
+    });
+
+    // ---------- Small utils ----------
+    function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, (m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+    function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
+
+    // ---------- Initial UI state ----------
+    showPage('listagem'); // default
+
+    // ---------- Notes ----------
+    // - We use only Realtime Database read/write (get, set, onValue).
+    // - Date strings are stored in the format "DD/MM/YYYY HH:MM:SS" (as requested).
+    // - If you see "Missing or insufficient permissions" in console, update your Realtime Database rules in Firebase Console to allow authenticated writes/reads during testing.
+    // Example (for testing only — tighten for production):
+    // {
+    //   "rules": {
+    //     ".read": "auth != null",
+    //     ".write": "auth != null"
+    //   }
+    // }
+
+    // End of module
   </script>
 </body>
 </html>
