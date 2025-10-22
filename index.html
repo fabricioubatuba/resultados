@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Controle de Chegadas - Demo</title>
+  <style>
+    :root{--accent:#1e90ff;--accent-2:#ff8a00;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
+    body{margin:0;background:#f6f8fb;color:#111;font-family:var(--font, Inter), sans-serif}
+    header{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#fff;padding:12px 18px;display:flex;align-items:center;justify-content:space-between}
+    .brand{font-weight:700} .container{max-width:1100px;margin:20px auto;padding:12px}
+    .card{background:#fff;border-radius:10px;padding:16px;box-shadow:0 6px 18px rgba(20,30,60,0.06);}
+    .big-input{font-size:48px;letter-spacing:6px;padding:18px;text-align:center;width:220px}
+    .row{display:flex;gap:12px;align-items:center}
+    button{background:var(--accent);color:#fff;border:none;padding:10px 14px;border-radius:8px;cursor:pointer}
+    button.secondary{background:#e6eefc;color:#1e3a8a}
+    .ghost{background:transparent;border:1px solid #ddd;color:#333}
+    nav{display:flex;gap:8px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:6px 8px;border-bottom:1px solid #f0f0f0;text-align:left}
+    .small{font-size:13px;color:#666}
+    .last5{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .pill{background:#f1f5f9;padding:6px 10px;border-radius:999px;font-weight:600}
+    .hidden{display:none}
+    .filters{display:flex;gap:8px;align-items:center}
+    input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">Controle de Chegadas</div>
+    <div id="user-area"></div>
+  </header>
+
+  <div class="container">
+    <div class="card" id="auth-card">
+      <h3>Entrar</h3>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+        <input id="email" placeholder="email" style="padding:8px;border-radius:6px;border:1px solid #ddd" />
+        <input id="password" placeholder="senha" type="password" style="padding:8px;border-radius:6px;border:1px solid #ddd" />
+        <button id="btn-login">Entrar</button>
+        <button id="btn-register" class="secondary">Criar conta</button>
+      </div>
+      <p class="small">Autenticação via Firebase (Email/Senha)</p>
+    </div>
+
+    <div class="card hidden" id="app-card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:14px;color:#444">Entrada rápida de número</div>
+          <div style="margin-top:8px;display:flex;align-items:center;gap:12px">
+            <input id="numero-input" maxlength="4" class="big-input" placeholder="0000" />
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <button id="btn-registrar">Registrar chegada</button>
+              <button id="btn-limpar" class="ghost">Limpar</button>
+            </div>
+          </div>
+          <div class="small" style="margin-top:8px">Últimos 5 números digitados</div>
+          <div class="last5" id="last5"></div>
+        </div>
+
+        <nav>
+          <button id="nav-listagem" class="secondary">Listagem Completa</button>
+          <button id="nav-largadas" class="secondary">Largadas</button>
+          <button id="nav-resultados" class="secondary">Resultados</button>
+          <button id="btn-logout" class="ghost">Sair</button>
+        </nav>
+      </div>
+
+      <hr style="margin:12px 0" />
+
+      <div id="pages">
+        <div id="page-listagem" class="hidden">
+          <h4>Listagem Completa</h4>
+          <div style="margin:8px 0" class="row">
+            <button id="btn-add-athlete" class="secondary">Novo Atleta</button>
+            <input id="search-listagem" placeholder="Pesquisar por nome ou número" style="flex:1;padding:8px;border-radius:6px;border:1px solid #ddd" />
+          </div>
+          <div id="table-listagem"></div>
+        </div>
+
+        <div id="page-largadas" class="hidden">
+          <h4>Largadas</h4>
+          <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
+            <button id="btn-add-largada" class="secondary">Nova Largada</button>
+          </div>
+          <div id="table-largadas"></div>
+        </div>
+
+        <div id="page-resultados" class="hidden">
+          <h4>Resultados</h4>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+            <div class="filters">
+              <select id="f-modalidade"><option value="">Todas modalidades</option></select>
+              <select id="f-genero"><option value="">Todos gêneros</option></select>
+              <select id="f-categoria"><option value="">Todas categorias</option></select>
+              <button id="btn-aplicar-filtro" class="secondary">Aplicar</button>
+            </div>
+            <div style="margin-left:auto">
+              <label class="small">Ordenar por: </label>
+              <select id="order-by"><option value="tempo_asc">Tempo (menor)</option><option value="tempo_desc">Tempo (maior)</option><option value="hora_desc">Hora chegada (recente)</option></select>
+            </div>
+          </div>
+          <div id="table-resultados"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase (v9 modular) -->
+  <script type="module">
+    // ====== COLOQUE AQUI SUA CONFIG DO FIREBASE ======
+    const firebaseConfig = {
+      apiKey: "REPLACE_APIKEY",
+      authDomain: "REPLACE_PROJECT.firebaseapp.com",
+      projectId: "REPLACE_PROJECT",
+      storageBucket: "REPLACE_PROJECT.appspot.com",
+      messagingSenderId: "...",
+      appId: "..."
+    };
+
+    // Import modular SDK
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
+    import { getFirestore, collection, doc, setDoc, addDoc, getDocs, getDoc, query, where, orderBy, serverTimestamp, Timestamp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // --- UI refs ---
+    const authCard = document.getElementById('auth-card');
+    const appCard = document.getElementById('app-card');
+    const userArea = document.getElementById('user-area');
+    const emailInput = document.getElementById('email');
+    const passInput = document.getElementById('password');
+    const btnLogin = document.getElementById('btn-login');
+    const btnRegister = document.getElementById('btn-register');
+    const btnLogout = document.getElementById('btn-logout');
+
+    const numeroInput = document.getElementById('numero-input');
+    const btnRegistrar = document.getElementById('btn-registrar');
+    const last5El = document.getElementById('last5');
+    const btnLimpar = document.getElementById('btn-limpar');
+
+    const navListagem = document.getElementById('nav-listagem');
+    const navLargadas = document.getElementById('nav-largadas');
+    const navResultados = document.getElementById('nav-resultados');
+
+    const pageListagem = document.getElementById('page-listagem');
+    const pageLargadas = document.getElementById('page-largadas');
+    const pageResultados = document.getElementById('page-resultados');
+
+    const tableListagem = document.getElementById('table-listagem');
+    const tableLargadas = document.getElementById('table-largadas');
+    const tableResultados = document.getElementById('table-resultados');
+
+    const fModalidade = document.getElementById('f-modalidade');
+    const fGenero = document.getElementById('f-genero');
+    const fCategoria = document.getElementById('f-categoria');
+    const btnAplicarFiltro = document.getElementById('btn-aplicar-filtro');
+    const orderByEl = document.getElementById('order-by');
+
+    // Persistência local dos últimos 5
+    function pushLast(num){
+      let arr = JSON.parse(localStorage.getItem('last5')||'[]');
+      arr = arr.filter(x=>x!==num);
+      arr.unshift(num);
+      arr = arr.slice(0,5);
+      localStorage.setItem('last5',JSON.stringify(arr));
+      renderLast5();
+    }
+    function renderLast5(){
+      const arr = JSON.parse(localStorage.getItem('last5')||'[]');
+      last5El.innerHTML='';
+      arr.forEach(x=>{
+        const b=document.createElement('div');b.className='pill';b.textContent=x; b.onclick=()=>numeroInput.value=x; last5El.appendChild(b);
+      })
+    }
+    renderLast5();
+
+    // --- Auth ---
+    btnLogin.onclick = async ()=>{
+      try{ await signInWithEmailAndPassword(auth,emailInput.value,passInput.value); }
+      catch(err){ alert('Erro login: '+err.message); }
+    }
+    btnRegister.onclick = async ()=>{
+      try{ await createUserWithEmailAndPassword(auth,emailInput.value,passInput.value); alert('Conta criada'); }
+      catch(err){ alert('Erro criar: '+err.message); }
+    }
+    btnLogout.onclick = async ()=>{ await signOut(auth); };
+
+    onAuthStateChanged(auth,user=>{
+      if(user){
+        authCard.classList.add('hidden'); appCard.classList.remove('hidden'); userArea.textContent = user.email;
+        loadAllLookups(); loadListagem(); loadLargadas(); loadResultados();
+      } else {
+        authCard.classList.remove('hidden'); appCard.classList.add('hidden'); userArea.textContent='';
+      }
+    });
+
+    // --- Navegação ---
+    navListagem.onclick = ()=>showPage('listagem');
+    navLargadas.onclick = ()=>showPage('largadas');
+    navResultados.onclick = ()=>showPage('resultados');
+    function showPage(p){ pageListagem.classList.add('hidden'); pageLargadas.classList.add('hidden'); pageResultados.classList.add('hidden');
+      if(p==='listagem') pageListagem.classList.remove('hidden');
+      if(p==='largadas') pageLargadas.classList.remove('hidden');
+      if(p==='resultados') pageResultados.classList.remove('hidden');
+    }
+
+    // --- Registrar chegada (fluxo principal) ---
+    btnRegistrar.onclick = async ()=>{
+      const raw = numeroInput.value || '';
+      const digits = raw.replace(/\D/g,'');
+      if(!digits){ alert('Digite um número válido'); return; }
+      const padded = digits.padStart(4,'0');
+      // busca atleta em "listagem" collection pelo campo numero
+      try{
+        const q = query(collection(db,'listagem'), where('numero','==',padded));
+        const snap = await getDocs(q);
+        if(snap.empty){ alert('Atleta não encontrado: '+padded); return; }
+        const docA = snap.docs[0];
+        const atleta = docA.data();
+        // hora de chegada
+        const chegada = new Date();
+        // busca largada pela modalidade
+        const qL = query(collection(db,'largadas'), where('modalidade','==',atleta.modalidade));
+        const snapL = await getDocs(qL);
+        let largadaDt = null;
+        if(!snapL.empty) largadaDt = snapL.docs[0].data().inicio && snapL.docs[0].data().inicio.toDate ? snapL.docs[0].data().inicio.toDate() : new Date(snapL.docs[0].data().inicio);
+        let tempo = null;
+        if(largadaDt){ const diff = Math.max(0, chegada.getTime()-largadaDt.getTime()); const hh=Math.floor(diff/3600000), mm=Math.floor((diff%3600000)/60000), ss=Math.floor((diff%60000)/1000); tempo = `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`; }
+        // grava em collection resultados
+        await addDoc(collection(db,'resultados'), { numero:padded, atletaRef:docA.ref, atletaNome:atleta.nome, genero:atleta.genero, modalidade:atleta.modalidade, categoria:atleta.categoria, dataNascimento:atleta.dataNascimento || null, idade:atleta.idade || null, chegada: Timestamp.fromDate(chegada), tempo:tempo || null, createdAt: serverTimestamp(), createdBy: auth.currentUser.email });
+        pushLast(padded);
+        numeroInput.value='';
+        alert('Chegada registrada: '+padded+(tempo?('\nTempo: '+tempo):''));
+        loadResultados();
+      }catch(err){ alert('Erro: '+err.message); }
+    };
+
+    btnLimpar.onclick = ()=>{ numeroInput.value=''; }
+
+    // --- Lookups e rendering ---
+    async function loadAllLookups(){
+      // preencher selects com valores existentes nas coleções
+      const modalidades = new Set(); const generos=new Set(); const categorias=new Set();
+      // varrer listagem
+      const snap = await getDocs(collection(db,'listagem'));
+      snap.forEach(d=>{ const v=d.data(); if(v.modalidade) modalidades.add(v.modalidade); if(v.genero) generos.add(v.genero); if(v.categoria) categorias.add(v.categoria); });
+      fillSelect(fModalidade,modalidades); fillSelect(fGenero,generos); fillSelect(fCategoria,categorias);
+    }
+    function fillSelect(el,set){ const arr=[...set].sort(); el.innerHTML='<option value="">Todos</option>'; arr.forEach(x=>{ const o=document.createElement('option'); o.value=x; o.textContent=x; el.appendChild(o); }); }
+
+    async function loadListagem(){
+      // renderiza uma tabela simples
+      const snap = await getDocs(collection(db,'listagem'));
+      const rows = [];
+      snap.forEach(d=>{ rows.push(Object.assign({id:d.id}, d.data())); });
+      rows.sort((a,b)=> (a.numero||'').localeCompare(b.numero||''));
+      renderTable(tableListagem, ['numero','nome','genero','modalidade','categoria','idade'], rows);
+    }
+
+    async function loadLargadas(){ const snap = await getDocs(collection(db,'largadas')); const rows=[]; snap.forEach(d=>rows.push(Object.assign({id:d.id},d.data()))); renderTable(tableLargadas,['modalidade','inicio'], rows); }
+
+    async function loadResultados(){
+      // aplica filtros
+      const all = []; const snap = await getDocs(collection(db,'resultados'));
+      snap.forEach(d=>all.push(Object.assign({id:d.id}, d.data())));
+      // convert timestamps
+      all.forEach(r=>{ if(r.chegada && r.chegada.toDate) r.chegada = r.chegada.toDate(); });
+      // aplica filtros UI
+      let filtered = all.filter(r=>{ if(fModalidade.value && r.modalidade!==fModalidade.value) return false; if(fGenero.value && r.genero!==fGenero.value) return false; if(fCategoria.value && r.categoria!==fCategoria.value) return false; return true; });
+      // ordenar
+      const order = orderByEl.value;
+      if(order==='tempo_asc') filtered = filtered.sort((a,b)=> compareTempo(a.tempo,b.tempo));
+      if(order==='tempo_desc') filtered = filtered.sort((a,b)=> compareTempo(b.tempo,a.tempo));
+      if(order==='hora_desc') filtered = filtered.sort((a,b)=> (b.chegada||0)-(a.chegada||0));
+      renderTable(tableResultados,['numero','atletaNome','modalidade','categoria','genero','tempo','chegada'], filtered);
+    }
+
+    btnAplicarFiltro.onclick = ()=>loadResultados(); orderByEl.onchange = ()=>loadResultados();
+
+    function compareTempo(t1,t2){ if(!t1) return 1; if(!t2) return -1; const p1 = t1.split(':').map(Number); const p2 = t2.split(':').map(Number); const s1=p1[0]*3600+p1[1]*60+p1[2]; const s2=p2[0]*3600+p2[1]*60+p2[2]; return s1-s2; }
+
+    function renderTable(container, cols, rows){
+      let html = '<table><thead><tr>' + cols.map(c=>`<th>\${c}</th>`).join('') + '</tr></thead><tbody>';
+      rows.forEach(r=>{ html += '<tr>' + cols.map(c=>`<td>\${formatCell(r[c])}</td>`).join('') + '</tr>'; });
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+    function formatCell(v){ if(v==null) return ''; if(v instanceof Date) return v.toLocaleString(); return String(v); }
+
+    // Inicializações
+    showPage('');
+
+  </script>
+</body>
+</html>
