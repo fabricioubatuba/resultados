@@ -11,7 +11,8 @@
     .brand{font-weight:700}
     .container{max-width:1100px;margin:20px auto;padding:12px}
     .card{background:#fff;border-radius:10px;padding:16px;box-shadow:0 6px 18px rgba(20,30,60,0.06);}
-    .big-input{font-size:64px;letter-spacing:8px;padding:20px 24px;text-align:center;width:660px;box-sizing:border-box} /* 3x maior */
+    /* Big input - 3x larger visual than typical */
+    .big-input{font-size:72px;letter-spacing:10px;padding:28px 20px;text-align:center;width:720px;box-sizing:border-box;border-radius:8px;border:1px solid #ddd}
     .row{display:flex;gap:12px;align-items:center}
     button{background:var(--accent);color:#fff;border:none;padding:10px 14px;border-radius:8px;cursor:pointer}
     button.secondary{background:#e6eefc;color:#1e3a8a}
@@ -30,8 +31,7 @@
     .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:50}
     .form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
     .error{color:#b00020}
-    /* responsive */
-    @media(max-width:900px){ .big-input{width:100%;font-size:48px;padding:14px} .container{padding:8px} }
+    @media(max-width:900px){ .big-input{width:100%;font-size:48px;padding:16px} .container{padding:8px} nav{flex-wrap:wrap} }
   </style>
 </head>
 <body>
@@ -58,11 +58,10 @@
     <div class="card hidden" id="app-card">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
         <div style="flex:1;min-width:280px">
-          <div style="font-size:14px;color:#444">Entrada rápida de número</div>
+          <div style="font-size:14px;color:#444">Entrada rápida de número (foco automático) — apenas pressione <strong>Enter</strong></div>
           <div style="margin-top:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-            <input id="numero-input" maxlength="10" class="big-input" placeholder="0000" />
+            <input id="numero-input" maxlength="10" class="big-input" placeholder="0000" autocomplete="off" inputmode="numeric" />
             <div style="display:flex;flex-direction:column;gap:8px">
-              <button id="btn-registrar">Registrar chegada (Enter)</button>
               <button id="btn-limpar" class="ghost">Limpar</button>
             </div>
           </div>
@@ -113,7 +112,6 @@
     </div>
   </div>
 
-  <!-- Firebase SDKs -->
   <script type="module">
     // ---------- FIREBASE CONFIG ----------
     const firebaseConfig = {
@@ -128,13 +126,13 @@
 
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
-    import { getDatabase, ref, set, push, onValue, get, child, update, remove } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js';
+    import { getDatabase, ref, set, get, onValue, child, remove, update } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js';
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    // ---------- UI refs ----------
+    // UI refs
     const authCard = document.getElementById('auth-card');
     const appCard = document.getElementById('app-card');
     const userArea = document.getElementById('user-area');
@@ -146,7 +144,6 @@
     const authError = document.getElementById('auth-error');
 
     const numeroInput = document.getElementById('numero-input');
-    const btnRegistrar = document.getElementById('btn-registrar');
     const btnLimpar = document.getElementById('btn-limpar');
     const last5El = document.getElementById('last5');
 
@@ -167,24 +164,20 @@
     const searchListagem = document.getElementById('search-listagem');
     const btnAddLargada = document.getElementById('btn-add-largada');
 
-    // ---------- Helpers ----------
+    // Helpers
     function padNum(n){ return String(n).padStart(4,'0'); }
 
-    // Parse string "DD/MM/YYYY HH:MM:SS" into a Date in local timezone
+    // Parse "DD/MM/YYYY HH:MM:SS" to local Date
     function parseDMYTime(s){
       if(!s) return null;
-      // accept "DD/MM/YYYY HH:MM:SS" or "DD/MM/YYYY"
       const [datePart, timePart] = s.split(' ');
       const [d,m,y] = datePart.split('/').map(Number);
       let hh=0, mm=0, ss=0;
       if(timePart){
         [hh,mm,ss] = timePart.split(':').map(x=>Number(x));
       }
-      // create local date
       return new Date(y, m-1, d, hh, mm, ss);
     }
-
-    // Format Date -> "DD/MM/YYYY HH:MM:SS"
     function formatDMYTime(dt){
       if(!dt) return '';
       const d = String(dt.getDate()).padStart(2,'0');
@@ -195,15 +188,6 @@
       const ss = String(dt.getSeconds()).padStart(2,'0');
       return `${d}/${m}/${y} ${hh}:${mm}:${ss}`;
     }
-
-    function formatDateOnlyDMY(dt){
-      if(!dt) return '';
-      const d = String(dt.getDate()).padStart(2,'0');
-      const m = String(dt.getMonth()+1).padStart(2,'0');
-      const y = String(dt.getFullYear());
-      return `${d}/${m}/${y}`;
-    }
-
     function formatTempoFromSeconds(totalSeconds){
       if(totalSeconds == null) return '';
       if(totalSeconds < 0) totalSeconds = 0;
@@ -213,7 +197,7 @@
       return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
     }
 
-    // ---------- Last5 local storage ----------
+    // Last5
     function pushLast(num){
       let arr = JSON.parse(localStorage.getItem('last5')||'[]');
       arr = arr.filter(x=>x!==num);
@@ -235,12 +219,12 @@
     }
     renderLast5();
 
-    // Keep focus on input (good for barcode scanners). Also try on visibility change to re-focus.
+    // Keep focus on input for fast scanning
     numeroInput.focus();
-    let focusInterval = setInterval(()=>{ if(document.activeElement !== numeroInput) numeroInput.focus(); }, 1500);
+    const focusInterval = setInterval(()=>{ if(document.activeElement !== numeroInput) numeroInput.focus(); }, 1200);
     document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) numeroInput.focus(); });
 
-    // ---------- Auth handlers ----------
+    // Auth handlers
     btnLogin.onclick = async () => {
       authError.style.display='none';
       try{
@@ -269,21 +253,20 @@
         authCard.classList.add('hidden');
         appCard.classList.remove('hidden');
         userArea.textContent = user.email;
-        // Start realtime listeners
         startRealtimeListeners();
       } else {
         authCard.classList.remove('hidden');
         appCard.classList.add('hidden');
         userArea.textContent = '';
-        stopRealtimeListeners();
+        // remove listeners by reloading (simple)
+        window.location.reload();
       }
     });
 
-    // ---------- Navigation ----------
+    // Navigation
     navListagem.onclick = ()=> showPage('listagem');
     navLargadas.onclick = ()=> showPage('largadas');
     navResultados.onclick = ()=> showPage('resultados');
-
     function showPage(p){
       pageListagem.classList.add('hidden');
       pageLargadas.classList.add('hidden');
@@ -293,37 +276,31 @@
       if(p==='resultados') pageResultados.classList.remove('hidden');
     }
 
-    // ---------- Register arrival (Enter or button) ----------
+    // Enter registers arrival; remove separate register button
     numeroInput.addEventListener('keydown', (e) => {
       if(e.key === 'Enter'){
         e.preventDefault();
         registrarChegada();
       }
     });
-    btnRegistrar.onclick = registrarChegada;
     btnLimpar.onclick = ()=>{ numeroInput.value = ''; numeroInput.focus(); };
 
     async function registrarChegada(){
       const raw = (numeroInput.value || '').trim();
       if(!raw){
-        alert('Digite um número válido.');
         numeroInput.focus();
         return;
       }
-      const numero = padNum(raw.replace(/\D/g,'')); // keep digits, pad to 4
+      const numero = padNum(raw.replace(/\D/g,''));
       try{
-        // read /listagem/{numero}
         const athleteSnap = await get(child(ref(db), `listagem/${numero}`));
         if(!athleteSnap.exists()){
           if(!confirm(`Atleta ${numero} não encontrado. Deseja cadastrar rapidamente?`)) {
             numeroInput.value=''; numeroInput.focus(); return;
           }
-          // quick minimal registration modal
           await quickRegisterAthlete(numero);
         }
-        // re-read athlete (in case just created)
         const athlete = (await get(child(ref(db), `listagem/${numero}`))).val();
-        // get largada for modalidade
         let largadaInicioStr = null;
         if(athlete && athlete.modalidade){
           const largSnap = await get(child(ref(db), `largadas/${athlete.modalidade}/inicio`));
@@ -334,11 +311,9 @@
         let tempoStr = null;
         if(largadaInicioStr){
           const largDt = parseDMYTime(largadaInicioStr);
-          // compute diff in seconds
           const diffSec = Math.round((chegadaDt.getTime() - largDt.getTime())/1000);
           tempoStr = formatTempoFromSeconds(diffSec);
         }
-        // write /resultados/{numero}
         await set(ref(db, `resultados/${numero}`), {
           chegada: chegadaStr,
           tempo: tempoStr || '',
@@ -354,20 +329,17 @@
         pushLast(numero);
         numeroInput.value = '';
         numeroInput.focus();
-        alert(`Chegada registrada: ${numero}` + (tempoStr ? `\nTempo: ${tempoStr}` : ''));
       }catch(err){
         console.error('Erro registrar chegada:', err);
-        alert('Erro ao registrar chegada: ' + err.message);
+        alert('Erro ao registrar chegada: ' + (err.message||err));
       }
     }
 
-    // Quick register used when athlete not found at arrival time
+    // Quick register modal
     async function quickRegisterAthlete(numero){
       return new Promise((resolve, reject)=>{
-        const overlay = document.createElement('div');
-        overlay.className = 'overlay';
-        const form = document.createElement('form');
-        form.className = 'modal';
+        const overlay = document.createElement('div'); overlay.className='overlay';
+        const form = document.createElement('form'); form.className='modal';
         form.innerHTML = `
           <h4>Cadastro Rápido - ${numero}</h4>
           <input id="q_atleta" placeholder="Nome (Atleta)" required />
@@ -381,15 +353,10 @@
             <button type="submit">Salvar</button>
           </div>
         `;
-        document.body.appendChild(overlay);
-        document.body.appendChild(form);
+        document.body.appendChild(overlay); document.body.appendChild(form);
         form.q_atleta.focus();
-
-        form.q_cancel.onclick = ()=>{
-          form.remove(); overlay.remove(); resolve();
-        };
-
-        form.onsubmit = async (e) => {
+        form.q_cancel.onclick = ()=>{ form.remove(); overlay.remove(); resolve(); };
+        form.onsubmit = async (e)=>{
           e.preventDefault();
           try{
             await set(ref(db, `listagem/${numero}`), {
@@ -400,17 +367,13 @@
               data_nascimento: form.q_data_nasc.value,
               idade: form.q_idade.value
             });
-            form.remove(); overlay.remove();
-            resolve();
-          }catch(err){
-            form.remove(); overlay.remove();
-            reject(err);
-          }
+            form.remove(); overlay.remove(); resolve();
+          }catch(err){ form.remove(); overlay.remove(); reject(err); }
         };
       });
     }
 
-    // ---------- CSV upload (Listagem) ----------
+    // CSV upload
     csvUpload.addEventListener('change', (e)=>{
       const file = e.target.files[0];
       if(!file) return;
@@ -418,7 +381,6 @@
       reader.onload = async () => {
         const text = reader.result;
         const lines = text.split(/\r?\n/).filter(Boolean);
-        // assume header on first line if non-numeric first column
         let start = 0;
         if(lines.length>0){
           const firstCols = lines[0].split(',');
@@ -431,7 +393,6 @@
             const rawNumero = cols[0].replace(/\D/g,'');
             if(!rawNumero) continue;
             const numero = padNum(rawNumero);
-            // map columns: numero, atleta/nome, genero, modalidade, categoria, data_nascimento, idade
             const data = {
               atleta: cols[1] || '',
               genero: cols[2] || '',
@@ -446,13 +407,13 @@
           csvUpload.value = '';
         }catch(err){
           console.error('Erro importar CSV', err);
-          alert('Erro ao importar CSV: ' + err.message);
+          alert('Erro ao importar CSV: ' + (err.message||err));
         }
       };
       reader.readAsText(file, 'utf-8');
     });
 
-    // ---------- Novo atleta modal ----------
+    // New athlete modal
     btnAddAthlete.onclick = ()=>{
       const overlay = document.createElement('div'); overlay.className='overlay';
       const form = document.createElement('form'); form.className='modal';
@@ -473,7 +434,7 @@
       document.body.appendChild(overlay); document.body.appendChild(form);
       form.a_numero.focus();
       form.a_cancel.onclick = ()=>{ form.remove(); overlay.remove(); };
-      form.onsubmit = async (e) => {
+      form.onsubmit = async (e)=>{
         e.preventDefault();
         const raw = form.a_numero.value.replace(/\D/g,'');
         if(!raw){ alert('Número inválido'); return; }
@@ -488,13 +449,11 @@
             idade: form.a_idade.value
           });
           form.remove(); overlay.remove();
-        }catch(err){
-          console.error(err); alert('Erro ao salvar: '+err.message);
-        }
+        }catch(err){ console.error(err); alert('Erro ao salvar: '+(err.message||err)); }
       };
     };
 
-    // ---------- Nova largada modal ----------
+    // New largada modal
     btnAddLargada.onclick = ()=>{
       const overlay = document.createElement('div'); overlay.className='overlay';
       const form = document.createElement('form'); form.className='modal';
@@ -511,74 +470,50 @@
       document.body.appendChild(overlay); document.body.appendChild(form);
       form.l_modalidade.focus();
       form.l_cancel.onclick = ()=>{ form.remove(); overlay.remove(); };
-      form.onsubmit = async (e) => {
+      form.onsubmit = async (e)=>{
         e.preventDefault();
         const modalidade = form.l_modalidade.value.trim();
         const inicioStr = form.l_inicio.value.trim();
         if(!modalidade || !inicioStr){ alert('Preencha todos os campos'); return; }
-        // basic validation of date pattern
-        if(!/^\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}:\d{2}$/.test(inicioStr)){
-          if(!confirm('Formato inesperado. Deseja salvar mesmo assim? (use DD/MM/YYYY HH:MM:SS)')) {
-            return;
-          }
-        }
         try{
           await set(ref(db, `largadas/${modalidade}/inicio`), inicioStr);
           form.remove(); overlay.remove();
-        }catch(err){
-          console.error(err); alert('Erro ao salvar largada: '+err.message);
-        }
+        }catch(err){ console.error(err); alert('Erro ao salvar largada: '+(err.message||err)); }
       };
     };
 
-    // ---------- Real-time listeners ----------
-    let listagemUnsub = null;
-    let largadasUnsub = null;
-    let resultadosUnsub = null;
-
+    // Real-time listeners
     function startRealtimeListeners(){
       // listagem
-      try{
-        listagemUnsub = onValue(ref(db, 'listagem'), (snap)=>{
-          const data = snap.val() || {};
-          const rows = Object.keys(data).map(k => Object.assign({numero: k}, data[k]));
-          renderListagem(rows);
-        }, (err)=>{ console.error('Erro listener listagem:', err); });
-      }catch(err){ console.error(err); }
+      onValue(ref(db, 'listagem'), (snap)=>{
+        const data = snap.val() || {};
+        const rows = Object.keys(data).map(k => Object.assign({numero: k}, data[k]));
+        renderListagem(rows);
+      }, (err)=>{ console.error('Erro listener listagem:', err); });
 
       // largadas
-      try{
-        largadasUnsub = onValue(ref(db, 'largadas'), (snap)=>{
-          const data = snap.val() || {};
-          const rows = Object.keys(data).map(k => ({modalidade: k, inicio: data[k].inicio || ''}));
-          renderLargadas(rows);
-        }, (err)=>{ console.error('Erro listener largadas:', err); });
-      }catch(err){ console.error(err); }
+      onValue(ref(db, 'largadas'), (snap)=>{
+        const data = snap.val() || {};
+        const rows = Object.keys(data).map(k => ({modalidade: k, inicio: data[k].inicio || ''}));
+        renderLargadas(rows);
+      }, (err)=>{ console.error('Erro listener largadas:', err); });
 
       // resultados
-      try{
-        resultadosUnsub = onValue(ref(db, 'resultados'), (snap)=>{
-          const data = snap.val() || {};
-          const rows = Object.keys(data).map(k => Object.assign({numero: k}, data[k]));
-          // sort by chegada (ISO field if exists) or by chegada string parse
-          rows.sort((a,b)=>{
-            const da = a.registradaEmISO ? new Date(a.registradaEmISO) : (a.chegada ? parseDMYTime(a.chegada) : new Date(0));
-            const dbb = b.registradaEmISO ? new Date(b.registradaEmISO) : (b.chegada ? parseDMYTime(b.chegada) : new Date(0));
-            return dbb - da;
-          });
-          renderResultados(rows);
-        }, (err)=>{ console.error('Erro listener resultados:', err); });
-      }catch(err){ console.error(err); }
+      onValue(ref(db, 'resultados'), (snap)=>{
+        const data = snap.val() || {};
+        const rows = Object.keys(data).map(k => Object.assign({numero: k}, data[k]));
+        rows.sort((a,b)=>{
+          const da = a.registradaEmISO ? new Date(a.registradaEmISO) : (a.chegada ? parseDMYTime(a.chegada) : new Date(0));
+          const dbb = b.registradaEmISO ? new Date(b.registradaEmISO) : (b.chegada ? parseDMYTime(b.chegada) : new Date(0));
+          return dbb - da;
+        });
+        renderResultados(rows);
+      }, (err)=>{ console.error('Erro listener resultados:', err); });
     }
 
-    function stopRealtimeListeners(){
-      // onValue returns unsub function? In modular Realtime DB, onValue returns the callback reference; can't easily remove without off(), but to keep it simple we'll reload page on logout. (or remove listeners by calling off on root)
-      try{ /* no-op */ }catch(e){}
-    }
-
-    // ---------- Render functions ----------
+    // Render functions
     function renderListagem(rows){
-      const q = searchListagem.value.trim().toLowerCase();
+      const q = (searchListagem.value || '').trim().toLowerCase();
       const filtered = rows.filter(r => !q || (r.numero && r.numero.toLowerCase().includes(q)) || (r.atleta && r.atleta.toLowerCase().includes(q)));
       let html = `<table><thead><tr><th>Número</th><th>Nome</th><th>Gênero</th><th>Modalidade</th><th>Categoria</th><th>Idade</th><th>Ações</th></tr></thead><tbody>`;
       filtered.forEach(r=>{
@@ -598,14 +533,13 @@
       html += `</tbody></table>`;
       tableListagem.innerHTML = html;
 
-      // attach actions
       tableListagem.querySelectorAll('.btn-edit').forEach(btn=>{
         btn.onclick = ()=> openEditAthlete(btn.dataset.num);
       });
       tableListagem.querySelectorAll('.btn-delete').forEach(btn=>{
         btn.onclick = async ()=>{
           if(!confirm(`Apagar atleta ${btn.dataset.num}?`)) return;
-          try{ await remove(ref(db, `listagem/${btn.dataset.num}`)); alert('Apagado'); }catch(err){ console.error(err); alert('Erro: '+err.message); }
+          try{ await remove(ref(db, `listagem/${btn.dataset.num}`)); alert('Apagado'); }catch(err){ console.error(err); alert('Erro: '+(err.message||err)); }
         };
       });
     }
@@ -642,7 +576,7 @@
               idade: form.e_idade.value
             });
             form.remove(); overlay.remove();
-          }catch(err){ console.error(err); alert('Erro salvar: '+err.message); }
+          }catch(err){ console.error(err); alert('Erro salvar: '+(err.message||err)); }
         };
       });
     }
@@ -668,7 +602,7 @@
       tableLargadas.querySelectorAll('.btn-del-l').forEach(btn=>{
         btn.onclick = async ()=>{
           if(!confirm(`Apagar largada ${btn.dataset.mod}?`)) return;
-          try{ await remove(ref(db, `largadas/${btn.dataset.mod}`)); alert('Apagado'); }catch(err){ console.error(err); alert('Erro: '+err.message); }
+          try{ await remove(ref(db, `largadas/${btn.dataset.mod}`)); alert('Apagado'); }catch(err){ console.error(err); alert('Erro: '+(err.message||err)); }
         };
       });
     }
@@ -694,7 +628,7 @@
           try{
             await set(ref(db, `largadas/${modalidade}/inicio`), form.el_inicio.value);
             form.remove(); overlay.remove();
-          }catch(err){ console.error(err); alert('Erro salvar: '+err.message); }
+          }catch(err){ console.error(err); alert('Erro salvar: '+(err.message||err)); }
         };
       });
     }
@@ -718,8 +652,6 @@
 
     // search handler
     searchListagem.addEventListener('input', ()=> {
-      // re-fetch current listagem snapshot rendering already stored in renderListagem; easier to re-trigger by reading DB (listeners already update UI)
-      // but we'll just call renderListagem by manually reading latest snapshot:
       get(child(ref(db), 'listagem')).then(snap=>{
         const data = snap.exists() ? snap.val() : {};
         const rows = Object.keys(data).map(k => Object.assign({numero: k}, data[k]));
@@ -727,26 +659,14 @@
       }).catch(err=>console.error(err));
     });
 
-    // ---------- Small utils ----------
+    // utils
     function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, (m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
     function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
 
-    // ---------- Initial UI state ----------
-    showPage('listagem'); // default
+    // default page
+    showPage('listagem');
 
-    // ---------- Notes ----------
-    // - We use only Realtime Database read/write (get, set, onValue).
-    // - Date strings are stored in the format "DD/MM/YYYY HH:MM:SS" (as requested).
-    // - If you see "Missing or insufficient permissions" in console, update your Realtime Database rules in Firebase Console to allow authenticated writes/reads during testing.
-    // Example (for testing only — tighten for production):
-    // {
-    //   "rules": {
-    //     ".read": "auth != null",
-    //     ".write": "auth != null"
-    //   }
-    // }
-
-    // End of module
+    // Note about permissions appears in console if DB rules restrict read/write.
   </script>
 </body>
 </html>
