@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Controle de Chegadas - teste-c702e</title>
+  <title>Controle de Chegadas v2 - teste-c702e</title>
   <style>
     :root{--accent:#1e90ff;--accent-2:#ff8a00;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
     body{margin:0;background:#f6f8fb;color:#111;font-family:var(--font, Inter), sans-serif}
@@ -11,7 +11,6 @@
     .brand{font-weight:700}
     .container{max-width:1100px;margin:20px auto;padding:12px}
     .card{background:#fff;border-radius:10px;padding:16px;box-shadow:0 6px 18px rgba(20,30,60,0.06);}
-    /* Big input - 3x larger visual than typical */
     .big-input{font-size:72px;letter-spacing:10px;padding:28px 20px;text-align:center;width:720px;box-sizing:border-box;border-radius:8px;border:1px solid #ddd}
     .row{display:flex;gap:12px;align-items:center}
     button{background:var(--accent);color:#fff;border:none;padding:10px 14px;border-radius:8px;cursor:pointer}
@@ -25,7 +24,6 @@
     .pill{background:#f1f5f9;padding:6px 10px;border-radius:999px;font-weight:600;cursor:pointer}
     .hidden{display:none}
     .filters{display:flex;gap:8px;align-items:center}
-    input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
     form.modal{background:#fff;border:1px solid #ccc;border-radius:10px;padding:16px;box-shadow:0 8px 30px rgba(0,0,0,0.18);position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:60;min-width:320px}
     form.modal input, form.modal select{width:100%;padding:8px;margin:6px 0;border:1px solid #ccc;border-radius:6px;box-sizing:border-box}
     .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:50}
@@ -36,7 +34,7 @@
 </head>
 <body>
   <header>
-    <div class="brand">Controle de Chegadas</div>
+    <div class="brand">Controle de Chegadas v2</div>
     <div id="user-area" class="small"></div>
   </header>
 
@@ -70,6 +68,7 @@
         </div>
 
         <nav>
+          <button id="nav-entrada" class="secondary">Entrada Rápida</button>
           <button id="nav-listagem" class="secondary">Listagem Completa</button>
           <button id="nav-largadas" class="secondary">Largadas</button>
           <button id="nav-resultados" class="secondary">Resultados</button>
@@ -80,6 +79,13 @@
       <hr style="margin:12px 0" />
 
       <div id="pages">
+        <!-- ENTRADA -->
+        <div id="page-entrada">
+          <div style="margin-top:12px">
+            <p class="small">Aponte o leitor de código de barras e pressione Enter. O cursor permanecerá aqui enquanto estiver nesta tela.</p>
+          </div>
+        </div>
+
         <!-- LISTAGEM -->
         <div id="page-listagem" class="hidden">
           <h4>Listagem Completa</h4>
@@ -103,8 +109,19 @@
         <!-- RESULTADOS -->
         <div id="page-resultados" class="hidden">
           <h4>Resultados</h4>
-          <div style="margin-bottom:8px">
-            <label class="small">Resultados em tempo real</label>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+            <div class="filters" style="align-items:center">
+              <label class="small">Modalidade</label>
+              <select id="f-modalidade"><option value="">Todas</option></select>
+              <label class="small">Categoria</label>
+              <select id="f-categoria"><option value="">Todas</option></select>
+              <label class="small">Gênero</label>
+              <select id="f-genero"><option value="">Todos</option></select>
+              <button id="btn-aplicar-filtro" class="secondary">Aplicar</button>
+            </div>
+            <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+              <button id="btn-export" class="secondary">Exportar CSV</button>
+            </div>
           </div>
           <div id="table-resultados"></div>
         </div>
@@ -113,7 +130,6 @@
   </div>
 
   <script type="module">
-    // ---------- FIREBASE CONFIG ----------
     const firebaseConfig = {
       apiKey: "AIzaSyBZqXrKnRGvM0BG5qrrE38R8zR25tacOzw",
       authDomain: "teste-c702e.firebaseapp.com",
@@ -132,7 +148,6 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    // UI refs
     const authCard = document.getElementById('auth-card');
     const appCard = document.getElementById('app-card');
     const userArea = document.getElementById('user-area');
@@ -145,12 +160,13 @@
 
     const numeroInput = document.getElementById('numero-input');
     const btnLimpar = document.getElementById('btn-limpar');
-    const last5El = document.getElementById('last5');
 
+    const navEntrada = document.getElementById('nav-entrada');
     const navListagem = document.getElementById('nav-listagem');
     const navLargadas = document.getElementById('nav-largadas');
     const navResultados = document.getElementById('nav-resultados');
 
+    const pageEntrada = document.getElementById('page-entrada');
     const pageListagem = document.getElementById('page-listagem');
     const pageLargadas = document.getElementById('page-largadas');
     const pageResultados = document.getElementById('page-resultados');
@@ -164,10 +180,13 @@
     const searchListagem = document.getElementById('search-listagem');
     const btnAddLargada = document.getElementById('btn-add-largada');
 
-    // Helpers
-    function padNum(n){ return String(n).padStart(4,'0'); }
+    const fModalidade = document.getElementById('f-modalidade');
+    const fCategoria = document.getElementById('f-categoria');
+    const fGenero = document.getElementById('f-genero');
+    const btnAplicarFiltro = document.getElementById('btn-aplicar-filtro');
+    const btnExport = document.getElementById('btn-export');
 
-    // Parse "DD/MM/YYYY HH:MM:SS" to local Date
+    function padNum(n){ return String(n).padStart(4,'0'); }
     function parseDMYTime(s){
       if(!s) return null;
       const [datePart, timePart] = s.split(' ');
@@ -204,11 +223,11 @@
       arr.unshift(num);
       arr = arr.slice(0,5);
       localStorage.setItem('last5', JSON.stringify(arr));
-      renderLast5();
     }
     function renderLast5(){
-      const arr = JSON.parse(localStorage.getItem('last5')||'[]');
+      const last5El = document.querySelector('.last5');
       last5El.innerHTML = '';
+      const arr = JSON.parse(localStorage.getItem('last5')||'[]');
       arr.forEach(x=>{
         const el = document.createElement('div');
         el.className = 'pill';
@@ -219,30 +238,36 @@
     }
     renderLast5();
 
-    // Keep focus on input for fast scanning
-    numeroInput.focus();
-    const focusInterval = setInterval(()=>{ if(document.activeElement !== numeroInput) numeroInput.focus(); }, 1200);
-    document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) numeroInput.focus(); });
+    // Focus management (only on Entrada page)
+    let focusInterval = null;
+    function enableEntradaFocus(){
+      numeroInput.focus();
+      if(focusInterval) clearInterval(focusInterval);
+      focusInterval = setInterval(()=>{ if(document.activeElement !== numeroInput) numeroInput.focus(); }, 900);
+    }
+    function disableEntradaFocus(){
+      if(focusInterval) { clearInterval(focusInterval); focusInterval = null; }
+    }
 
     // Auth handlers
     btnLogin.onclick = async () => {
-      authError.style.display='none';
       try{
         await signInWithEmailAndPassword(auth, emailInput.value, passInput.value);
       }catch(err){
-        authError.textContent = 'Erro login: ' + err.message;
+        const authError = document.getElementById('auth-error');
         authError.style.display='block';
+        authError.textContent = 'Erro login: ' + err.message;
         console.error(err);
       }
     };
     btnRegister.onclick = async () => {
-      authError.style.display='none';
       try{
         await createUserWithEmailAndPassword(auth, emailInput.value, passInput.value);
         alert('Conta criada. Faça login.');
       }catch(err){
-        authError.textContent = 'Erro criar conta: ' + err.message;
+        const authError = document.getElementById('auth-error');
         authError.style.display='block';
+        authError.textContent = 'Erro criar conta: ' + err.message;
         console.error(err);
       }
     };
@@ -254,43 +279,45 @@
         appCard.classList.remove('hidden');
         userArea.textContent = user.email;
         startRealtimeListeners();
+        showPage('entrada');
       } else {
         authCard.classList.remove('hidden');
         appCard.classList.add('hidden');
         userArea.textContent = '';
-        // remove listeners by reloading (simple)
         window.location.reload();
       }
     });
 
     // Navigation
+    navEntrada.onclick = ()=> showPage('entrada');
     navListagem.onclick = ()=> showPage('listagem');
     navLargadas.onclick = ()=> showPage('largadas');
     navResultados.onclick = ()=> showPage('resultados');
+
     function showPage(p){
+      pageEntrada.classList.add('hidden');
       pageListagem.classList.add('hidden');
       pageLargadas.classList.add('hidden');
       pageResultados.classList.add('hidden');
+      disableEntradaFocus();
+      if(p==='entrada'){ pageEntrada.classList.remove('hidden'); enableEntradaFocus(); }
       if(p==='listagem') pageListagem.classList.remove('hidden');
       if(p==='largadas') pageLargadas.classList.remove('hidden');
       if(p==='resultados') pageResultados.classList.remove('hidden');
     }
 
-    // Enter registers arrival; remove separate register button
+    // Enter registers arrival
     numeroInput.addEventListener('keydown', (e) => {
       if(e.key === 'Enter'){
         e.preventDefault();
         registrarChegada();
       }
     });
-    btnLimpar.onclick = ()=>{ numeroInput.value = ''; numeroInput.focus(); };
+    btnLimpar.addEventListener('click', ()=>{ numeroInput.value = ''; numeroInput.focus(); });
 
     async function registrarChegada(){
       const raw = (numeroInput.value || '').trim();
-      if(!raw){
-        numeroInput.focus();
-        return;
-      }
+      if(!raw){ numeroInput.focus(); return; }
       const numero = padNum(raw.replace(/\D/g,''));
       try{
         const athleteSnap = await get(child(ref(db), `listagem/${numero}`));
@@ -327,6 +354,7 @@
           registradaEmISO: new Date().toISOString()
         });
         pushLast(numero);
+        renderLast5();
         numeroInput.value = '';
         numeroInput.focus();
       }catch(err){
@@ -373,7 +401,7 @@
       });
     }
 
-    // CSV upload
+    // CSV upload (listagem)
     csvUpload.addEventListener('change', (e)=>{
       const file = e.target.files[0];
       if(!file) return;
@@ -482,36 +510,39 @@
       };
     };
 
-    // Real-time listeners
+    // Real-time listeners and state
+    let latestListagem = [];
+    let latestLargadas = [];
+    let latestResultados = [];
+    let filteredResultadosCache = [];
+
     function startRealtimeListeners(){
-      // listagem
       onValue(ref(db, 'listagem'), (snap)=>{
         const data = snap.val() || {};
-        const rows = Object.keys(data).map(k => Object.assign({numero: k}, data[k]));
-        renderListagem(rows);
+        latestListagem = Object.keys(data).map(k => Object.assign({numero: k}, data[k]));
+        renderListagem(latestListagem);
+        rebuildResultFilters();
       }, (err)=>{ console.error('Erro listener listagem:', err); });
 
-      // largadas
       onValue(ref(db, 'largadas'), (snap)=>{
         const data = snap.val() || {};
-        const rows = Object.keys(data).map(k => ({modalidade: k, inicio: data[k].inicio || ''}));
-        renderLargadas(rows);
+        latestLargadas = Object.keys(data).map(k => ({modalidade: k, inicio: data[k].inicio || ''}));
+        renderLargadas(latestLargadas);
+        rebuildResultFilters();
       }, (err)=>{ console.error('Erro listener largadas:', err); });
 
-      // resultados
       onValue(ref(db, 'resultados'), (snap)=>{
         const data = snap.val() || {};
-        const rows = Object.keys(data).map(k => Object.assign({numero: k}, data[k]));
-        rows.sort((a,b)=>{
+        latestResultados = Object.keys(data).map(k => Object.assign({numero: k}, data[k]));
+        latestResultados.sort((a,b)=>{
           const da = a.registradaEmISO ? new Date(a.registradaEmISO) : (a.chegada ? parseDMYTime(a.chegada) : new Date(0));
           const dbb = b.registradaEmISO ? new Date(b.registradaEmISO) : (b.chegada ? parseDMYTime(b.chegada) : new Date(0));
           return dbb - da;
         });
-        renderResultados(rows);
+        renderResultados(latestResultados);
       }, (err)=>{ console.error('Erro listener resultados:', err); });
     }
 
-    // Render functions
     function renderListagem(rows){
       const q = (searchListagem.value || '').trim().toLowerCase();
       const filtered = rows.filter(r => !q || (r.numero && r.numero.toLowerCase().includes(q)) || (r.atleta && r.atleta.toLowerCase().includes(q)));
@@ -532,16 +563,8 @@
       });
       html += `</tbody></table>`;
       tableListagem.innerHTML = html;
-
-      tableListagem.querySelectorAll('.btn-edit').forEach(btn=>{
-        btn.onclick = ()=> openEditAthlete(btn.dataset.num);
-      });
-      tableListagem.querySelectorAll('.btn-delete').forEach(btn=>{
-        btn.onclick = async ()=>{
-          if(!confirm(`Apagar atleta ${btn.dataset.num}?`)) return;
-          try{ await remove(ref(db, `listagem/${btn.dataset.num}`)); alert('Apagado'); }catch(err){ console.error(err); alert('Erro: '+(err.message||err)); }
-        };
-      });
+      tableListagem.querySelectorAll('.btn-edit').forEach(btn=> btn.onclick = ()=> openEditAthlete(btn.dataset.num) );
+      tableListagem.querySelectorAll('.btn-delete').forEach(btn=> btn.onclick = async ()=>{ if(!confirm(`Apagar atleta ${btn.dataset.num}?`)) return; try{ await remove(ref(db, `listagem/${btn.dataset.num}`)); alert('Apagado'); }catch(err){ console.error(err); alert('Erro: '+(err.message||err)); } });
     }
 
     function openEditAthlete(numero){
@@ -595,16 +618,8 @@
       });
       html += `</tbody></table>`;
       tableLargadas.innerHTML = html;
-
-      tableLargadas.querySelectorAll('.btn-edit-l').forEach(btn=>{
-        btn.onclick = ()=> openEditLargada(btn.dataset.mod);
-      });
-      tableLargadas.querySelectorAll('.btn-del-l').forEach(btn=>{
-        btn.onclick = async ()=>{
-          if(!confirm(`Apagar largada ${btn.dataset.mod}?`)) return;
-          try{ await remove(ref(db, `largadas/${btn.dataset.mod}`)); alert('Apagado'); }catch(err){ console.error(err); alert('Erro: '+(err.message||err)); }
-        };
-      });
+      tableLargadas.querySelectorAll('.btn-edit-l').forEach(btn=> btn.onclick = ()=> openEditLargada(btn.dataset.mod) );
+      tableLargadas.querySelectorAll('.btn-del-l').forEach(btn=> btn.onclick = async ()=>{ if(!confirm(`Apagar largada ${btn.dataset.mod}?`)) return; try{ await remove(ref(db, `largadas/${btn.dataset.mod}`)); alert('Apagado'); }catch(err){ console.error(err); alert('Erro: '+(err.message||err)); } });
     }
 
     function openEditLargada(modalidade){
@@ -633,9 +648,41 @@
       });
     }
 
+    function rebuildResultFilters(){
+      const modalidades = new Set();
+      latestListagem.forEach(r=>{ if(r.modalidade) modalidades.add(r.modalidade); });
+      latestLargadas.forEach(r=>{ if(r.modalidade) modalidades.add(r.modalidade); });
+      const categorias = new Set();
+      latestListagem.forEach(r=>{ if(r.categoria) categorias.add(r.categoria); });
+      latestResultados.forEach(r=>{ if(r.categoria) categorias.add(r.categoria); });
+      const generos = new Set();
+      latestListagem.forEach(r=>{ if(r.genero) generos.add(r.genero); });
+      latestResultados.forEach(r=>{ if(r.genero) generos.add(r.genero); });
+
+      fillSelect(fModalidade, [...modalidades].sort(), 'Todas');
+      fillSelect(fCategoria, [...categorias].sort(), 'Todas');
+      fillSelect(fGenero, [...generos].sort(), 'Todos');
+    }
+    function fillSelect(selectEl, arr, firstLabel){
+      selectEl.innerHTML = `<option value="">${firstLabel||'Todos'}</option>`;
+      arr.forEach(x=>{ const o=document.createElement('option'); o.value=x; o.textContent=x; selectEl.appendChild(o); });
+    }
+
+    btnAplicarFiltro.onclick = ()=> renderResultados(latestResultados);
+
     function renderResultados(rows){
-      let html = `<table><thead><tr><th>Número</th><th>Atleta</th><th>Modalidade</th><th>Categoria</th><th>Gênero</th><th>Chegada</th><th>Tempo</th></tr></thead><tbody>`;
-      rows.forEach(r=>{
+      const fm = fModalidade.value;
+      const fc = fCategoria.value;
+      const fg = fGenero.value;
+      const filtered = rows.filter(r=>{
+        if(fm && r.modalidade !== fm) return false;
+        if(fc && r.categoria !== fc) return false;
+        if(fg && r.genero !== fg) return false;
+        return true;
+      });
+      filteredResultadosCache = filtered;
+      let html = `<table><thead><tr><th>Número</th><th>Atleta</th><th>Modalidade</th><th>Categoria</th><th>Gênero</th><th>Chegada</th><th>Tempo</th><th>Ações</th></tr></thead><tbody>`;
+      filtered.forEach(r=>{
         html += `<tr>
           <td>${r.numero}</td>
           <td>${escapeHtml(r.atleta||'')}</td>
@@ -644,29 +691,90 @@
           <td>${escapeHtml(r.genero||'')}</td>
           <td>${escapeHtml(r.chegada||'')}</td>
           <td>${escapeHtml(r.tempo||'')}</td>
+          <td>
+            <button data-num="${r.numero}" class="btn-edit-res">Editar</button>
+          </td>
         </tr>`;
       });
       html += `</tbody></table>`;
       tableResultados.innerHTML = html;
+      tableResultados.querySelectorAll('.btn-edit-res').forEach(btn=> btn.onclick = ()=> openEditResultado(btn.dataset.num) );
     }
 
-    // search handler
-    searchListagem.addEventListener('input', ()=> {
-      get(child(ref(db), 'listagem')).then(snap=>{
+    function openEditResultado(numero){
+      get(child(ref(db), `resultados/${numero}`)).then(async snap=>{
         const data = snap.exists() ? snap.val() : {};
-        const rows = Object.keys(data).map(k => Object.assign({numero: k}, data[k]));
-        renderListagem(rows);
-      }).catch(err=>console.error(err));
-    });
+        const athleteSnap = await get(child(ref(db), `listagem/${numero}`));
+        const athlete = athleteSnap.exists() ? athleteSnap.val() : {};
+        const overlay = document.createElement('div'); overlay.className='overlay';
+        const form = document.createElement('form'); form.className='modal';
+        form.innerHTML = `
+          <h4>Editar Resultado - ${numero}</h4>
+          <input id="r_nome" placeholder="Nome" value="${escapeAttr(data.atleta || athlete.atleta || '')}" />
+          <input id="r_modalidade" placeholder="Modalidade" value="${escapeAttr(data.modalidade || athlete.modalidade || '')}" />
+          <input id="r_categoria" placeholder="Categoria" value="${escapeAttr(data.categoria || athlete.categoria || '')}" />
+          <input id="r_genero" placeholder="Gênero" value="${escapeAttr(data.genero || athlete.genero || '')}" />
+          <label class="small">Chegada (DD/MM/YYYY HH:MM:SS)</label>
+          <input id="r_chegada" value="${escapeAttr(data.chegada||'')}" />
+          <label class="small">Tempo (HH:MM:SS)</label>
+          <input id="r_tempo" value="${escapeAttr(data.tempo||'')}" />
+          <div class="form-actions">
+            <button type="button" id="r_cancel" class="ghost">Cancelar</button>
+            <button type="submit">Salvar</button>
+          </div>
+        `;
+        document.body.appendChild(overlay); document.body.appendChild(form);
+        form.r_cancel.onclick = ()=>{ form.remove(); overlay.remove(); };
+        form.onsubmit = async (e)=>{
+          e.preventDefault();
+          try{
+            await update(ref(db, `resultados/${numero}`), {
+              atleta: form.r_nome.value,
+              modalidade: form.r_modalidade.value,
+              categoria: form.r_categoria.value,
+              genero: form.r_genero.value,
+              chegada: form.r_chegada.value,
+              tempo: form.r_tempo.value,
+              registradaEmISO: new Date().toISOString()
+            });
+            await update(ref(db, `listagem/${numero}`), {
+              atleta: form.r_nome.value,
+              modalidade: form.r_modalidade.value,
+              categoria: form.r_categoria.value,
+              genero: form.r_genero.value
+            });
+            form.remove(); overlay.remove();
+          }catch(err){ console.error(err); alert('Erro ao salvar: '+(err.message||err)); }
+        };
+      });
+    }
 
-    // utils
+    // Export CSV
+    btnExport.onclick = ()=>{
+      const rows = filteredResultadosCache.length ? filteredResultadosCache : latestResultados;
+      if(!rows || !rows.length){ alert('Nenhum resultado para exportar'); return; }
+      const header = ['numero','atleta','modalidade','categoria','genero','chegada','tempo'];
+      const csv = [header.join(',')].concat(rows.map(r=> header.map(h=> `"${String(r[h]||'').replace(/"/g,'""')}"`).join(','))).join('\n');
+      const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'resultados_export.csv';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    };
+
+    // search handler and utils
+    searchListagem.addEventListener('input', ()=> renderListagem(latestListagem) );
+
     function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, (m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
     function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
 
-    // default page
-    showPage('listagem');
+    // initial UI
+    showPage('entrada');
 
-    // Note about permissions appears in console if DB rules restrict read/write.
   </script>
 </body>
 </html>
