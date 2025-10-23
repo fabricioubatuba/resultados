@@ -36,6 +36,7 @@
     .form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
     .error{color:#b00020}
     .disabled{opacity:0.6;pointer-events:none}
+    .success{color:#00c853}
     @media(max-width:900px){ .big-input{width:100%;font-size:48px;padding:16px} .container{padding:8px} nav{flex-wrap:wrap} }
   </style>
 </head>
@@ -71,12 +72,13 @@
               <button id="btn-limpar" class="ghost">Limpar</button>
             </div>
           </div>
-          <div class="small" style="margin-top:8px">Últimos 10 atletas registrados</div>
+          <div class="small" style="margin-top:8px">Últimos 10 atletas registrados (compartilhado)</div>
           <div class="last5" id="last5"></div>
         </div>
 
         <nav id="main-nav">
           <button id="nav-entrada" class="secondary">Registrar Chegada</button>
+          <button id="nav-voltas-mtb" class="secondary">Voltas MTB</button>
           <button id="nav-listagem" class="secondary">Listagem Completa</button>
           <button id="nav-largadas" class="secondary">Largadas</button>
           <button id="nav-resultados" class="secondary">Resultados</button>
@@ -91,7 +93,24 @@
         <div id="page-entrada">
           <div style="margin-top:12px">
             <p class="small">Aponte o leitor de código de barras e pressione Enter. O cursor permanecerá aqui enquanto estiver nesta tela.</p>
+            <p class="small success" id="entrada-success" style="display:none"></p>
+            <p class="small error" id="entrada-error" style="display:none"></p>
           </div>
+        </div>
+
+        <!-- VOLTAS MTB -->
+        <div id="page-voltas-mtb" class="hidden">
+          <h4>Registro de Voltas - MTB</h4>
+          <div style="margin-bottom:16px">
+            <p class="small">Registre cada volta dos atletas de MTB. Cada registro conta 1 volta. O sistema calculará automaticamente a classificação baseada em maior número de voltas e menor tempo.</p>
+            <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+              <input id="volta-numero-input" placeholder="Número do atleta" style="padding:8px;border-radius:6px;border:1px solid #ddd;width:120px" />
+              <button id="btn-registrar-volta" class="secondary">Registrar Volta</button>
+            </div>
+            <p class="small success" id="volta-success" style="display:none"></p>
+            <p class="small error" id="volta-error" style="display:none"></p>
+          </div>
+          <div id="table-voltas-mtb"></div>
         </div>
 
         <!-- LISTAGEM -->
@@ -150,7 +169,7 @@
 
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
-    import { getDatabase, ref, set, get, onValue, child, remove, update } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js';
+    import { getDatabase, ref, set, get, onValue, child, remove, update, push } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js';
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
@@ -170,20 +189,30 @@
 
     const numeroInput = document.getElementById('numero-input');
     const btnLimpar = document.getElementById('btn-limpar');
+    const entradaSuccess = document.getElementById('entrada-success');
+    const entradaError = document.getElementById('entrada-error');
 
     const navEntrada = document.getElementById('nav-entrada');
+    const navVoltasMtb = document.getElementById('nav-voltas-mtb');
     const navListagem = document.getElementById('nav-listagem');
     const navLargadas = document.getElementById('nav-largadas');
     const navResultados = document.getElementById('nav-resultados');
 
     const pageEntrada = document.getElementById('page-entrada');
+    const pageVoltasMtb = document.getElementById('page-voltas-mtb');
     const pageListagem = document.getElementById('page-listagem');
     const pageLargadas = document.getElementById('page-largadas');
     const pageResultados = document.getElementById('page-resultados');
 
     const tableListagem = document.getElementById('table-listagem');
+    const tableVoltasMtb = document.getElementById('table-voltas-mtb');
     const tableLargadas = document.getElementById('table-largadas');
     const tableResultados = document.getElementById('table-resultados');
+
+    const voltaNumeroInput = document.getElementById('volta-numero-input');
+    const btnRegistrarVolta = document.getElementById('btn-registrar-volta');
+    const voltaSuccess = document.getElementById('volta-success');
+    const voltaError = document.getElementById('volta-error');
 
     const btnAddAthlete = document.getElementById('btn-add-athlete');
     const csvUpload = document.getElementById('csv-upload');
@@ -227,37 +256,49 @@
       return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
     }
 
-    // Últimos 10 números realmente registrados
+    // Últimos 10 números compartilhados via Firebase
     function pushLastRegistrado(num) {
-      let arr = JSON.parse(localStorage.getItem('ultimosRegistrados') || '[]');
-      arr = arr.filter(x => x !== num);
-      arr.unshift(num);
-      arr = arr.slice(0, 10); // mantém só os 10 últimos
-      localStorage.setItem('ultimosRegistrados', JSON.stringify(arr));
+      const lastRef = ref(db, 'ultimosRegistrados');
+      get(lastRef).then((snap) => {
+        let arr = snap.exists() ? snap.val() : [];
+        arr = arr.filter(x => x !== num);
+        arr.unshift(num);
+        arr = arr.slice(0, 10);
+        set(lastRef, arr);
+      });
     }
 
     function renderUltimosRegistrados() {
-      const el = document.getElementById('last5'); // usa o mesmo container visual
-      el.innerHTML = '';
-      const arr = JSON.parse(localStorage.getItem('ultimosRegistrados') || '[]');
-      if (!arr.length) {
-        el.innerHTML = `<span class="small" style="color:#666">Nenhum registro ainda</span>`;
-        return;
-      }
-      arr.forEach(x => {
-        const div = document.createElement('div');
-        div.className = 'pill';
-        div.textContent = x;
-        div.onclick = () => { numeroInput.value = x; numeroInput.focus(); };
-        el.appendChild(div);
+      const el = document.getElementById('last5');
+      const lastRef = ref(db, 'ultimosRegistrados');
+      onValue(lastRef, (snap) => {
+        el.innerHTML = '';
+        const arr = snap.exists() ? snap.val() : [];
+        if (!arr.length) {
+          el.innerHTML = `<span class="small" style="color:#666">Nenhum registro ainda</span>`;
+          return;
+        }
+        arr.forEach(x => {
+          const div = document.createElement('div');
+          div.className = 'pill';
+          div.textContent = x;
+          div.onclick = () => { 
+            if(pageEntrada.classList.contains('hidden')) {
+              numeroInput.value = x; 
+              numeroInput.focus(); 
+            } else if(pageVoltasMtb.classList.contains('hidden')) {
+              voltaNumeroInput.value = x;
+              voltaNumeroInput.focus();
+            }
+          };
+          el.appendChild(div);
+        });
       });
     }
-    renderUltimosRegistrados();
 
     // Focus management (only on Entrada page)
     let focusInterval = null;
     function enableEntradaFocus(){
-      // evita tentativa de foco se o usuário não estiver logado ou o campo não existir
       if(!auth.currentUser || !numeroInput || numeroInput.offsetParent === null) return;
       numeroInput.focus();
       if(focusInterval) clearInterval(focusInterval);
@@ -275,6 +316,7 @@
     let latestListagem = [];
     let latestLargadas = [];
     let latestResultados = [];
+    let latestVoltasMtb = [];
     let filteredResultadosCache = [];
     let isVisitor = false;
 
@@ -300,13 +342,12 @@
     };
     btnLogout.onclick = async ()=>{ 
       if(isVisitor){
-        // sair do modo visitante
         isVisitor = false;
         authCard.classList.remove('hidden');
         appCard.classList.add('hidden');
         userArea.textContent = '';
-        // reset nav visibility
         navEntrada.style.display = '';
+        navVoltasMtb.style.display = '';
         navListagem.style.display = '';
         navLargadas.style.display = '';
         showPage('entrada');
@@ -321,36 +362,39 @@
       authCard.classList.add('hidden');
       appCard.classList.remove('hidden');
       userArea.textContent = 'Visitante (somente leitura)';
-      // esconder abas que não devem aparecer
       navEntrada.style.display = 'none';
+      navVoltasMtb.style.display = 'none';
       navListagem.style.display = 'none';
       navLargadas.style.display = 'none';
-      // garantir que numeroInput / ações não estejam disponíveis
       numeroInput.classList.add('disabled');
       numeroInput.setAttribute('disabled','true');
       btnLimpar.classList.add('disabled');
       btnLimpar.setAttribute('disabled','true');
+      voltaNumeroInput.classList.add('disabled');
+      voltaNumeroInput.setAttribute('disabled','true');
+      btnRegistrarVolta.classList.add('disabled');
+      btnRegistrarVolta.setAttribute('disabled','true');
       btnAddAthlete.classList.add('disabled'); btnAddAthlete.setAttribute('disabled','true');
       csvUpload.classList.add('disabled'); csvUpload.disabled = true;
       btnAddLargada.classList.add('disabled'); btnAddLargada.setAttribute('disabled','true');
-      // Simular listeners e abrir página de resultados
       startRealtimeListeners();
       showPage('resultados');
     };
 
     onAuthStateChanged(auth, user => {
       if(user){
-        // login real
         isVisitor = false;
         authCard.classList.add('hidden');
         appCard.classList.remove('hidden');
         userArea.textContent = user.email;
-        // restaurar nav e inputs
         navEntrada.style.display = '';
+        navVoltasMtb.style.display = '';
         navListagem.style.display = '';
         navLargadas.style.display = '';
         numeroInput.classList.remove('disabled'); numeroInput.removeAttribute('disabled');
         btnLimpar.classList.remove('disabled'); btnLimpar.removeAttribute('disabled');
+        voltaNumeroInput.classList.remove('disabled'); voltaNumeroInput.removeAttribute('disabled');
+        btnRegistrarVolta.classList.remove('disabled'); btnRegistrarVolta.removeAttribute('disabled');
         btnAddAthlete.classList.remove('disabled'); btnAddAthlete.removeAttribute('disabled');
         csvUpload.classList.remove('disabled'); csvUpload.disabled = false;
         btnAddLargada.classList.remove('disabled'); btnAddLargada.removeAttribute('disabled');
@@ -362,29 +406,34 @@
           appCard.classList.add('hidden');
           userArea.textContent = '';
           disableEntradaFocus();
-        } else {
-          // já tratado no botão visitante
         }
       }
     });
 
     // Navigation
     navEntrada.addEventListener('click', ()=> { if(isVisitor){ alert('Modo visitante: acesso somente leitura.'); return; } showPage('entrada'); });
+    navVoltasMtb.addEventListener('click', ()=> { if(isVisitor){ alert('Modo visitante: acesso somente leitura.'); return; } showPage('voltas-mtb'); });
     navListagem.addEventListener('click', ()=> { if(isVisitor){ alert('Modo visitante: acesso somente leitura.'); return; } showPage('listagem'); });
     navLargadas.addEventListener('click', ()=> { if(isVisitor){ alert('Modo visitante: acesso somente leitura.'); return; } showPage('largadas'); });
     navResultados.addEventListener('click', ()=> showPage('resultados'));
 
     function showPage(p){
       pageEntrada.classList.add('hidden');
+      pageVoltasMtb.classList.add('hidden');
       pageListagem.classList.add('hidden');
       pageLargadas.classList.add('hidden');
       pageResultados.classList.add('hidden');
       disableEntradaFocus();
+      entradaSuccess.style.display = 'none';
+      entradaError.style.display = 'none';
+      voltaSuccess.style.display = 'none';
+      voltaError.style.display = 'none';
+      
       if(p==='entrada'){ 
-        // bloquear se visitante
         if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; }
         pageEntrada.classList.remove('hidden'); enableEntradaFocus(); 
       }
+      if(p==='voltas-mtb'){ if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; } pageVoltasMtb.classList.remove('hidden'); }
       if(p==='listagem'){ if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; } pageListagem.classList.remove('hidden'); }
       if(p==='largadas'){ if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; } pageLargadas.classList.remove('hidden'); }
       if(p==='resultados') pageResultados.classList.remove('hidden');
@@ -399,6 +448,15 @@
     });
     btnLimpar.addEventListener('click', ()=>{ numeroInput.value = ''; numeroInput.focus(); });
 
+    // Registrar volta MTB
+    voltaNumeroInput.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter'){
+        e.preventDefault();
+        registrarVoltaMtb();
+      }
+    });
+    btnRegistrarVolta.addEventListener('click', registrarVoltaMtb);
+
     async function registrarChegada(){
       if(isVisitor || !auth.currentUser){
         alert('Ação proibida: modo visitante ou não autenticado. Faça login para registrar chegadas.');
@@ -407,7 +465,9 @@
       const raw = (numeroInput.value || '').trim();
       if(!raw){ numeroInput.focus(); return; }
       const numero = padNum(raw.replace(/\D/g,''));
+      
       try{
+        // Verificar se atleta existe
         const athleteSnap = await get(child(ref(db), `listagem/${numero}`));
         if(!athleteSnap.exists()){
           if(!confirm(`Atleta ${numero} não encontrado. Deseja cadastrar rapidamente?`)) {
@@ -415,40 +475,139 @@
           }
           await quickRegisterAthlete(numero);
         }
+        
         const athlete = (await get(child(ref(db), `listagem/${numero}`))).val();
+        
+        // VERIFICAR DUPLICAÇÃO (exceto MTB)
+        if(athlete.modalidade !== 'MTB'){
+          const resultadoSnap = await get(child(ref(db), `resultados/${numero}`));
+          if(resultadoSnap.exists()){
+            entradaError.textContent = `Atleta ${numero} já possui chegada registrada!`;
+            entradaError.style.display = 'block';
+            numeroInput.value = '';
+            numeroInput.focus();
+            return;
+          }
+        }
+
         let largadaInicioStr = null;
         if(athlete && athlete.modalidade){
           const largSnap = await get(child(ref(db), `largadas/${athlete.modalidade}/inicio`));
           if(largSnap.exists()) largadaInicioStr = largSnap.val();
         }
+        
         const chegadaDt = new Date();
         const chegadaStr = formatDMYTime(chegadaDt);
         let tempoStr = null;
+        
         if(largadaInicioStr){
           const largDt = parseDMYTime(largadaInicioStr);
           const diffSec = Math.round((chegadaDt.getTime() - largDt.getTime())/1000);
           tempoStr = formatTempoFromSeconds(diffSec);
         }
-        await set(ref(db, `resultados/${numero}`), {
-          chegada: chegadaStr,
-          tempo: tempoStr || '',
-          atleta: (athlete && athlete.atleta) || '',
-          genero: (athlete && athlete.genero) || '',
-          modalidade: (athlete && athlete.modalidade) || '',
-          categoria: (athlete && athlete.categoria) || '',
-          data_nascimento: (athlete && athlete.data_nascimento) || '',
-          idade: (athlete && athlete.idade) || '',
-          registradoPor: auth.currentUser ? auth.currentUser.email : null,
-          registradaEmISO: new Date().toISOString()
-        });
+
+        // Se for MTB, registrar como volta especial
+        if(athlete.modalidade === 'MTB'){
+          await registrarVoltaMtbFirebase(numero, athlete, chegadaStr, tempoStr);
+          entradaSuccess.textContent = `Volta registrada para atleta ${numero} (MTB)`;
+          entradaSuccess.style.display = 'block';
+        } else {
+          // Outras modalidades: registro normal
+          await set(ref(db, `resultados/${numero}`), {
+            chegada: chegadaStr,
+            tempo: tempoStr || '',
+            atleta: (athlete && athlete.atleta) || '',
+            genero: (athlete && athlete.genero) || '',
+            modalidade: (athlete && athlete.modalidade) || '',
+            categoria: (athlete && athlete.categoria) || '',
+            data_nascimento: (athlete && athlete.data_nascimento) || '',
+            idade: (athlete && athlete.idade) || '',
+            registradoPor: auth.currentUser ? auth.currentUser.email : null,
+            registradaEmISO: new Date().toISOString()
+          });
+          entradaSuccess.textContent = `Chegada registrada para atleta ${numero}`;
+          entradaSuccess.style.display = 'block';
+        }
+        
         pushLastRegistrado(numero);
-        renderUltimosRegistrados();
         numeroInput.value = '';
         numeroInput.focus();
+        
       }catch(err){
         console.error('Erro registrar chegada:', err);
-        alert('Erro ao registrar chegada: ' + (err.message||err));
+        entradaError.textContent = 'Erro ao registrar chegada: ' + (err.message||err);
+        entradaError.style.display = 'block';
       }
+    }
+
+    async function registrarVoltaMtb(){
+      if(isVisitor || !auth.currentUser){
+        alert('Ação proibida: modo visitante ou não autenticado. Faça login para registrar voltas.');
+        return;
+      }
+      
+      const raw = (voltaNumeroInput.value || '').trim();
+      if(!raw){ voltaNumeroInput.focus(); return; }
+      const numero = padNum(raw.replace(/\D/g,''));
+      
+      try{
+        const athleteSnap = await get(child(ref(db), `listagem/${numero}`));
+        if(!athleteSnap.exists()){
+          voltaError.textContent = `Atleta ${numero} não encontrado!`;
+          voltaError.style.display = 'block';
+          return;
+        }
+        
+        const athlete = athleteSnap.val();
+        if(athlete.modalidade !== 'MTB'){
+          voltaError.textContent = `Atleta ${numero} não é da modalidade MTB!`;
+          voltaError.style.display = 'block';
+          voltaNumeroInput.value = '';
+          voltaNumeroInput.focus();
+          return;
+        }
+        
+        let largadaInicioStr = null;
+        const largSnap = await get(child(ref(db), `largadas/MTB/inicio`));
+        if(largSnap.exists()) largadaInicioStr = largSnap.val();
+        
+        const voltaDt = new Date();
+        const voltaStr = formatDMYTime(voltaDt);
+        let tempoStr = null;
+        
+        if(largadaInicioStr){
+          const largDt = parseDMYTime(largadaInicioStr);
+          const diffSec = Math.round((voltaDt.getTime() - largDt.getTime())/1000);
+          tempoStr = formatTempoFromSeconds(diffSec);
+        }
+        
+        await registrarVoltaMtbFirebase(numero, athlete, voltaStr, tempoStr);
+        
+        voltaSuccess.textContent = `Volta registrada para atleta ${numero}`;
+        voltaSuccess.style.display = 'block';
+        pushLastRegistrado(numero);
+        voltaNumeroInput.value = '';
+        voltaNumeroInput.focus();
+        
+      }catch(err){
+        console.error('Erro registrar volta:', err);
+        voltaError.textContent = 'Erro ao registrar volta: ' + (err.message||err);
+        voltaError.style.display = 'block';
+      }
+    }
+
+    async function registrarVoltaMtbFirebase(numero, athlete, dataHora, tempo){
+      const voltaRef = push(ref(db, `voltasMtb/${numero}`));
+      await set(voltaRef, {
+        numero: numero,
+        atleta: athlete.atleta || '',
+        genero: athlete.genero || '',
+        categoria: athlete.categoria || '',
+        dataHora: dataHora,
+        tempo: tempo || '',
+        registradoPor: auth.currentUser ? auth.currentUser.email : null,
+        registradaEmISO: new Date().toISOString()
+      });
     }
 
     // Quick register modal
@@ -464,7 +623,11 @@
           <h4>Cadastro Rápido - ${numero}</h4>
           <input id="q_atleta" placeholder="Nome (Atleta)" required />
           <input id="q_genero" placeholder="Gênero (ex: Feminino)" />
-          <input id="q_modalidade" placeholder="Modalidade (ex: MTB)" />
+          <select id="q_modalidade">
+            <option value="">Selecione a modalidade</option>
+            <option value="MTB">MTB</option>
+            <option value="TRAIL RUN">TRAIL RUN</option>
+          </select>
           <input id="q_categoria" placeholder="Categoria" />
           <input id="q_data_nasc" placeholder="Data Nascimento (DD/MM/YYYY)" />
           <input id="q_idade" placeholder="Idade" type="number" />
@@ -548,7 +711,11 @@
         <input id="a_numero" placeholder="Número (ex: 1 ou 0001)" required />
         <input id="a_nome" placeholder="Nome" required />
         <input id="a_genero" placeholder="Gênero" />
-        <input id="a_modalidade" placeholder="Modalidade" />
+        <select id="a_modalidade">
+          <option value="">Selecione a modalidade</option>
+          <option value="MTB">MTB</option>
+          <option value="TRAIL RUN">TRAIL RUN</option>
+        </select>
         <input id="a_categoria" placeholder="Categoria" />
         <input id="a_data_nasc" placeholder="Data Nascimento (DD/MM/YYYY)" />
         <input id="a_idade" placeholder="Idade" type="number" />
@@ -611,6 +778,8 @@
 
     // Real-time listeners and state
     function startRealtimeListeners(){
+      renderUltimosRegistrados();
+      
       onValue(ref(db, 'listagem'), (snap)=>{
         const data = snap.val() || {};
         latestListagem = Object.keys(data).map(k => Object.assign({numero: k}, data[k]));
@@ -628,9 +797,24 @@
       onValue(ref(db, 'resultados'), (snap)=>{
         const data = snap.val() || {};
         latestResultados = Object.keys(data).map(k => Object.assign({numero: k}, data[k]));
-        // mantém ordenação por tempo feita na renderResultados; aqui apenas atualizar lista
         renderResultados(latestResultados);
       }, (err)=>{ console.error('Erro listener resultados:', err); });
+
+      onValue(ref(db, 'voltasMtb'), (snap)=>{
+        const data = snap.val() || {};
+        const voltasPorAtleta = {};
+        Object.keys(data).forEach(numero => {
+          const voltasAtleta = data[numero];
+          if(voltasAtleta && typeof voltasAtleta === 'object'){
+            voltasPorAtleta[numero] = Object.keys(voltasAtleta).map(key => {
+              return Object.assign({id: key}, voltasAtleta[key]);
+            });
+          }
+        });
+        latestVoltasMtb = voltasPorAtleta;
+        renderVoltasMtb(voltasPorAtleta);
+        rebuildResultFilters();
+      }, (err)=>{ console.error('Erro listener voltas MTB:', err); });
     }
 
     function renderListagem(rows){
@@ -662,6 +846,49 @@
       }
     }
 
+    function renderVoltasMtb(voltasPorAtleta){
+      let html = `<table><thead><tr><th>Número</th><th>Atleta</th><th>Voltas</th><th>Última Volta</th><th>Tempo Última Volta</th><th>Ações</th></tr></thead><tbody>`;
+      
+      Object.keys(voltasPorAtleta).forEach(numero => {
+        const voltas = voltasPorAtleta[numero];
+        if(voltas && voltas.length > 0){
+          const primeiraVolta = voltas[0];
+          const ultimaVolta = voltas[voltas.length - 1];
+          html += `<tr>
+            <td>${numero}</td>
+            <td>${escapeHtml(primeiraVolta.atleta||'')}</td>
+            <td><strong>${voltas.length}</strong></td>
+            <td>${escapeHtml(ultimaVolta.dataHora||'')}</td>
+            <td>${escapeHtml(ultimaVolta.tempo||'')}</td>
+            <td>`;
+          if(!isVisitor && auth.currentUser){
+            html += `<button data-num="${numero}" class="btn-delete-voltas ghost">Apagar Voltas</button>`;
+          } else {
+            html += `<span class="small" style="color:#666">Somente leitura</span>`;
+          }
+          html += `</td></tr>`;
+        }
+      });
+      
+      html += `</tbody></table>`;
+      tableVoltasMtb.innerHTML = html;
+      
+      if(!isVisitor && auth.currentUser){
+        tableVoltasMtb.querySelectorAll('.btn-delete-voltas').forEach(btn=> {
+          btn.onclick = async ()=>{
+            if(!confirm(`Apagar TODAS as voltas do atleta ${btn.dataset.num}?`)) return;
+            try{ 
+              await remove(ref(db, `voltasMtb/${btn.dataset.num}`)); 
+              alert('Voltas apagadas'); 
+            }catch(err){ 
+              console.error(err); 
+              alert('Erro: '+(err.message||err)); 
+            }
+          };
+        });
+      }
+    }
+
     // Edit athlete from Listagem (now allows editing number)
     function openEditAthlete(numero){
       if(isVisitor || !auth.currentUser){ alert('Ação proibida: modo visitante. Faça login para editar.'); return; }
@@ -675,7 +902,11 @@
           <input id="e_numero" placeholder="Número" value="${escapeAttr(numero)}" />
           <input id="e_nome" placeholder="Nome" value="${escapeAttr(data.atleta||'')}" />
           <input id="e_genero" placeholder="Gênero" value="${escapeAttr(data.genero||'')}" />
-          <input id="e_modalidade" placeholder="Modalidade" value="${escapeAttr(data.modalidade||'')}" />
+          <select id="e_modalidade">
+            <option value="">Selecione a modalidade</option>
+            <option value="MTB" ${data.modalidade==='MTB'?'selected':''}>MTB</option>
+            <option value="TRAIL RUN" ${data.modalidade==='TRAIL RUN'?'selected':''}>TRAIL RUN</option>
+          </select>
           <input id="e_categoria" placeholder="Categoria" value="${escapeAttr(data.categoria||'')}" />
           <input id="e_data_nasc" placeholder="Data Nascimento (DD/MM/YYYY)" value="${escapeAttr(data.data_nascimento||'')}" />
           <input id="e_idade" placeholder="Idade" type="number" value="${escapeAttr(data.idade||'')}" />
@@ -701,22 +932,17 @@
               idade: form.e_idade.value
             };
             if(newNumero === numero){
-              // simples update
               await update(ref(db, `listagem/${numero}`), payload);
             } else {
-              // mudar número: verificar conflito
               const existsNew = (await get(child(ref(db), `listagem/${newNumero}`))).exists();
               if(existsNew){
                 if(!confirm(`Já existe atleta com número ${newNumero}. Deseja sobrescrever?`)) { return; }
               }
-              // escrever novo nó e remover antigo
               await set(ref(db, `listagem/${newNumero}`), payload);
               await remove(ref(db, `listagem/${numero}`));
-              // se houver resultado com número antigo, mover também
               const resSnap = await get(child(ref(db), `resultados/${numero}`));
               if(resSnap.exists()){
                 const resData = resSnap.val();
-                // atualiza campos para novo número
                 await set(ref(db, `resultados/${newNumero}`), Object.assign({}, resData, {
                   atleta: payload.atleta || resData.atleta,
                   modalidade: payload.modalidade || resData.modalidade,
@@ -805,7 +1031,7 @@
     btnAplicarFiltro.onclick = ()=> renderResultados(latestResultados);
 
     function tempoToSeconds(t){
-      if(!t) return Infinity; // sem tempo -> no final
+      if(!t) return Infinity;
       const parts = t.split(':').map(x=>Number(x));
       if(parts.length===3){
         return parts[0]*3600 + parts[1]*60 + parts[2];
@@ -816,23 +1042,81 @@
       return Number(t) || Infinity;
     }
 
+    function calcularResultadosMtb(){
+      const resultadosMtb = [];
+      
+      Object.keys(latestVoltasMtb).forEach(numero => {
+        const voltas = latestVoltasMtb[numero];
+        if(voltas && voltas.length > 0){
+          const primeiraVolta = voltas[0];
+          const ultimaVolta = voltas[voltas.length - 1];
+          
+          resultadosMtb.push({
+            numero: numero,
+            atleta: primeiraVolta.atleta || '',
+            modalidade: 'MTB',
+            categoria: primeiraVolta.categoria || '',
+            genero: primeiraVolta.genero || '',
+            chegada: ultimaVolta.dataHora || '',
+            tempo: ultimaVolta.tempo || '',
+            totalVoltas: voltas.length,
+            tempoTotal: tempoToSeconds(ultimaVolta.tempo)
+          });
+        }
+      });
+      
+      // Ordenar por: maior número de voltas -> menor tempo total
+      resultadosMtb.sort((a, b) => {
+        if(b.totalVoltas !== a.totalVoltas){
+          return b.totalVoltas - a.totalVoltas;
+        }
+        return a.tempoTotal - b.tempoTotal;
+      });
+      
+      return resultadosMtb;
+    }
+
     function renderResultados(rows){
       const fm = fModalidade.value;
       const fc = fCategoria.value;
       const fg = fGenero.value;
-      const filtered = rows.filter(r=>{
+      
+      let filtered = rows.filter(r=>{
         if(fm && r.modalidade !== fm) return false;
         if(fc && r.categoria !== fc) return false;
         if(fg && r.genero !== fg) return false;
         return true;
       });
 
-      // Ordena por tempo (ascendente). quem não tem tempo fica por último
+      // Se filtrando por MTB ou todas modalidades, adicionar resultados MTB calculados
+      if((!fm || fm === 'MTB') && latestVoltasMtb && Object.keys(latestVoltasMtb).length > 0){
+        const resultadosMtb = calcularResultadosMtb();
+        
+        // Remover resultados MTB existentes para evitar duplicação
+        filtered = filtered.filter(r => r.modalidade !== 'MTB');
+        
+        // Adicionar resultados MTB calculados
+        resultadosMtb.forEach(rm => {
+          if((!fc || rm.categoria === fc) && (!fg || rm.genero === fg)){
+            filtered.push(rm);
+          }
+        });
+      }
+
+      // Ordenar resultados
       filtered.sort((a,b)=>{
+        // Se for MTB com sistema de voltas, usar ordenação especial
+        if(a.modalidade === 'MTB' && b.modalidade === 'MTB' && a.totalVoltas && b.totalVoltas){
+          if(b.totalVoltas !== a.totalVoltas){
+            return b.totalVoltas - a.totalVoltas;
+          }
+          return (a.tempoTotal || Infinity) - (b.tempoTotal || Infinity);
+        }
+        
+        // Ordenação normal para outras modalidades
         const ta = tempoToSeconds(a.tempo);
         const tb = tempoToSeconds(b.tempo);
         if(ta === tb) {
-          // fallback: usar data de chegada (mais recente em cima?) or registradaEmISO - mas queremos ordem por chegada (tempo)
           const da = a.registradaEmISO ? new Date(a.registradaEmISO) : (a.chegada ? parseDMYTime(a.chegada) : new Date(0));
           const dbb = b.registradaEmISO ? new Date(b.registradaEmISO) : (b.chegada ? parseDMYTime(b.chegada) : new Date(0));
           return da - dbb;
@@ -851,11 +1135,14 @@
         <th>Gênero</th>
         <th>Chegada</th>
         <th>Tempo</th>
+        <th>Voltas</th>
         <th>Ações</th>
       </tr></thead><tbody>`;
 
       filtered.forEach((r, i)=>{
-        const pos = r.tempo ? `${i+1}º` : '';
+        const pos = (r.tempo || r.totalVoltas) ? `${i+1}º` : '';
+        const voltasInfo = r.totalVoltas ? `${r.totalVoltas} volta(s)` : '';
+        
         html += `<tr>
           <td><strong>${pos}</strong></td>
           <td>${r.numero}</td>
@@ -865,6 +1152,7 @@
           <td>${escapeHtml(r.genero||'')}</td>
           <td>${escapeHtml(r.chegada||'')}</td>
           <td>${escapeHtml(r.tempo||'')}</td>
+          <td>${voltasInfo}</td>
           <td>`;
         if(!isVisitor && auth.currentUser){
           html += `<button data-num="${r.numero}" class="btn-edit-res">Editar</button>`;
@@ -881,7 +1169,7 @@
       }
     }
 
-    // Edit resultado modal (now allows full athlete edit including number change)
+    // Edit resultado modal
     async function openEditResultado(numero){
       if(isVisitor || !auth.currentUser){ alert('Ação proibida: modo visitante. Faça login para editar resultados.'); return; }
       const snap = await get(child(ref(db), `resultados/${numero}`));
@@ -938,10 +1226,8 @@
           };
           if(newNumero === numero){
             await update(ref(db, `resultados/${numero}`), payloadRes);
-            // update listagem too
             await update(ref(db, `listagem/${numero}`), payloadList);
           } else {
-            // numero mudou: verificar conflito
             const existsNewList = (await get(child(ref(db), `listagem/${newNumero}`))).exists();
             if(existsNewList){
               if(!confirm(`Já existe atleta com número ${newNumero} em listagem. Deseja sobrescrever?`)) { return; }
@@ -950,10 +1236,8 @@
             if(existsNewRes){
               if(!confirm(`Já existe resultado com número ${newNumero}. Deseja sobrescrever?`)) { return; }
             }
-            // mover listagem
             await set(ref(db, `listagem/${newNumero}`), payloadList);
             await remove(ref(db, `listagem/${numero}`));
-            // mover resultado
             await set(ref(db, `resultados/${newNumero}`), Object.assign({}, payloadRes, { registradoPor: auth.currentUser ? auth.currentUser.email : null }));
             await remove(ref(db, `resultados/${numero}`));
           }
@@ -966,8 +1250,20 @@
     btnExport.onclick = ()=>{
       const rows = filteredResultadosCache.length ? filteredResultadosCache : latestResultados;
       if(!rows || !rows.length){ alert('Nenhum resultado para exportar'); return; }
-      const header = ['numero','atleta','modalidade','categoria','genero','chegada','tempo'];
-      const csv = [header.join(',')].concat(rows.map(r=> header.map(h=> `"${String(r[h]||'').replace(/"/g,'""')}"`).join(','))).join('\n');
+      const header = ['numero','atleta','modalidade','categoria','genero','chegada','tempo','voltas'];
+      const csv = [header.join(',')].concat(rows.map(r=> {
+        const rowData = [
+          r.numero || '',
+          r.atleta || '',
+          r.modalidade || '',
+          r.categoria || '',
+          r.genero || '',
+          r.chegada || '',
+          r.tempo || '',
+          r.totalVoltas || ''
+        ];
+        return rowData.map(cell => `"${String(cell).replace(/"/g,'""')}"`).join(',');
+      })).join('\n');
       const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
