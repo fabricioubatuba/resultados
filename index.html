@@ -35,6 +35,7 @@
     .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:50}
     .form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
     .error{color:#b00020}
+    .disabled{opacity:0.6;pointer-events:none}
     @media(max-width:900px){ .big-input{width:100%;font-size:48px;padding:16px} .container{padding:8px} nav{flex-wrap:wrap} }
   </style>
 </head>
@@ -53,8 +54,9 @@
         <input id="password" placeholder="senha" type="password" style="padding:8px;border-radius:6px;border:1px solid #ddd" />
         <button id="btn-login">Entrar</button>
         <button id="btn-register" class="secondary">Criar conta</button>
+        <button id="btn-visitante" class="ghost">Entrar como Visitante</button>
       </div>
-      <p class="small">Autenticação via Firebase (Email/Senha). Faça login para acessar o painel.</p>
+      <p class="small">Autenticação via Firebase (Email/Senha). Faça login para acessar o painel. Ou entre como visitante para somente leitura nos resultados.</p>
       <p class="small error" id="auth-error" style="display:none"></p>
     </div>
 
@@ -73,7 +75,7 @@
           <div class="last5" id="last5"></div>
         </div>
 
-        <nav>
+        <nav id="main-nav">
           <button id="nav-entrada" class="secondary">Registrar Chegada</button>
           <button id="nav-listagem" class="secondary">Listagem Completa</button>
           <button id="nav-largadas" class="secondary">Largadas</button>
@@ -154,6 +156,7 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
+    // UI refs
     const authCard = document.getElementById('auth-card');
     const appCard = document.getElementById('app-card');
     const userArea = document.getElementById('user-area');
@@ -161,6 +164,7 @@
     const passInput = document.getElementById('password');
     const btnLogin = document.getElementById('btn-login');
     const btnRegister = document.getElementById('btn-register');
+    const btnVisitante = document.getElementById('btn-visitante');
     const btnLogout = document.getElementById('btn-logout');
     const authError = document.getElementById('auth-error');
 
@@ -192,6 +196,7 @@
     const btnAplicarFiltro = document.getElementById('btn-aplicar-filtro');
     const btnExport = document.getElementById('btn-export');
 
+    // utils
     function padNum(n){ return String(n).padStart(4,'0'); }
     function parseDMYTime(s){
       if(!s) return null;
@@ -222,32 +227,32 @@
       return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
     }
 
-// Últimos 10 números realmente registrados
-function pushLastRegistrado(num) {
-  let arr = JSON.parse(localStorage.getItem('ultimosRegistrados') || '[]');
-  arr = arr.filter(x => x !== num);
-  arr.unshift(num);
-  arr = arr.slice(0, 10); // mantém só os 10 últimos
-  localStorage.setItem('ultimosRegistrados', JSON.stringify(arr));
-}
+    // Últimos 10 números realmente registrados
+    function pushLastRegistrado(num) {
+      let arr = JSON.parse(localStorage.getItem('ultimosRegistrados') || '[]');
+      arr = arr.filter(x => x !== num);
+      arr.unshift(num);
+      arr = arr.slice(0, 10); // mantém só os 10 últimos
+      localStorage.setItem('ultimosRegistrados', JSON.stringify(arr));
+    }
 
-function renderUltimosRegistrados() {
-  const el = document.getElementById('last5'); // usa o mesmo container visual
-  el.innerHTML = '';
-  const arr = JSON.parse(localStorage.getItem('ultimosRegistrados') || '[]');
-  if (!arr.length) {
-    el.innerHTML = `<span class="small" style="color:#666">Nenhum registro ainda</span>`;
-    return;
-  }
-  arr.forEach(x => {
-    const div = document.createElement('div');
-    div.className = 'pill';
-    div.textContent = x;
-    div.onclick = () => { numeroInput.value = x; numeroInput.focus(); };
-    el.appendChild(div);
-  });
-}
-renderUltimosRegistrados();
+    function renderUltimosRegistrados() {
+      const el = document.getElementById('last5'); // usa o mesmo container visual
+      el.innerHTML = '';
+      const arr = JSON.parse(localStorage.getItem('ultimosRegistrados') || '[]');
+      if (!arr.length) {
+        el.innerHTML = `<span class="small" style="color:#666">Nenhum registro ainda</span>`;
+        return;
+      }
+      arr.forEach(x => {
+        const div = document.createElement('div');
+        div.className = 'pill';
+        div.textContent = x;
+        div.onclick = () => { numeroInput.value = x; numeroInput.focus(); };
+        el.appendChild(div);
+      });
+    }
+    renderUltimosRegistrados();
 
     // Focus management (only on Entrada page)
     let focusInterval = null;
@@ -266,12 +271,18 @@ renderUltimosRegistrados();
       if(focusInterval) { clearInterval(focusInterval); focusInterval = null; }
     }
 
+    // State
+    let latestListagem = [];
+    let latestLargadas = [];
+    let latestResultados = [];
+    let filteredResultadosCache = [];
+    let isVisitor = false;
+
     // Auth handlers
     btnLogin.onclick = async () => {
       try{
         await signInWithEmailAndPassword(auth, emailInput.value, passInput.value);
       }catch(err){
-        const authError = document.getElementById('auth-error');
         authError.style.display='block';
         authError.textContent = 'Erro login: ' + err.message;
         console.error(err);
@@ -282,34 +293,86 @@ renderUltimosRegistrados();
         await createUserWithEmailAndPassword(auth, emailInput.value, passInput.value);
         alert('Conta criada. Faça login.');
       }catch(err){
-        const authError = document.getElementById('auth-error');
         authError.style.display='block';
         authError.textContent = 'Erro criar conta: ' + err.message;
         console.error(err);
       }
     };
-    btnLogout.onclick = async ()=>{ await signOut(auth); };
-
-    onAuthStateChanged(auth, user => {
-      if(user){
-        authCard.classList.add('hidden');
-        appCard.classList.remove('hidden');
-        userArea.textContent = user.email;
-        startRealtimeListeners();
-        showPage('entrada');
-      } else {
+    btnLogout.onclick = async ()=>{ 
+      if(isVisitor){
+        // sair do modo visitante
+        isVisitor = false;
         authCard.classList.remove('hidden');
         appCard.classList.add('hidden');
         userArea.textContent = '';
-        disableEntradaFocus();
+        // reset nav visibility
+        navEntrada.style.display = '';
+        navListagem.style.display = '';
+        navLargadas.style.display = '';
+        showPage('entrada');
+      } else {
+        await signOut(auth); 
+      }
+    };
+
+    // Entrar como visitante
+    btnVisitante.onclick = () => {
+      isVisitor = true;
+      authCard.classList.add('hidden');
+      appCard.classList.remove('hidden');
+      userArea.textContent = 'Visitante (somente leitura)';
+      // esconder abas que não devem aparecer
+      navEntrada.style.display = 'none';
+      navListagem.style.display = 'none';
+      navLargadas.style.display = 'none';
+      // garantir que numeroInput / ações não estejam disponíveis
+      numeroInput.classList.add('disabled');
+      numeroInput.setAttribute('disabled','true');
+      btnLimpar.classList.add('disabled');
+      btnLimpar.setAttribute('disabled','true');
+      btnAddAthlete.classList.add('disabled'); btnAddAthlete.setAttribute('disabled','true');
+      csvUpload.classList.add('disabled'); csvUpload.disabled = true;
+      btnAddLargada.classList.add('disabled'); btnAddLargada.setAttribute('disabled','true');
+      // Simular listeners e abrir página de resultados
+      startRealtimeListeners();
+      showPage('resultados');
+    };
+
+    onAuthStateChanged(auth, user => {
+      if(user){
+        // login real
+        isVisitor = false;
+        authCard.classList.add('hidden');
+        appCard.classList.remove('hidden');
+        userArea.textContent = user.email;
+        // restaurar nav e inputs
+        navEntrada.style.display = '';
+        navListagem.style.display = '';
+        navLargadas.style.display = '';
+        numeroInput.classList.remove('disabled'); numeroInput.removeAttribute('disabled');
+        btnLimpar.classList.remove('disabled'); btnLimpar.removeAttribute('disabled');
+        btnAddAthlete.classList.remove('disabled'); btnAddAthlete.removeAttribute('disabled');
+        csvUpload.classList.remove('disabled'); csvUpload.disabled = false;
+        btnAddLargada.classList.remove('disabled'); btnAddLargada.removeAttribute('disabled');
+        startRealtimeListeners();
+        showPage('entrada');
+      } else {
+        if(!isVisitor){
+          authCard.classList.remove('hidden');
+          appCard.classList.add('hidden');
+          userArea.textContent = '';
+          disableEntradaFocus();
+        } else {
+          // já tratado no botão visitante
+        }
       }
     });
 
     // Navigation
-    navEntrada.onclick = ()=> showPage('entrada');
-    navListagem.onclick = ()=> showPage('listagem');
-    navLargadas.onclick = ()=> showPage('largadas');
-    navResultados.onclick = ()=> showPage('resultados');
+    navEntrada.addEventListener('click', ()=> { if(isVisitor){ alert('Modo visitante: acesso somente leitura.'); return; } showPage('entrada'); });
+    navListagem.addEventListener('click', ()=> { if(isVisitor){ alert('Modo visitante: acesso somente leitura.'); return; } showPage('listagem'); });
+    navLargadas.addEventListener('click', ()=> { if(isVisitor){ alert('Modo visitante: acesso somente leitura.'); return; } showPage('largadas'); });
+    navResultados.addEventListener('click', ()=> showPage('resultados'));
 
     function showPage(p){
       pageEntrada.classList.add('hidden');
@@ -317,9 +380,13 @@ renderUltimosRegistrados();
       pageLargadas.classList.add('hidden');
       pageResultados.classList.add('hidden');
       disableEntradaFocus();
-      if(p==='entrada'){ pageEntrada.classList.remove('hidden'); enableEntradaFocus(); }
-      if(p==='listagem') pageListagem.classList.remove('hidden');
-      if(p==='largadas') pageLargadas.classList.remove('hidden');
+      if(p==='entrada'){ 
+        // bloquear se visitante
+        if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; }
+        pageEntrada.classList.remove('hidden'); enableEntradaFocus(); 
+      }
+      if(p==='listagem'){ if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; } pageListagem.classList.remove('hidden'); }
+      if(p==='largadas'){ if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; } pageLargadas.classList.remove('hidden'); }
       if(p==='resultados') pageResultados.classList.remove('hidden');
     }
 
@@ -333,6 +400,10 @@ renderUltimosRegistrados();
     btnLimpar.addEventListener('click', ()=>{ numeroInput.value = ''; numeroInput.focus(); });
 
     async function registrarChegada(){
+      if(isVisitor || !auth.currentUser){
+        alert('Ação proibida: modo visitante ou não autenticado. Faça login para registrar chegadas.');
+        return;
+      }
       const raw = (numeroInput.value || '').trim();
       if(!raw){ numeroInput.focus(); return; }
       const numero = padNum(raw.replace(/\D/g,''));
@@ -382,6 +453,10 @@ renderUltimosRegistrados();
 
     // Quick register modal
     async function quickRegisterAthlete(numero){
+      if(isVisitor || !auth.currentUser) {
+        alert('Ação proibida: modo visitante. Faça login para cadastrar atletas.');
+        return;
+      }
       return new Promise((resolve, reject)=>{
         const overlay = document.createElement('div'); overlay.className='overlay';
         const form = document.createElement('form'); form.className='modal';
@@ -420,6 +495,11 @@ renderUltimosRegistrados();
 
     // CSV upload (listagem)
     csvUpload.addEventListener('change', (e)=>{
+      if(isVisitor || !auth.currentUser){
+        alert('Ação proibida: modo visitante. Faça login para importar CSV.');
+        csvUpload.value = '';
+        return;
+      }
       const file = e.target.files[0];
       if(!file) return;
       const reader = new FileReader();
@@ -460,6 +540,7 @@ renderUltimosRegistrados();
 
     // New athlete modal
     btnAddAthlete.onclick = ()=>{
+      if(isVisitor || !auth.currentUser){ alert('Ação proibida: modo visitante. Faça login para adicionar atletas.'); return; }
       const overlay = document.createElement('div'); overlay.className='overlay';
       const form = document.createElement('form'); form.className='modal';
       form.innerHTML = `
@@ -500,6 +581,7 @@ renderUltimosRegistrados();
 
     // New largada modal
     btnAddLargada.onclick = ()=>{
+      if(isVisitor || !auth.currentUser){ alert('Ação proibida: modo visitante. Faça login para adicionar largadas.'); return; }
       const overlay = document.createElement('div'); overlay.className='overlay';
       const form = document.createElement('form'); form.className='modal';
       form.innerHTML = `
@@ -528,11 +610,6 @@ renderUltimosRegistrados();
     };
 
     // Real-time listeners and state
-    let latestListagem = [];
-    let latestLargadas = [];
-    let latestResultados = [];
-    let filteredResultadosCache = [];
-
     function startRealtimeListeners(){
       onValue(ref(db, 'listagem'), (snap)=>{
         const data = snap.val() || {};
@@ -572,19 +649,25 @@ renderUltimosRegistrados();
           <td>${escapeHtml(r.modalidade||'')}</td>
           <td>${escapeHtml(r.categoria||'')}</td>
           <td>${escapeHtml(r.idade||'')}</td>
-          <td>
-            <button data-num="${r.numero}" class="btn-edit">Editar</button>
-            <button data-num="${r.numero}" class="btn-delete ghost">Apagar</button>
-          </td>
-        </tr>`;
+          <td>`;
+        if(!isVisitor && auth.currentUser){
+          html += `<button data-num="${r.numero}" class="btn-edit">Editar</button>
+                   <button data-num="${r.numero}" class="btn-delete ghost">Apagar</button>`;
+        } else {
+          html += `<span class="small" style="color:#666">Somente leitura</span>`;
+        }
+        html += `</td></tr>`;
       });
       html += `</tbody></table>`;
       tableListagem.innerHTML = html;
-      tableListagem.querySelectorAll('.btn-edit').forEach(btn=> btn.onclick = ()=> openEditAthlete(btn.dataset.num) );
-      tableListagem.querySelectorAll('.btn-delete').forEach(btn=> btn.onclick = async ()=>{ if(!confirm(`Apagar atleta ${btn.dataset.num}?`)) return; try{ await remove(ref(db, `listagem/${btn.dataset.num}`)); alert('Apagado'); }catch(err){ console.error(err); alert('Erro: '+(err.message||err)); } });
+      if(!isVisitor && auth.currentUser){
+        tableListagem.querySelectorAll('.btn-edit').forEach(btn=> btn.onclick = ()=> openEditAthlete(btn.dataset.num) );
+        tableListagem.querySelectorAll('.btn-delete').forEach(btn=> btn.onclick = async ()=>{ if(!confirm(`Apagar atleta ${btn.dataset.num}?`)) return; try{ await remove(ref(db, `listagem/${btn.dataset.num}`)); alert('Apagado'); }catch(err){ console.error(err); alert('Erro: '+(err.message||err)); } });
+      }
     }
 
     function openEditAthlete(numero){
+      if(isVisitor || !auth.currentUser){ alert('Ação proibida: modo visitante. Faça login para editar.'); return; }
       get(child(ref(db), `listagem/${numero}`)).then(snap=>{
         const data = snap.exists() ? snap.val() : {};
         const overlay = document.createElement('div'); overlay.className='overlay';
@@ -627,19 +710,25 @@ renderUltimosRegistrados();
         html += `<tr>
           <td>${escapeHtml(r.modalidade||'')}</td>
           <td>${escapeHtml(r.inicio||'')}</td>
-          <td>
-            <button data-mod="${r.modalidade}" class="btn-edit-l">Editar</button>
-            <button data-mod="${r.modalidade}" class="btn-del-l ghost">Apagar</button>
-          </td>
-        </tr>`;
+          <td>`;
+        if(!isVisitor && auth.currentUser){
+          html += `<button data-mod="${r.modalidade}" class="btn-edit-l">Editar</button>
+                   <button data-mod="${r.modalidade}" class="btn-del-l ghost">Apagar</button>`;
+        } else {
+          html += `<span class="small" style="color:#666">Somente leitura</span>`;
+        }
+        html += `</td></tr>`;
       });
       html += `</tbody></table>`;
       tableLargadas.innerHTML = html;
-      tableLargadas.querySelectorAll('.btn-edit-l').forEach(btn=> btn.onclick = ()=> openEditLargada(btn.dataset.mod) );
-      tableLargadas.querySelectorAll('.btn-del-l').forEach(btn=> btn.onclick = async ()=>{ if(!confirm(`Apagar largada ${btn.dataset.mod}?`)) return; try{ await remove(ref(db, `largadas/${btn.dataset.mod}`)); alert('Apagado'); }catch(err){ console.error(err); alert('Erro: '+(err.message||err)); } });
+      if(!isVisitor && auth.currentUser){
+        tableLargadas.querySelectorAll('.btn-edit-l').forEach(btn=> btn.onclick = ()=> openEditLargada(btn.dataset.mod) );
+        tableLargadas.querySelectorAll('.btn-del-l').forEach(btn=> btn.onclick = async ()=>{ if(!confirm(`Apagar largada ${btn.dataset.mod}?`)) return; try{ await remove(ref(db, `largadas/${btn.dataset.mod}`)); alert('Apagado'); }catch(err){ console.error(err); alert('Erro: '+(err.message||err)); } });
+      }
     }
 
     function openEditLargada(modalidade){
+      if(isVisitor || !auth.currentUser){ alert('Ação proibida: modo visitante. Faça login para editar largadas.'); return; }
       get(child(ref(db), `largadas/${modalidade}/inicio`)).then(snap=>{
         const inicio = snap.exists() ? snap.val() : '';
         const overlay = document.createElement('div'); overlay.className='overlay';
@@ -688,62 +777,70 @@ renderUltimosRegistrados();
     btnAplicarFiltro.onclick = ()=> renderResultados(latestResultados);
 
     function renderResultados(rows){
-  const fm = fModalidade.value;
-  const fc = fCategoria.value;
-  const fg = fGenero.value;
-  const filtered = rows.filter(r=>{
-    if(fm && r.modalidade !== fm) return false;
-    if(fc && r.categoria !== fc) return false;
-    if(fg && r.genero !== fg) return false;
-    return true;
-  });
+      const fm = fModalidade.value;
+      const fc = fCategoria.value;
+      const fg = fGenero.value;
+      const filtered = rows.filter(r=>{
+        if(fm && r.modalidade !== fm) return false;
+        if(fc && r.categoria !== fc) return false;
+        if(fg && r.genero !== fg) return false;
+        return true;
+      });
 
-  // Ordena por tempo (ascendente)
-  filtered.sort((a,b)=>{
-    if(!a.tempo) return 1;
-    if(!b.tempo) return -1;
-    const [ah,am,as] = a.tempo.split(':').map(Number);
-    const [bh,bm,bs] = b.tempo.split(':').map(Number);
-    const ta = ah*3600 + am*60 + as;
-    const tb = bh*3600 + bm*60 + bs;
-    return ta - tb;
-  });
+      // Ordena por tempo (ascendente)
+      filtered.sort((a,b)=>{
+        if(!a.tempo) return 1;
+        if(!b.tempo) return -1;
+        const [ah,am,as] = a.tempo.split(':').map(Number);
+        const [bh,bm,bs] = b.tempo.split(':').map(Number);
+        const ta = ah*3600 + am*60 + as;
+        const tb = bh*3600 + bm*60 + bs;
+        return ta - tb;
+      });
 
-  filteredResultadosCache = filtered;
+      filteredResultadosCache = filtered;
 
-  let html = `<table><thead><tr>
-    <th>Posição</th>
-    <th>Número</th>
-    <th>Atleta</th>
-    <th>Modalidade</th>
-    <th>Categoria</th>
-    <th>Gênero</th>
-    <th>Chegada</th>
-    <th>Tempo</th>
-    <th>Ações</th>
-  </tr></thead><tbody>`;
+      let html = `<table><thead><tr>
+        <th>Posição</th>
+        <th>Número</th>
+        <th>Atleta</th>
+        <th>Modalidade</th>
+        <th>Categoria</th>
+        <th>Gênero</th>
+        <th>Chegada</th>
+        <th>Tempo</th>
+        <th>Ações</th>
+      </tr></thead><tbody>`;
 
-  filtered.forEach((r, i)=>{
-    const pos = `${i+1}º`;
-    html += `<tr>
-      <td><strong>${pos}</strong></td>
-      <td>${r.numero}</td>
-      <td>${escapeHtml(r.atleta||'')}</td>
-      <td>${escapeHtml(r.modalidade||'')}</td>
-      <td>${escapeHtml(r.categoria||'')}</td>
-      <td>${escapeHtml(r.genero||'')}</td>
-      <td>${escapeHtml(r.chegada||'')}</td>
-      <td>${escapeHtml(r.tempo||'')}</td>
-      <td><button data-num="${r.numero}" class="btn-edit-res">Editar</button></td>
-    </tr>`;
-  });
+      filtered.forEach((r, i)=>{
+        const pos = `${i+1}º`;
+        html += `<tr>
+          <td><strong>${pos}</strong></td>
+          <td>${r.numero}</td>
+          <td>${escapeHtml(r.atleta||'')}</td>
+          <td>${escapeHtml(r.modalidade||'')}</td>
+          <td>${escapeHtml(r.categoria||'')}</td>
+          <td>${escapeHtml(r.genero||'')}</td>
+          <td>${escapeHtml(r.chegada||'')}</td>
+          <td>${escapeHtml(r.tempo||'')}</td>
+          <td>`;
+        if(!isVisitor && auth.currentUser){
+          html += `<button data-num="${r.numero}" class="btn-edit-res">Editar</button>`;
+        } else {
+          html += `<span class="small" style="color:#666">Somente leitura</span>`;
+        }
+        html += `</td></tr>`;
+      });
 
-  html += `</tbody></table>`;
-  tableResultados.innerHTML = html;
-  tableResultados.querySelectorAll('.btn-edit-res').forEach(btn=> btn.onclick = ()=> openEditResultado(btn.dataset.num) );
-}
+      html += `</tbody></table>`;
+      tableResultados.innerHTML = html;
+      if(!isVisitor && auth.currentUser){
+        tableResultados.querySelectorAll('.btn-edit-res').forEach(btn=> btn.onclick = ()=> openEditResultado(btn.dataset.num) );
+      }
+    }
 
     function openEditResultado(numero){
+      if(isVisitor || !auth.currentUser){ alert('Ação proibida: modo visitante. Faça login para editar resultados.'); return; }
       get(child(ref(db), `resultados/${numero}`)).then(async snap=>{
         const data = snap.exists() ? snap.val() : {};
         const athleteSnap = await get(child(ref(db), `listagem/${numero}`));
