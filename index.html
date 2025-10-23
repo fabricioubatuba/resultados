@@ -16,7 +16,7 @@
     button{background:var(--accent);color:#fff;border:none;padding:10px 14px;border-radius:8px;cursor:pointer}
     button.secondary{background:#e6eefc;color:#1e3a8a}
     .ghost{background:transparent;border:1px solid #ddd;color:#333}
-    nav{display:flex;gap:8px}
+    nav{display:flex;gap:8px;margin-top:24px}
     table{width:100%;border-collapse:collapse}
     th,td{padding:6px 8px;border-bottom:1px solid #f0f0f0;text-align:left}
     .small{font-size:13px;color:#666}
@@ -671,35 +671,60 @@
     btnAplicarFiltro.onclick = ()=> renderResultados(latestResultados);
 
     function renderResultados(rows){
-      const fm = fModalidade.value;
-      const fc = fCategoria.value;
-      const fg = fGenero.value;
-      const filtered = rows.filter(r=>{
-        if(fm && r.modalidade !== fm) return false;
-        if(fc && r.categoria !== fc) return false;
-        if(fg && r.genero !== fg) return false;
-        return true;
-      });
-      filteredResultadosCache = filtered;
-      let html = `<table><thead><tr><th>Número</th><th>Atleta</th><th>Modalidade</th><th>Categoria</th><th>Gênero</th><th>Chegada</th><th>Tempo</th><th>Ações</th></tr></thead><tbody>`;
-      filtered.forEach(r=>{
-        html += `<tr>
-          <td>${r.numero}</td>
-          <td>${escapeHtml(r.atleta||'')}</td>
-          <td>${escapeHtml(r.modalidade||'')}</td>
-          <td>${escapeHtml(r.categoria||'')}</td>
-          <td>${escapeHtml(r.genero||'')}</td>
-          <td>${escapeHtml(r.chegada||'')}</td>
-          <td>${escapeHtml(r.tempo||'')}</td>
-          <td>
-            <button data-num="${r.numero}" class="btn-edit-res">Editar</button>
-          </td>
-        </tr>`;
-      });
-      html += `</tbody></table>`;
-      tableResultados.innerHTML = html;
-      tableResultados.querySelectorAll('.btn-edit-res').forEach(btn=> btn.onclick = ()=> openEditResultado(btn.dataset.num) );
-    }
+  const fm = fModalidade.value;
+  const fc = fCategoria.value;
+  const fg = fGenero.value;
+  const filtered = rows.filter(r=>{
+    if(fm && r.modalidade !== fm) return false;
+    if(fc && r.categoria !== fc) return false;
+    if(fg && r.genero !== fg) return false;
+    return true;
+  });
+
+  // Ordena por tempo (ascendente)
+  filtered.sort((a,b)=>{
+    if(!a.tempo) return 1;
+    if(!b.tempo) return -1;
+    const [ah,am,as] = a.tempo.split(':').map(Number);
+    const [bh,bm,bs] = b.tempo.split(':').map(Number);
+    const ta = ah*3600 + am*60 + as;
+    const tb = bh*3600 + bm*60 + bs;
+    return ta - tb;
+  });
+
+  filteredResultadosCache = filtered;
+
+  let html = `<table><thead><tr>
+    <th>Posição</th>
+    <th>Número</th>
+    <th>Atleta</th>
+    <th>Modalidade</th>
+    <th>Categoria</th>
+    <th>Gênero</th>
+    <th>Chegada</th>
+    <th>Tempo</th>
+    <th>Ações</th>
+  </tr></thead><tbody>`;
+
+  filtered.forEach((r, i)=>{
+    const pos = `${i+1}º`;
+    html += `<tr>
+      <td><strong>${pos}</strong></td>
+      <td>${r.numero}</td>
+      <td>${escapeHtml(r.atleta||'')}</td>
+      <td>${escapeHtml(r.modalidade||'')}</td>
+      <td>${escapeHtml(r.categoria||'')}</td>
+      <td>${escapeHtml(r.genero||'')}</td>
+      <td>${escapeHtml(r.chegada||'')}</td>
+      <td>${escapeHtml(r.tempo||'')}</td>
+      <td><button data-num="${r.numero}" class="btn-edit-res">Editar</button></td>
+    </tr>`;
+  });
+
+  html += `</tbody></table>`;
+  tableResultados.innerHTML = html;
+  tableResultados.querySelectorAll('.btn-edit-res').forEach(btn=> btn.onclick = ()=> openEditResultado(btn.dataset.num) );
+}
 
     function openEditResultado(numero){
       get(child(ref(db), `resultados/${numero}`)).then(async snap=>{
