@@ -230,7 +230,7 @@
       arr = arr.slice(0,10);
       localStorage.setItem('last10', JSON.stringify(arr));
     }
-    function renderLast10(){
+    function renderLast5(){
       const last5El = document.querySelector('.last10');
       last5El.innerHTML = '';
       const arr = JSON.parse(localStorage.getItem('last10')||'[]');
