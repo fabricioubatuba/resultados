@@ -222,27 +222,29 @@
       return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
     }
 
-    // Last5
-    function pushLast(num){
-      let arr = JSON.parse(localStorage.getItem('last10')||'[]');
-      arr = arr.filter(x=>x!==num);
-      arr.unshift(num);
-      arr = arr.slice(0,10);
-      localStorage.setItem('last10', JSON.stringify(arr));
-    }
-    function renderLast5(){
-      const last5El = document.querySelector('.last5');
-      last5El.innerHTML = '';
-      const arr = JSON.parse(localStorage.getItem('last10')||'[]');
-      arr.forEach(x=>{
-        const el = document.createElement('div');
-        el.className = 'pill';
-        el.textContent = x;
-        el.onclick = ()=>{ numeroInput.value = x; numeroInput.focus(); };
-        last5El.appendChild(el);
-      });
-    }
-    renderLast5();
+    // Últimos 10 números
+function pushLast(num){
+  let arr = JSON.parse(localStorage.getItem('last10')||'[]');
+  arr = arr.filter(x => x !== num);
+  arr.unshift(num);
+  arr = arr.slice(0,10);
+  localStorage.setItem('last10', JSON.stringify(arr));
+}
+
+function renderLast5(){
+  const last5El = document.getElementById('last5'); // mantém o mesmo id do HTML
+  last5El.innerHTML = '';
+  const arr = JSON.parse(localStorage.getItem('last10')||'[]');
+  arr.forEach(x=>{
+    const el = document.createElement('div');
+    el.className = 'pill';
+    el.textContent = x;
+    el.onclick = ()=>{ numeroInput.value = x; numeroInput.focus(); };
+    last5El.appendChild(el);
+  });
+}
+renderLast5();
+
 
     // Focus management (only on Entrada page)
     let focusInterval = null;
