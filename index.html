@@ -35,7 +35,6 @@
     .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:50}
     .form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
     .error{color:#b00020}
-    .disabled{opacity:0.6;pointer-events:none}
     @media(max-width:900px){ .big-input{width:100%;font-size:48px;padding:16px} .container{padding:8px} nav{flex-wrap:wrap} }
   </style>
 </head>
@@ -54,9 +53,8 @@
         <input id="password" placeholder="senha" type="password" style="padding:8px;border-radius:6px;border:1px solid #ddd" />
         <button id="btn-login">Entrar</button>
         <button id="btn-register" class="secondary">Criar conta</button>
-        <button id="btn-visitante" class="ghost">Entrar como Visitante</button>
       </div>
-      <p class="small">Autenticação via Firebase (Email/Senha). Faça login para acessar o painel. Ou entre como visitante para somente leitura nos resultados.</p>
+      <p class="small">Autenticação via Firebase (Email/Senha). Faça login para acessar o painel.</p>
       <p class="small error" id="auth-error" style="display:none"></p>
     </div>
 
@@ -75,7 +73,7 @@
           <div class="last5" id="last5"></div>
         </div>
 
-        <nav id="main-nav">
+        <nav>
           <button id="nav-entrada" class="secondary">Registrar Chegada</button>
           <button id="nav-listagem" class="secondary">Listagem Completa</button>
           <button id="nav-largadas" class="secondary">Largadas</button>
@@ -135,6 +133,45 @@
         </div>
       </div>
     </div>
+
+    <!-- Visitante Card -->
+    <div class="card hidden" id="visitante-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:280px">
+          <h3>Resultados - Modo Visitante</h3>
+          <p class="small">Você está visualizando os resultados em modo leitura. Faça login para registrar chegadas e gerenciar dados.</p>
+        </div>
+
+        <nav>
+          <button id="nav-resultados-visitante" class="secondary">Resultados</button>
+          <button id="btn-login-from-visitante" class="ghost">Fazer Login</button>
+        </nav>
+      </div>
+
+      <hr style="margin:12px 0" />
+
+      <div id="visitante-pages">
+        <!-- RESULTADOS VISITANTE -->
+        <div id="page-resultados-visitante">
+          <h4>Resultados</h4>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+            <div class="filters" style="align-items:center">
+              <label class="small">Modalidade</label>
+              <select id="f-modalidade-visitante"><option value="">Todas</option></select>
+              <label class="small">Categoria</label>
+              <select id="f-categoria-visitante"><option value="">Todas</option></select>
+              <label class="small">Gênero</label>
+              <select id="f-genero-visitante"><option value="">Todos</option></select>
+              <button id="btn-aplicar-filtro-visitante" class="secondary">Aplicar</button>
+            </div>
+            <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+              <button id="btn-export-visitante" class="secondary">Exportar CSV</button>
+            </div>
+          </div>
+          <div id="table-resultados-visitante"></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script type="module">
@@ -156,15 +193,14 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    // UI refs
     const authCard = document.getElementById('auth-card');
     const appCard = document.getElementById('app-card');
+    const visitanteCard = document.getElementById('visitante-card');
     const userArea = document.getElementById('user-area');
     const emailInput = document.getElementById('email');
     const passInput = document.getElementById('password');
     const btnLogin = document.getElementById('btn-login');
     const btnRegister = document.getElementById('btn-register');
-    const btnVisitante = document.getElementById('btn-visitante');
     const btnLogout = document.getElementById('btn-logout');
     const authError = document.getElementById('auth-error');
 
@@ -196,7 +232,17 @@
     const btnAplicarFiltro = document.getElementById('btn-aplicar-filtro');
     const btnExport = document.getElementById('btn-export');
 
-    // utils
+    // Visitante elements
+    const navResultadosVisitante = document.getElementById('nav-resultados-visitante');
+    const btnLoginFromVisitante = document.getElementById('btn-login-from-visitante');
+    const pageResultadosVisitante = document.getElementById('page-resultados-visitante');
+    const fModalidadeVisitante = document.getElementById('f-modalidade-visitante');
+    const fCategoriaVisitante = document.getElementById('f-categoria-visitante');
+    const fGeneroVisitante = document.getElementById('f-genero-visitante');
+    const btnAplicarFiltroVisitante = document.getElementById('btn-aplicar-filtro-visitante');
+    const btnExportVisitante = document.getElementById('btn-export-visitante');
+    const tableResultadosVisitante = document.getElementById('table-resultados-visitante');
+
     function padNum(n){ return String(n).padStart(4,'0'); }
     function parseDMYTime(s){
       if(!s) return null;
@@ -227,32 +273,32 @@
       return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
     }
 
-    // Últimos 10 números realmente registrados
-    function pushLastRegistrado(num) {
-      let arr = JSON.parse(localStorage.getItem('ultimosRegistrados') || '[]');
-      arr = arr.filter(x => x !== num);
-      arr.unshift(num);
-      arr = arr.slice(0, 10); // mantém só os 10 últimos
-      localStorage.setItem('ultimosRegistrados', JSON.stringify(arr));
-    }
+// Últimos 10 números realmente registrados
+function pushLastRegistrado(num) {
+  let arr = JSON.parse(localStorage.getItem('ultimosRegistrados') || '[]');
+  arr = arr.filter(x => x !== num);
+  arr.unshift(num);
+  arr = arr.slice(0, 10); // mantém só os 10 últimos
+  localStorage.setItem('ultimosRegistrados', JSON.stringify(arr));
+}
 
-    function renderUltimosRegistrados() {
-      const el = document.getElementById('last5'); // usa o mesmo container visual
-      el.innerHTML = '';
-      const arr = JSON.parse(localStorage.getItem('ultimosRegistrados') || '[]');
-      if (!arr.length) {
-        el.innerHTML = `<span class="small" style="color:#666">Nenhum registro ainda</span>`;
-        return;
-      }
-      arr.forEach(x => {
-        const div = document.createElement('div');
-        div.className = 'pill';
-        div.textContent = x;
-        div.onclick = () => { numeroInput.value = x; numeroInput.focus(); };
-        el.appendChild(div);
-      });
-    }
-    renderUltimosRegistrados();
+function renderUltimosRegistrados() {
+  const el = document.getElementById('last5'); // usa o mesmo container visual
+  el.innerHTML = '';
+  const arr = JSON.parse(localStorage.getItem('ultimosRegistrados') || '[]');
+  if (!arr.length) {
+    el.innerHTML = `<span class="small" style="color:#666">Nenhum registro ainda</span>`;
+    return;
+  }
+  arr.forEach(x => {
+    const div = document.createElement('div');
+    div.className = 'pill';
+    div.textContent = x;
+    div.onclick = () => { numeroInput.value = x; numeroInput.focus(); };
+    el.appendChild(div);
+  });
+}
+renderUltimosRegistrados();
 
     // Focus management (only on Entrada page)
     let focusInterval = null;
@@ -271,18 +317,12 @@
       if(focusInterval) { clearInterval(focusInterval); focusInterval = null; }
     }
 
-    // State
-    let latestListagem = [];
-    let latestLargadas = [];
-    let latestResultados = [];
-    let filteredResultadosCache = [];
-    let isVisitor = false;
-
     // Auth handlers
     btnLogin.onclick = async () => {
       try{
         await signInWithEmailAndPassword(auth, emailInput.value, passInput.value);
       }catch(err){
+        const authError = document.getElementById('auth-error');
         authError.style.display='block';
         authError.textContent = 'Erro login: ' + err.message;
         console.error(err);
@@ -293,86 +333,43 @@
         await createUserWithEmailAndPassword(auth, emailInput.value, passInput.value);
         alert('Conta criada. Faça login.');
       }catch(err){
+        const authError = document.getElementById('auth-error');
         authError.style.display='block';
         authError.textContent = 'Erro criar conta: ' + err.message;
         console.error(err);
       }
     };
-    btnLogout.onclick = async ()=>{ 
-      if(isVisitor){
-        // sair do modo visitante
-        isVisitor = false;
-        authCard.classList.remove('hidden');
-        appCard.classList.add('hidden');
-        userArea.textContent = '';
-        // reset nav visibility
-        navEntrada.style.display = '';
-        navListagem.style.display = '';
-        navLargadas.style.display = '';
-        showPage('entrada');
-      } else {
-        await signOut(auth); 
-      }
-    };
-
-    // Entrar como visitante
-    btnVisitante.onclick = () => {
-      isVisitor = true;
-      authCard.classList.add('hidden');
-      appCard.classList.remove('hidden');
-      userArea.textContent = 'Visitante (somente leitura)';
-      // esconder abas que não devem aparecer
-      navEntrada.style.display = 'none';
-      navListagem.style.display = 'none';
-      navLargadas.style.display = 'none';
-      // garantir que numeroInput / ações não estejam disponíveis
-      numeroInput.classList.add('disabled');
-      numeroInput.setAttribute('disabled','true');
-      btnLimpar.classList.add('disabled');
-      btnLimpar.setAttribute('disabled','true');
-      btnAddAthlete.classList.add('disabled'); btnAddAthlete.setAttribute('disabled','true');
-      csvUpload.classList.add('disabled'); csvUpload.disabled = true;
-      btnAddLargada.classList.add('disabled'); btnAddLargada.setAttribute('disabled','true');
-      // Simular listeners e abrir página de resultados
-      startRealtimeListeners();
-      showPage('resultados');
+    btnLogout.onclick = async ()=>{ await signOut(auth); };
+    btnLoginFromVisitante.onclick = () => {
+      visitanteCard.classList.add('hidden');
+      authCard.classList.remove('hidden');
     };
 
     onAuthStateChanged(auth, user => {
       if(user){
-        // login real
-        isVisitor = false;
         authCard.classList.add('hidden');
         appCard.classList.remove('hidden');
+        visitanteCard.classList.add('hidden');
         userArea.textContent = user.email;
-        // restaurar nav e inputs
-        navEntrada.style.display = '';
-        navListagem.style.display = '';
-        navLargadas.style.display = '';
-        numeroInput.classList.remove('disabled'); numeroInput.removeAttribute('disabled');
-        btnLimpar.classList.remove('disabled'); btnLimpar.removeAttribute('disabled');
-        btnAddAthlete.classList.remove('disabled'); btnAddAthlete.removeAttribute('disabled');
-        csvUpload.classList.remove('disabled'); csvUpload.disabled = false;
-        btnAddLargada.classList.remove('disabled'); btnAddLargada.removeAttribute('disabled');
         startRealtimeListeners();
         showPage('entrada');
       } else {
-        if(!isVisitor){
-          authCard.classList.remove('hidden');
-          appCard.classList.add('hidden');
-          userArea.textContent = '';
-          disableEntradaFocus();
-        } else {
-          // já tratado no botão visitante
-        }
+        authCard.classList.add('hidden');
+        appCard.classList.add('hidden');
+        visitanteCard.classList.remove('hidden');
+        userArea.textContent = '';
+        disableEntradaFocus();
+        startRealtimeListenersVisitante();
+        showVisitantePage('resultados');
       }
     });
 
     // Navigation
-    navEntrada.addEventListener('click', ()=> { if(isVisitor){ alert('Modo visitante: acesso somente leitura.'); return; } showPage('entrada'); });
-    navListagem.addEventListener('click', ()=> { if(isVisitor){ alert('Modo visitante: acesso somente leitura.'); return; } showPage('listagem'); });
-    navLargadas.addEventListener('click', ()=> { if(isVisitor){ alert('Modo visitante: acesso somente leitura.'); return; } showPage('largadas'); });
-    navResultados.addEventListener('click', ()=> showPage('resultados'));
+    navEntrada.onclick = ()=> showPage('entrada');
+    navListagem.onclick = ()=> showPage('listagem');
+    navLargadas.onclick = ()=> showPage('largadas');
+    navResultados.onclick = ()=> showPage('resultados');
+    navResultadosVisitante.onclick = ()=> showVisitantePage('resultados');
 
     function showPage(p){
       pageEntrada.classList.add('hidden');
@@ -380,14 +377,15 @@
       pageLargadas.classList.add('hidden');
       pageResultados.classList.add('hidden');
       disableEntradaFocus();
-      if(p==='entrada'){ 
-        // bloquear se visitante
-        if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; }
-        pageEntrada.classList.remove('hidden'); enableEntradaFocus(); 
-      }
-      if(p==='listagem'){ if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; } pageListagem.classList.remove('hidden'); }
-      if(p==='largadas'){ if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; } pageLargadas.classList.remove('hidden'); }
+      if(p==='entrada'){ pageEntrada.classList.remove('hidden'); enableEntradaFocus(); }
+      if(p==='listagem') pageListagem.classList.remove('hidden');
+      if(p==='largadas') pageLargadas.classList.remove('hidden');
       if(p==='resultados') pageResultados.classList.remove('hidden');
+    }
+
+    function showVisitantePage(p){
+      pageResultadosVisitante.classList.add('hidden');
+      if(p==='resultados') pageResultadosVisitante.classList.remove('hidden');
     }
 
     // Enter registers arrival
@@ -400,10 +398,6 @@
     btnLimpar.addEventListener('click', ()=>{ numeroInput.value = ''; numeroInput.focus(); });
 
     async function registrarChegada(){
-      if(isVisitor || !auth.currentUser){
-        alert('Ação proibida: modo visitante ou não autenticado. Faça login para registrar chegadas.');
-        return;
-      }
       const raw = (numeroInput.value || '').trim();
       if(!raw){ numeroInput.focus(); return; }
       const numero = padNum(raw.replace(/\D/g,''));
@@ -453,10 +447,6 @@ renderUltimosRegistrados();
 
     // Quick register modal
     async function quickRegisterAthlete(numero){
-      if(isVisitor || !auth.currentUser) {
-        alert('Ação proibida: modo visitante. Faça login para cadastrar atletas.');
-        return;
-      }
       return new Promise((resolve, reject)=>{
         const overlay = document.createElement('div'); overlay.className='overlay';
         const form = document.createElement('form'); form.className='modal';
@@ -495,11 +485,6 @@ renderUltimosRegistrados();
 
     // CSV upload (listagem)
     csvUpload.addEventListener('change', (e)=>{
-      if(isVisitor || !auth.currentUser){
-        alert('Ação proibida: modo visitante. Faça login para importar CSV.');
-        csvUpload.value = '';
-        return;
-      }
       const file = e.target.files[0];
       if(!file) return;
       const reader = new FileReader();
@@ -540,7 +525,6 @@ renderUltimosRegistrados();
 
     // New athlete modal
     btnAddAthlete.onclick = ()=>{
-      if(isVisitor || !auth.currentUser){ alert('Ação proibida: modo visitante. Faça login para adicionar atletas.'); return; }
       const overlay = document.createElement('div'); overlay.className='overlay';
       const form = document.createElement('form'); form.className='modal';
       form.innerHTML = `
@@ -581,7 +565,6 @@ renderUltimosRegistrados();
 
     // New largada modal
     btnAddLargada.onclick = ()=>{
-      if(isVisitor || !auth.currentUser){ alert('Ação proibida: modo visitante. Faça login para adicionar largadas.'); return; }
       const overlay = document.createElement('div'); overlay.className='overlay';
       const form = document.createElement('form'); form.className='modal';
       form.innerHTML = `
@@ -610,6 +593,11 @@ renderUltimosRegistrados();
     };
 
     // Real-time listeners and state
+    let latestListagem = [];
+    let latestLargadas = [];
+    let latestResultados = [];
+    let filteredResultadosCache = [];
+
     function startRealtimeListeners(){
       onValue(ref(db, 'listagem'), (snap)=>{
         const data = snap.val() || {};
@@ -634,6 +622,20 @@ renderUltimosRegistrados();
           return dbb - da;
         });
         renderResultados(latestResultados);
+        renderResultadosVisitante(latestResultados);
+      }, (err)=>{ console.error('Erro listener resultados:', err); });
+    }
+
+    function startRealtimeListenersVisitante(){
+      onValue(ref(db, 'resultados'), (snap)=>{
+        const data = snap.val() || {};
+        latestResultados = Object.keys(data).map(k => Object.assign({numero: k}, data[k]));
+        latestResultados.sort((a,b)=>{
+          const da = a.registradaEmISO ? new Date(a.registradaEmISO) : (a.chegada ? parseDMYTime(a.chegada) : new Date(0));
+          const dbb = b.registradaEmISO ? new Date(b.registradaEmISO) : (b.chegada ? parseDMYTime(b.chegada) : new Date(0));
+          return dbb - da;
+        });
+        renderResultadosVisitante(latestResultados);
       }, (err)=>{ console.error('Erro listener resultados:', err); });
     }
 
@@ -649,59 +651,16 @@ renderUltimosRegistrados();
           <td>${escapeHtml(r.modalidade||'')}</td>
           <td>${escapeHtml(r.categoria||'')}</td>
           <td>${escapeHtml(r.idade||'')}</td>
-          <td>`;
-        if(!isVisitor && auth.currentUser){
-          html += `<button data-num="${r.numero}" class="btn-edit">Editar</button>
-                   <button data-num="${r.numero}" class="btn-delete ghost">Apagar</button>`;
-        } else {
-          html += `<span class="small" style="color:#666">Somente leitura</span>`;
-        }
-        html += `</td></tr>`;
+          <td>
+            <button data-num="${r.numero}" class="btn-edit">Editar</button>
+            <button data-num="${r.numero}" class="btn-delete ghost">Apagar</button>
+          </td>
+        </tr>`;
       });
       html += `</tbody></table>`;
       tableListagem.innerHTML = html;
-      if(!isVisitor && auth.currentUser){
-        tableListagem.querySelectorAll('.btn-edit').forEach(btn=> btn.onclick = ()=> openEditAthlete(btn.dataset.num) );
-        tableListagem.querySelectorAll('.btn-delete').forEach(btn=> btn.onclick = async ()=>{ if(!confirm(`Apagar atleta ${btn.dataset.num}?`)) return; try{ await remove(ref(db, `listagem/${btn.dataset.num}`)); alert('Apagado'); }catch(err){ console.error(err); alert('Erro: '+(err.message||err)); } });
-      }
-    }
-
-    function openEditAthlete(numero){
-      if(isVisitor || !auth.currentUser){ alert('Ação proibida: modo visitante. Faça login para editar.'); return; }
-      get(child(ref(db), `listagem/${numero}`)).then(snap=>{
-        const data = snap.exists() ? snap.val() : {};
-        const overlay = document.createElement('div'); overlay.className='overlay';
-        const form = document.createElement('form'); form.className='modal';
-        form.innerHTML = `
-          <h4>Editar Atleta - ${numero}</h4>
-          <input id="e_nome" placeholder="Nome" value="${escapeAttr(data.atleta||'')}" />
-          <input id="e_genero" placeholder="Gênero" value="${escapeAttr(data.genero||'')}" />
-          <input id="e_modalidade" placeholder="Modalidade" value="${escapeAttr(data.modalidade||'')}" />
-          <input id="e_categoria" placeholder="Categoria" value="${escapeAttr(data.categoria||'')}" />
-          <input id="e_data_nasc" placeholder="Data Nascimento (DD/MM/YYYY)" value="${escapeAttr(data.data_nascimento||'')}" />
-          <input id="e_idade" placeholder="Idade" type="number" value="${escapeAttr(data.idade||'')}" />
-          <div class="form-actions">
-            <button type="button" id="e_cancel" class="ghost">Cancelar</button>
-            <button type="submit">Salvar</button>
-          </div>
-        `;
-        document.body.appendChild(overlay); document.body.appendChild(form);
-        form.e_cancel.onclick = ()=>{ form.remove(); overlay.remove(); };
-        form.onsubmit = async (e)=>{
-          e.preventDefault();
-          try{
-            await update(ref(db, `listagem/${numero}`), {
-              atleta: form.e_nome.value,
-              genero: form.e_genero.value,
-              modalidade: form.e_modalidade.value,
-              categoria: form.e_categoria.value,
-              data_nascimento: form.e_data_nasc.value,
-              idade: form.e_idade.value
-            });
-            form.remove(); overlay.remove();
-          }catch(err){ console.error(err); alert('Erro salvar: '+(err.message||err)); }
-        };
-      });
+      tableListagem.querySelectorAll('.btn-edit').forEach(btn=> btn.onclick = ()=> openEditAthlete(btn.dataset.num) );
+      tableListagem.querySelectorAll('.btn-delete').forEach(btn=> btn.onclick = async ()=>{ if(!confirm(`Apagar atleta ${btn.dataset.num}?`)) return; try{ await remove(ref(db, `listagem/${btn.dataset.num}`)); alert('Apagado'); }catch(err){ console.error(err); alert('Erro: '+(err.message||err)); } });
     }
 
     function renderLargadas(rows){
@@ -710,210 +669,258 @@ renderUltimosRegistrados();
         html += `<tr>
           <td>${escapeHtml(r.modalidade||'')}</td>
           <td>${escapeHtml(r.inicio||'')}</td>
-          <td>`;
-        if(!isVisitor && auth.currentUser){
-          html += `<button data-mod="${r.modalidade}" class="btn-edit-l">Editar</button>
-                   <button data-mod="${r.modalidade}" class="btn-del-l ghost">Apagar</button>`;
-        } else {
-          html += `<span class="small" style="color:#666">Somente leitura</span>`;
-        }
-        html += `</td></tr>`;
+          <td>
+            <button data-mod="${r.modalidade}" class="btn-edit-largada">Editar</button>
+            <button data-mod="${r.modalidade}" class="btn-delete-largada ghost">Apagar</button>
+          </td>
+        </tr>`;
       });
       html += `</tbody></table>`;
       tableLargadas.innerHTML = html;
-      if(!isVisitor && auth.currentUser){
-        tableLargadas.querySelectorAll('.btn-edit-l').forEach(btn=> btn.onclick = ()=> openEditLargada(btn.dataset.mod) );
-        tableLargadas.querySelectorAll('.btn-del-l').forEach(btn=> btn.onclick = async ()=>{ if(!confirm(`Apagar largada ${btn.dataset.mod}?`)) return; try{ await remove(ref(db, `largadas/${btn.dataset.mod}`)); alert('Apagado'); }catch(err){ console.error(err); alert('Erro: '+(err.message||err)); } });
-      }
+      tableLargadas.querySelectorAll('.btn-edit-largada').forEach(btn=> btn.onclick = ()=> openEditLargada(btn.dataset.mod) );
+      tableLargadas.querySelectorAll('.btn-delete-largada').forEach(btn=> btn.onclick = async ()=>{ if(!confirm(`Apagar largada ${btn.dataset.mod}?`)) return; try{ await remove(ref(db, `largadas/${btn.dataset.mod}`)); alert('Apagado'); }catch(err){ console.error(err); alert('Erro: '+(err.message||err)); } });
     }
 
-    function openEditLargada(modalidade){
-      if(isVisitor || !auth.currentUser){ alert('Ação proibida: modo visitante. Faça login para editar largadas.'); return; }
-      get(child(ref(db), `largadas/${modalidade}/inicio`)).then(snap=>{
-        const inicio = snap.exists() ? snap.val() : '';
-        const overlay = document.createElement('div'); overlay.className='overlay';
-        const form = document.createElement('form'); form.className='modal';
-        form.innerHTML = `
-          <h4>Editar Largada - ${modalidade}</h4>
-          <label class="small">Início (DD/MM/YYYY HH:MM:SS)</label>
-          <input id="el_inicio" value="${escapeAttr(inicio||'')}" />
-          <div class="form-actions">
-            <button type="button" id="el_cancel" class="ghost">Cancelar</button>
-            <button type="submit">Salvar</button>
-          </div>
-        `;
-        document.body.appendChild(overlay); document.body.appendChild(form);
-        form.el_cancel.onclick = ()=>{ form.remove(); overlay.remove(); };
-        form.onsubmit = async (e)=>{
-          e.preventDefault();
-          try{
-            await set(ref(db, `largadas/${modalidade}/inicio`), form.el_inicio.value);
-            form.remove(); overlay.remove();
-          }catch(err){ console.error(err); alert('Erro salvar: '+(err.message||err)); }
-        };
+    function renderResultados(rows){
+      const modalidade = fModalidade.value;
+      const categoria = fCategoria.value;
+      const genero = fGenero.value;
+      let filtered = rows;
+      if(modalidade) filtered = filtered.filter(r=>r.modalidade===modalidade);
+      if(categoria) filtered = filtered.filter(r=>r.categoria===categoria);
+      if(genero) filtered = filtered.filter(r=>r.genero===genero);
+      filteredResultadosCache = filtered;
+      let html = `<table><thead><tr><th>Número</th><th>Nome</th><th>Gênero</th><th>Modalidade</th><th>Categoria</th><th>Chegada</th><th>Tempo</th><th>Ações</th></tr></thead><tbody>`;
+      filtered.forEach(r=>{
+        html += `<tr>
+          <td>${r.numero}</td>
+          <td>${escapeHtml(r.atleta||'')}</td>
+          <td>${escapeHtml(r.genero||'')}</td>
+          <td>${escapeHtml(r.modalidade||'')}</td>
+          <td>${escapeHtml(r.categoria||'')}</td>
+          <td>${escapeHtml(r.chegada||'')}</td>
+          <td>${escapeHtml(r.tempo||'')}</td>
+          <td>
+            <button data-num="${r.numero}" class="btn-edit-resultado">Editar</button>
+            <button data-num="${r.numero}" class="btn-delete-resultado ghost">Apagar</button>
+          </td>
+        </tr>`;
       });
+      html += `</tbody></table>`;
+      tableResultados.innerHTML = html;
+      tableResultados.querySelectorAll('.btn-edit-resultado').forEach(btn=> btn.onclick = ()=> openEditResultado(btn.dataset.num) );
+      tableResultados.querySelectorAll('.btn-delete-resultado').forEach(btn=> btn.onclick = async ()=>{ if(!confirm(`Apagar resultado ${btn.dataset.num}?`)) return; try{ await remove(ref(db, `resultados/${btn.dataset.num}`)); alert('Apagado'); }catch(err){ console.error(err); alert('Erro: '+(err.message||err)); } });
+    }
+
+    function renderResultadosVisitante(rows){
+      const modalidade = fModalidadeVisitante.value;
+      const categoria = fCategoriaVisitante.value;
+      const genero = fGeneroVisitante.value;
+      let filtered = rows;
+      if(modalidade) filtered = filtered.filter(r=>r.modalidade===modalidade);
+      if(categoria) filtered = filtered.filter(r=>r.categoria===categoria);
+      if(genero) filtered = filtered.filter(r=>r.genero===genero);
+      let html = `<table><thead><tr><th>Número</th><th>Nome</th><th>Gênero</th><th>Modalidade</th><th>Categoria</th><th>Chegada</th><th>Tempo</th></tr></thead><tbody>`;
+      filtered.forEach(r=>{
+        html += `<tr>
+          <td>${r.numero}</td>
+          <td>${escapeHtml(r.atleta||'')}</td>
+          <td>${escapeHtml(r.genero||'')}</td>
+          <td>${escapeHtml(r.modalidade||'')}</td>
+          <td>${escapeHtml(r.categoria||'')}</td>
+          <td>${escapeHtml(r.chegada||'')}</td>
+          <td>${escapeHtml(r.tempo||'')}</td>
+        </tr>`;
+      });
+      html += `</tbody></table>`;
+      tableResultadosVisitante.innerHTML = html;
     }
 
     function rebuildResultFilters(){
-      const modalidades = new Set();
-      latestListagem.forEach(r=>{ if(r.modalidade) modalidades.add(r.modalidade); });
-      latestLargadas.forEach(r=>{ if(r.modalidade) modalidades.add(r.modalidade); });
-      const categorias = new Set();
-      latestListagem.forEach(r=>{ if(r.categoria) categorias.add(r.categoria); });
-      latestResultados.forEach(r=>{ if(r.categoria) categorias.add(r.categoria); });
-      const generos = new Set();
-      latestListagem.forEach(r=>{ if(r.genero) generos.add(r.genero); });
-      latestResultados.forEach(r=>{ if(r.genero) generos.add(r.genero); });
-
-      fillSelect(fModalidade, [...modalidades].sort(), 'Todas');
-      fillSelect(fCategoria, [...categorias].sort(), 'Todas');
-      fillSelect(fGenero, [...generos].sort(), 'Todos');
-    }
-    function fillSelect(selectEl, arr, firstLabel){
-      selectEl.innerHTML = `<option value="">${firstLabel||'Todos'}</option>`;
-      arr.forEach(x=>{ const o=document.createElement('option'); o.value=x; o.textContent=x; selectEl.appendChild(o); });
+      const modalidades = [...new Set(latestListagem.map(r=>r.modalidade).filter(Boolean))];
+      const categorias = [...new Set(latestListagem.map(r=>r.categoria).filter(Boolean))];
+      const generos = [...new Set(latestListagem.map(r=>r.genero).filter(Boolean))];
+      fModalidade.innerHTML = `<option value="">Todas</option>` + modalidades.map(m=>`<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+      fCategoria.innerHTML = `<option value="">Todas</option>` + categorias.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+      fGenero.innerHTML = `<option value="">Todos</option>` + generos.map(g=>`<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
+      fModalidadeVisitante.innerHTML = `<option value="">Todas</option>` + modalidades.map(m=>`<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+      fCategoriaVisitante.innerHTML = `<option value="">Todas</option>` + categorias.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+      fGeneroVisitante.innerHTML = `<option value="">Todos</option>` + generos.map(g=>`<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
     }
 
     btnAplicarFiltro.onclick = ()=> renderResultados(latestResultados);
-
-    function renderResultados(rows){
-      const fm = fModalidade.value;
-      const fc = fCategoria.value;
-      const fg = fGenero.value;
-      const filtered = rows.filter(r=>{
-        if(fm && r.modalidade !== fm) return false;
-        if(fc && r.categoria !== fc) return false;
-        if(fg && r.genero !== fg) return false;
-        return true;
-      });
-
-      // Ordena por tempo (ascendente)
-      filtered.sort((a,b)=>{
-        if(!a.tempo) return 1;
-        if(!b.tempo) return -1;
-        const [ah,am,as] = a.tempo.split(':').map(Number);
-        const [bh,bm,bs] = b.tempo.split(':').map(Number);
-        const ta = ah*3600 + am*60 + as;
-        const tb = bh*3600 + bm*60 + bs;
-        return ta - tb;
-      });
-
-      filteredResultadosCache = filtered;
-
-      let html = `<table><thead><tr>
-        <th>Posição</th>
-        <th>Número</th>
-        <th>Atleta</th>
-        <th>Modalidade</th>
-        <th>Categoria</th>
-        <th>Gênero</th>
-        <th>Chegada</th>
-        <th>Tempo</th>
-        <th>Ações</th>
-      </tr></thead><tbody>`;
-
-      filtered.forEach((r, i)=>{
-        const pos = `${i+1}º`;
-        html += `<tr>
-          <td><strong>${pos}</strong></td>
-          <td>${r.numero}</td>
-          <td>${escapeHtml(r.atleta||'')}</td>
-          <td>${escapeHtml(r.modalidade||'')}</td>
-          <td>${escapeHtml(r.categoria||'')}</td>
-          <td>${escapeHtml(r.genero||'')}</td>
-          <td>${escapeHtml(r.chegada||'')}</td>
-          <td>${escapeHtml(r.tempo||'')}</td>
-          <td>`;
-        if(!isVisitor && auth.currentUser){
-          html += `<button data-num="${r.numero}" class="btn-edit-res">Editar</button>`;
-        } else {
-          html += `<span class="small" style="color:#666">Somente leitura</span>`;
-        }
-        html += `</td></tr>`;
-      });
-
-      html += `</tbody></table>`;
-      tableResultados.innerHTML = html;
-      if(!isVisitor && auth.currentUser){
-        tableResultados.querySelectorAll('.btn-edit-res').forEach(btn=> btn.onclick = ()=> openEditResultado(btn.dataset.num) );
-      }
-    }
-
-    function openEditResultado(numero){
-      if(isVisitor || !auth.currentUser){ alert('Ação proibida: modo visitante. Faça login para editar resultados.'); return; }
-      get(child(ref(db), `resultados/${numero}`)).then(async snap=>{
-        const data = snap.exists() ? snap.val() : {};
-        const athleteSnap = await get(child(ref(db), `listagem/${numero}`));
-        const athlete = athleteSnap.exists() ? athleteSnap.val() : {};
-        const overlay = document.createElement('div'); overlay.className='overlay';
-        const form = document.createElement('form'); form.className='modal';
-        form.innerHTML = `
-          <h4>Editar Resultado - ${numero}</h4>
-          <input id="r_nome" placeholder="Nome" value="${escapeAttr(data.atleta || athlete.atleta || '')}" />
-          <input id="r_modalidade" placeholder="Modalidade" value="${escapeAttr(data.modalidade || athlete.modalidade || '')}" />
-          <input id="r_categoria" placeholder="Categoria" value="${escapeAttr(data.categoria || athlete.categoria || '')}" />
-          <input id="r_genero" placeholder="Gênero" value="${escapeAttr(data.genero || athlete.genero || '')}" />
-          <label class="small">Chegada (DD/MM/YYYY HH:MM:SS)</label>
-          <input id="r_chegada" value="${escapeAttr(data.chegada||'')}" />
-          <label class="small">Tempo (HH:MM:SS)</label>
-          <input id="r_tempo" value="${escapeAttr(data.tempo||'')}" />
-          <div class="form-actions">
-            <button type="button" id="r_cancel" class="ghost">Cancelar</button>
-            <button type="submit">Salvar</button>
-          </div>
-        `;
-        document.body.appendChild(overlay); document.body.appendChild(form);
-        form.r_cancel.onclick = ()=>{ form.remove(); overlay.remove(); };
-        form.onsubmit = async (e)=>{
-          e.preventDefault();
-          try{
-            await update(ref(db, `resultados/${numero}`), {
-              atleta: form.r_nome.value,
-              modalidade: form.r_modalidade.value,
-              categoria: form.r_categoria.value,
-              genero: form.r_genero.value,
-              chegada: form.r_chegada.value,
-              tempo: form.r_tempo.value,
-              registradaEmISO: new Date().toISOString()
-            });
-            await update(ref(db, `listagem/${numero}`), {
-              atleta: form.r_nome.value,
-              modalidade: form.r_modalidade.value,
-              categoria: form.r_categoria.value,
-              genero: form.r_genero.value
-            });
-            form.remove(); overlay.remove();
-          }catch(err){ console.error(err); alert('Erro ao salvar: '+(err.message||err)); }
-        };
-      });
-    }
+    btnAplicarFiltroVisitante.onclick = ()=> renderResultadosVisitante(latestResultados);
 
     // Export CSV
     btnExport.onclick = ()=>{
-      const rows = filteredResultadosCache.length ? filteredResultadosCache : latestResultados;
-      if(!rows || !rows.length){ alert('Nenhum resultado para exportar'); return; }
-      const header = ['numero','atleta','modalidade','categoria','genero','chegada','tempo'];
-      const csv = [header.join(',')].concat(rows.map(r=> header.map(h=> `"${String(r[h]||'').replace(/"/g,'""')}"`).join(','))).join('\n');
-      const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+      if(!filteredResultadosCache.length){ alert('Nenhum dado para exportar'); return; }
+      const headers = ['Número','Nome','Gênero','Modalidade','Categoria','Chegada','Tempo'];
+      const csvRows = [headers];
+      filteredResultadosCache.forEach(r=>{
+        csvRows.push([
+          r.numero,
+          r.atleta||'',
+          r.genero||'',
+          r.modalidade||'',
+          r.categoria||'',
+          r.chegada||'',
+          r.tempo||''
+        ]);
+      });
+      const csvContent = csvRows.map(r=>r.map(field=>`"${(field||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+      const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'resultados_export.csv';
-      document.body.appendChild(a);
+      a.download = 'resultados.csv';
       a.click();
-      a.remove();
       URL.revokeObjectURL(url);
     };
 
-    // search handler and utils
+    btnExportVisitante.onclick = ()=>{
+      const modalidade = fModalidadeVisitante.value;
+      const categoria = fCategoriaVisitante.value;
+      const genero = fGeneroVisitante.value;
+      let filtered = latestResultados;
+      if(modalidade) filtered = filtered.filter(r=>r.modalidade===modalidade);
+      if(categoria) filtered = filtered.filter(r=>r.categoria===categoria);
+      if(genero) filtered = filtered.filter(r=>r.genero===genero);
+      if(!filtered.length){ alert('Nenhum dado para exportar'); return; }
+      const headers = ['Número','Nome','Gênero','Modalidade','Categoria','Chegada','Tempo'];
+      const csvRows = [headers];
+      filtered.forEach(r=>{
+        csvRows.push([
+          r.numero,
+          r.atleta||'',
+          r.genero||'',
+          r.modalidade||'',
+          r.categoria||'',
+          r.chegada||'',
+          r.tempo||''
+        ]);
+      });
+      const csvContent = csvRows.map(r=>r.map(field=>`"${(field||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+      const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'resultados.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+
+    // Search in listagem
     searchListagem.addEventListener('input', ()=> renderListagem(latestListagem) );
 
-    function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, (m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-    function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
+    // Edit modals
+    function openEditAthlete(numero){
+      const athlete = latestListagem.find(a=>a.numero===numero);
+      if(!athlete) return;
+      const overlay = document.createElement('div'); overlay.className='overlay';
+      const form = document.createElement('form'); form.className='modal';
+      form.innerHTML = `
+        <h4>Editar Atleta - ${numero}</h4>
+        <input id="ea_nome" placeholder="Nome" value="${escapeHtml(athlete.atleta||'')}" required />
+        <input id="ea_genero" placeholder="Gênero" value="${escapeHtml(athlete.genero||'')}" />
+        <input id="ea_modalidade" placeholder="Modalidade" value="${escapeHtml(athlete.modalidade||'')}" />
+        <input id="ea_categoria" placeholder="Categoria" value="${escapeHtml(athlete.categoria||'')}" />
+        <input id="ea_data_nasc" placeholder="Data Nascimento (DD/MM/YYYY)" value="${escapeHtml(athlete.data_nascimento||'')}" />
+        <input id="ea_idade" placeholder="Idade" type="number" value="${escapeHtml(athlete.idade||'')}" />
+        <div class="form-actions">
+          <button type="button" id="ea_cancel" class="ghost">Cancelar</button>
+          <button type="submit">Salvar</button>
+        </div>
+      `;
+      document.body.appendChild(overlay); document.body.appendChild(form);
+      form.ea_nome.focus();
+      form.ea_cancel.onclick = ()=>{ form.remove(); overlay.remove(); };
+      form.onsubmit = async (e)=>{
+        e.preventDefault();
+        try{
+          await set(ref(db, `listagem/${numero}`), {
+            atleta: form.ea_nome.value,
+            genero: form.ea_genero.value,
+            modalidade: form.ea_modalidade.value,
+            categoria: form.ea_categoria.value,
+            data_nascimento: form.ea_data_nasc.value,
+            idade: form.ea_idade.value
+          });
+          form.remove(); overlay.remove();
+        }catch(err){ console.error(err); alert('Erro ao salvar: '+(err.message||err)); }
+      };
+    }
 
-    // initial UI
-    showPage('entrada');
+    function openEditLargada(modalidade){
+      const largada = latestLargadas.find(l=>l.modalidade===modalidade);
+      if(!largada) return;
+      const overlay = document.createElement('div'); overlay.className='overlay';
+      const form = document.createElement('form'); form.className='modal';
+      form.innerHTML = `
+        <h4>Editar Largada - ${modalidade}</h4>
+        <label class="small">Início (DD/MM/YYYY HH:MM:SS)</label>
+        <input id="el_inicio" placeholder="22/10/2025 08:00:00" value="${escapeHtml(largada.inicio||'')}" required />
+        <div class="form-actions">
+          <button type="button" id="el_cancel" class="ghost">Cancelar</button>
+          <button type="submit">Salvar</button>
+        </div>
+      `;
+      document.body.appendChild(overlay); document.body.appendChild(form);
+      form.el_inicio.focus();
+      form.el_cancel.onclick = ()=>{ form.remove(); overlay.remove(); };
+      form.onsubmit = async (e)=>{
+        e.preventDefault();
+        const inicioStr = form.el_inicio.value.trim();
+        if(!inicioStr){ alert('Preencha o horário de início'); return; }
+        try{
+          await set(ref(db, `largadas/${modalidade}/inicio`), inicioStr);
+          form.remove(); overlay.remove();
+        }catch(err){ console.error(err); alert('Erro ao salvar largada: '+(err.message||err)); }
+      };
+    }
 
+    function openEditResultado(numero){
+      const resultado = latestResultados.find(r=>r.numero===numero);
+      if(!resultado) return;
+      const overlay = document.createElement('div'); overlay.className='overlay';
+      const form = document.createElement('form'); form.className='modal';
+      form.innerHTML = `
+        <h4>Editar Resultado - ${numero}</h4>
+        <label class="small">Chegada (DD/MM/YYYY HH:MM:SS)</label>
+        <input id="er_chegada" placeholder="22/10/2025 08:00:00" value="${escapeHtml(resultado.chegada||'')}" required />
+        <label class="small">Tempo (HH:MM:SS)</label>
+        <input id="er_tempo" placeholder="02:30:15" value="${escapeHtml(resultado.tempo||'')}" />
+        <div class="form-actions">
+          <button type="button" id="er_cancel" class="ghost">Cancelar</button>
+          <button type="submit">Salvar</button>
+        </div>
+      `;
+      document.body.appendChild(overlay); document.body.appendChild(form);
+      form.er_chegada.focus();
+      form.er_cancel.onclick = ()=>{ form.remove(); overlay.remove(); };
+      form.onsubmit = async (e)=>{
+        e.preventDefault();
+        const chegadaStr = form.er_chegada.value.trim();
+        const tempoStr = form.er_tempo.value.trim();
+        if(!chegadaStr){ alert('Preencha a chegada'); return; }
+        try{
+          await update(ref(db, `resultados/${numero}`), {
+            chegada: chegadaStr,
+            tempo: tempoStr
+          });
+          form.remove(); overlay.remove();
+        }catch(err){ console.error(err); alert('Erro ao salvar resultado: '+(err.message||err)); }
+      };
+    }
+
+    function escapeHtml(unsafe) {
+      if(unsafe === null || unsafe === undefined) return '';
+      return unsafe.toString()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
   </script>
 </body>
 </html>
