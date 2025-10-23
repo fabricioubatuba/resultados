@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Controle de Chegadas v2 - teste-c702e</title>
+  <title>Resultados</title>
   <style>
     :root{--accent:#1e90ff;--accent-2:#ff8a00;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
     body{margin:0;background:#f6f8fb;color:#111;font-family:var(--font, Inter), sans-serif}
@@ -40,7 +40,7 @@
 </head>
 <body>
   <header>
-    <div class="brand">Controle de Chegadas v2</div>
+    <div class="brand">4 HORAS DE MTB E TRAIL RUN MATA ATLÂNTICA</div>
     <div id="user-area" class="small"></div>
   </header>
 
@@ -222,29 +222,32 @@
       return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
     }
 
-    // Últimos 10 números
-function pushLast(num){
-  let arr = JSON.parse(localStorage.getItem('last10')||'[]');
+// Últimos 10 números realmente registrados
+function pushLastRegistrado(num) {
+  let arr = JSON.parse(localStorage.getItem('ultimosRegistrados') || '[]');
   arr = arr.filter(x => x !== num);
   arr.unshift(num);
-  arr = arr.slice(0,10);
-  localStorage.setItem('last10', JSON.stringify(arr));
+  arr = arr.slice(0, 10); // mantém só os 10 últimos
+  localStorage.setItem('ultimosRegistrados', JSON.stringify(arr));
 }
 
-function renderLast5(){
-  const last5El = document.getElementById('last5'); // mantém o mesmo id do HTML
-  last5El.innerHTML = '';
-  const arr = JSON.parse(localStorage.getItem('last10')||'[]');
-  arr.forEach(x=>{
-    const el = document.createElement('div');
-    el.className = 'pill';
-    el.textContent = x;
-    el.onclick = ()=>{ numeroInput.value = x; numeroInput.focus(); };
-    last5El.appendChild(el);
+function renderUltimosRegistrados() {
+  const el = document.getElementById('last5'); // usa o mesmo container visual
+  el.innerHTML = '';
+  const arr = JSON.parse(localStorage.getItem('ultimosRegistrados') || '[]');
+  if (!arr.length) {
+    el.innerHTML = `<span class="small" style="color:#666">Nenhum registro ainda</span>`;
+    return;
+  }
+  arr.forEach(x => {
+    const div = document.createElement('div');
+    div.className = 'pill';
+    div.textContent = x;
+    div.onclick = () => { numeroInput.value = x; numeroInput.focus(); };
+    el.appendChild(div);
   });
 }
-renderLast5();
-
+renderUltimosRegistrados();
 
     // Focus management (only on Entrada page)
     let focusInterval = null;
@@ -361,8 +364,8 @@ renderLast5();
           registradoPor: auth.currentUser ? auth.currentUser.email : null,
           registradaEmISO: new Date().toISOString()
         });
-        pushLast(numero);
-        renderLast5();
+        pushLastRegistrado(numero);
+renderUltimosRegistrados();
         numeroInput.value = '';
         numeroInput.focus();
       }catch(err){
