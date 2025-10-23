@@ -231,7 +231,7 @@
       localStorage.setItem('last10', JSON.stringify(arr));
     }
     function renderLast5(){
-      const last5El = document.querySelector('.last10');
+      const last5El = document.querySelector('.last5');
       last5El.innerHTML = '';
       const arr = JSON.parse(localStorage.getItem('last10')||'[]');
       arr.forEach(x=>{
