@@ -251,11 +251,17 @@ renderUltimosRegistrados();
 
     // Focus management (only on Entrada page)
     let focusInterval = null;
-    function enableEntradaFocus(){
+   function enableEntradaFocus(){
+  // evita tentativa de foco se o usuário não estiver logado ou o campo não existir
+  if(!auth.currentUser || !numeroInput || numeroInput.offsetParent === null) return;
+  numeroInput.focus();
+  if(focusInterval) clearInterval(focusInterval);
+  focusInterval = setInterval(()=>{
+    if(document.activeElement !== numeroInput && numeroInput.offsetParent !== null){
       numeroInput.focus();
-      if(focusInterval) clearInterval(focusInterval);
-      focusInterval = setInterval(()=>{ if(document.activeElement !== numeroInput) numeroInput.focus(); }, 900);
     }
+  }, 900);
+}
     function disableEntradaFocus(){
       if(focusInterval) { clearInterval(focusInterval); focusInterval = null; }
     }
@@ -295,7 +301,7 @@ renderUltimosRegistrados();
         authCard.classList.remove('hidden');
         appCard.classList.add('hidden');
         userArea.textContent = '';
-        window.location.reload();
+        disableEntradaFocus();
       }
     });
 
