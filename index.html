@@ -224,16 +224,16 @@
 
     // Last5
     function pushLast(num){
-      let arr = JSON.parse(localStorage.getItem('last5')||'[]');
+      let arr = JSON.parse(localStorage.getItem('last10')||'[]');
       arr = arr.filter(x=>x!==num);
       arr.unshift(num);
-      arr = arr.slice(0,5);
-      localStorage.setItem('last5', JSON.stringify(arr));
+      arr = arr.slice(0,10);
+      localStorage.setItem('last10', JSON.stringify(arr));
     }
-    function renderLast5(){
-      const last5El = document.querySelector('.last5');
+    function renderLast10(){
+      const last5El = document.querySelector('.last10');
       last5El.innerHTML = '';
-      const arr = JSON.parse(localStorage.getItem('last5')||'[]');
+      const arr = JSON.parse(localStorage.getItem('last10')||'[]');
       arr.forEach(x=>{
         const el = document.createElement('div');
         el.className = 'pill';
@@ -242,7 +242,7 @@
         last5El.appendChild(el);
       });
     }
-    renderLast5();
+    renderLast10();
 
     // Focus management (only on Entrada page)
     let focusInterval = null;
