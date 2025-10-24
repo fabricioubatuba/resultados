@@ -1204,10 +1204,17 @@
       
       const posicaoGeral = filteredResultadosCache.findIndex(a => a.numero === atletaSelecionadoComprovante.numero) + 1;
       
+      // EXTRAIR PRIMEIRO E ÚLTIMO NOME
+      const nomeCompleto = atletaSelecionadoComprovante.atleta || '';
+      const partesNome = nomeCompleto.split(' ').filter(part => part.trim() !== '');
+      const nomeSimplificado = partesNome.length > 1 
+        ? `${partesNome[0]} ${partesNome[partesNome.length - 1]}`
+        : partesNome[0] || '';
+      
       comprovanteData.innerHTML = `
         <div class="comprovante-item">
           <span class="comprovante-item-label">Atleta:</span>
-          <span>${escapeHtml(atletaSelecionadoComprovante.atleta || '')}</span>
+          <span>${escapeHtml(nomeSimplificado)}</span>
         </div>
         <div class="comprovante-item">
           <span class="comprovante-item-label">Modalidade:</span>
