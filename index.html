@@ -37,7 +37,35 @@
     .error{color:#b00020}
     .disabled{opacity:0.6;pointer-events:none}
     .success{color:#00c853}
-    @media(max-width:900px){ .big-input{width:100%;font-size:48px;padding:16px} .container{padding:8px} nav{flex-wrap:wrap} }
+    .warning{color:#ff6d00}
+
+    /* Estilos para os comprovantes */
+    .comprovante-container { position: relative; width: 100%; margin: 20px 0; }
+    .comprovante-story { width: 270px; height: 480px; position: relative; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; overflow: hidden; color: white; font-family: 'Arial', sans-serif; }
+    .comprovante-feed { width: 400px; height: 400px; position: relative; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; overflow: hidden; color: white; font-family: 'Arial', sans-serif; }
+    .comprovante-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; opacity: 0.3; }
+    .comprovante-content { position: relative; z-index: 2; padding: 20px; height: 100%; display: flex; flex-direction: column; justify-content: space-between; }
+    .comprovante-header { text-align: center; margin-bottom: 20px; }
+    .comprovante-title { font-size: 24px; font-weight: bold; margin-bottom: 8px; }
+    .comprovante-subtitle { font-size: 14px; opacity: 0.9; }
+    .comprovante-data { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 12px; }
+    .comprovante-item { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.2); padding: 8px 0; }
+    .comprovante-item-label { font-weight: bold; }
+    .comprovante-footer { text-align: center; margin-top: 20px; }
+    .comprovante-logo { position: absolute; bottom: 10px; right: 10px; width: 40px; height: 40px; background: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; }
+    .comprovante-formatos { display: flex; gap: 10px; margin: 15px 0; }
+    .comprovante-formatos button { flex: 1; }
+
+    @media(max-width:900px){ 
+      .big-input{width:100%;font-size:48px;padding:16px} 
+      .container{padding:8px} 
+      nav{flex-wrap:wrap} 
+      .comprovante-story, .comprovante-feed { 
+        width: 100%; 
+        max-width: 300px; 
+        margin: 0 auto; 
+      }
+    }
   </style>
 </head>
 <body>
@@ -95,6 +123,7 @@
             <p class="small">Aponte o leitor de código de barras e pressione Enter. O cursor permanecerá aqui enquanto estiver nesta tela.</p>
             <p class="small success" id="entrada-success" style="display:none"></p>
             <p class="small error" id="entrada-error" style="display:none"></p>
+            <p class="small warning" id="entrada-warning" style="display:none"></p>
           </div>
         </div>
 
@@ -103,13 +132,22 @@
           <h4>Registro de Voltas - MTB</h4>
           <div style="margin-bottom:16px">
             <p class="small">Registre cada volta dos atletas de MTB. Cada registro conta 1 volta. O sistema calculará automaticamente a classificação baseada em maior número de voltas e menor tempo.</p>
+            <p class="small warning">⚠️ Intervalo mínimo entre voltas: 3 minutos</p>
             <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
               <input id="volta-numero-input" placeholder="Número do atleta" style="padding:8px;border-radius:6px;border:1px solid #ddd;width:120px" />
               <button id="btn-registrar-volta" class="secondary">Registrar Volta</button>
             </div>
             <p class="small success" id="volta-success" style="display:none"></p>
             <p class="small error" id="volta-error" style="display:none"></p>
+            <p class="small warning" id="volta-warning" style="display:none"></p>
           </div>
+          
+          <!-- Filtro para voltas MTB -->
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+            <input id="filtro-voltas-numero" placeholder="Filtrar por número do atleta" style="padding:8px;border-radius:6px;border:1px solid #ddd;width:200px" />
+            <button id="btn-limpar-filtro-voltas" class="ghost">Limpar Filtro</button>
+          </div>
+          
           <div id="table-voltas-mtb"></div>
         </div>
 
@@ -148,6 +186,7 @@
             </div>
             <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
               <button id="btn-export" class="secondary">Exportar CSV</button>
+              <button id="btn-comprovante" class="secondary">Gerar Comprovante</button>
             </div>
           </div>
           <div id="table-resultados"></div>
@@ -156,7 +195,40 @@
     </div>
   </div>
 
-  <script type="module">
+  <!-- Modal para Gerar Comprovante -->
+  <div id="modal-comprovante" class="hidden">
+    <div class="overlay"></div>
+    <div class="modal" style="max-width: 500px;">
+      <h4>Gerar Comprovante</h4>
+      <div class="comprovante-formatos">
+        <button id="btn-comprovante-story" class="secondary">Formato Story</button>
+        <button id="btn-comprovante-feed" class="secondary">Formato Feed</button>
+      </div>
+      <div class="comprovante-container">
+        <div id="comprovante-preview" class="comprovante-story">
+          <div class="comprovante-bg" id="comprovante-bg"></div>
+          <div class="comprovante-content">
+            <div class="comprovante-header">
+              <div class="comprovante-title">4 HORAS MATA ATLÂNTICA</div>
+              <div class="comprovante-subtitle">Comprovante de Conclusão</div>
+            </div>
+            <div class="comprovante-data" id="comprovante-data">
+              <!-- Dados serão preenchidos via JavaScript -->
+            </div>
+            <div class="comprovante-footer">
+              <div id="comprovante-texto">Concluí meu desafio em --:--:--</div>
+            </div>
+            <div class="comprovante-logo">MA</div>
+          </div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button id="btn-fechar-comprovante" class="ghost">Fechar</button>
+        <button id="btn-download-comprovante" class="secondary">Download</button>
+      </div>
+    </div>
+  </div>
+<script type="module">
     const firebaseConfig = {
       apiKey: "AIzaSyBZqXrKnRGvM0BG5qrrE38R8zR25tacOzw",
       authDomain: "teste-c702e.firebaseapp.com",
@@ -191,6 +263,7 @@
     const btnLimpar = document.getElementById('btn-limpar');
     const entradaSuccess = document.getElementById('entrada-success');
     const entradaError = document.getElementById('entrada-error');
+    const entradaWarning = document.getElementById('entrada-warning');
 
     const navEntrada = document.getElementById('nav-entrada');
     const navVoltasMtb = document.getElementById('nav-voltas-mtb');
@@ -213,6 +286,11 @@
     const btnRegistrarVolta = document.getElementById('btn-registrar-volta');
     const voltaSuccess = document.getElementById('volta-success');
     const voltaError = document.getElementById('volta-error');
+    const voltaWarning = document.getElementById('volta-warning');
+
+    // Novos elementos para filtro de voltas
+    const filtroVoltasNumero = document.getElementById('filtro-voltas-numero');
+    const btnLimparFiltroVoltas = document.getElementById('btn-limpar-filtro-voltas');
 
     const btnAddAthlete = document.getElementById('btn-add-athlete');
     const csvUpload = document.getElementById('csv-upload');
@@ -224,6 +302,18 @@
     const fGenero = document.getElementById('f-genero');
     const btnAplicarFiltro = document.getElementById('btn-aplicar-filtro');
     const btnExport = document.getElementById('btn-export');
+    const btnComprovante = document.getElementById('btn-comprovante');
+
+    // Elementos do modal de comprovante
+    const modalComprovante = document.getElementById('modal-comprovante');
+    const btnComprovanteStory = document.getElementById('btn-comprovante-story');
+    const btnComprovanteFeed = document.getElementById('btn-comprovante-feed');
+    const comprovantePreview = document.getElementById('comprovante-preview');
+    const comprovanteBg = document.getElementById('comprovante-bg');
+    const comprovanteData = document.getElementById('comprovante-data');
+    const comprovanteTexto = document.getElementById('comprovante-texto');
+    const btnFecharComprovante = document.getElementById('btn-fechar-comprovante');
+    const btnDownloadComprovante = document.getElementById('btn-download-comprovante');
 
     // utils
     function padNum(n){ return String(n).padStart(4,'0'); }
@@ -254,6 +344,20 @@
       const mm = Math.floor((totalSeconds%3600)/60);
       const ss = Math.floor(totalSeconds%60);
       return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+    }
+
+    // Função para verificar intervalo mínimo entre voltas
+    function verificarIntervaloMinimo(voltasAtleta) {
+      if (!voltasAtleta || voltasAtleta.length === 0) return true; // Sem voltas anteriores, pode registrar
+      
+      const ultimaVolta = voltasAtleta[voltasAtleta.length - 1];
+      const agora = new Date();
+      const ultimaVoltaDt = parseDMYTime(ultimaVolta.dataHora) || new Date(ultimaVolta.registradaEmISO);
+      
+      const diferencaMs = agora.getTime() - ultimaVoltaDt.getTime();
+      const diferencaMinutos = diferencaMs / (1000 * 60);
+      
+      return diferencaMinutos >= 3; // Retorna true se passaram 3 minutos ou mais
     }
 
     // Últimos 10 números compartilhados via Firebase
@@ -319,6 +423,8 @@
     let latestVoltasMtb = [];
     let filteredResultadosCache = [];
     let isVisitor = false;
+    let atletaSelecionadoComprovante = null;
+    let formatoComprovanteAtual = 'story';
 
     // Auth handlers
     btnLogin.onclick = async () => {
@@ -426,8 +532,10 @@
       disableEntradaFocus();
       entradaSuccess.style.display = 'none';
       entradaError.style.display = 'none';
+      entradaWarning.style.display = 'none';
       voltaSuccess.style.display = 'none';
       voltaError.style.display = 'none';
+      voltaWarning.style.display = 'none';
       
       if(p==='entrada'){ 
         if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; }
@@ -456,6 +564,15 @@
       }
     });
     btnRegistrarVolta.addEventListener('click', registrarVoltaMtb);
+
+    // Filtro de voltas MTB
+    filtroVoltasNumero.addEventListener('input', () => {
+      renderVoltasMtb(latestVoltasMtb);
+    });
+    btnLimparFiltroVoltas.addEventListener('click', () => {
+      filtroVoltasNumero.value = '';
+      renderVoltasMtb(latestVoltasMtb);
+    });
 
     async function registrarChegada(){
       if(isVisitor || !auth.currentUser){
@@ -508,6 +625,18 @@
 
         // Se for MTB, registrar como volta especial
         if(athlete.modalidade === 'MTB'){
+          // Verificar intervalo mínimo para MTB
+          const voltasAtleta = latestVoltasMtb[numero] || [];
+          const podeRegistrar = verificarIntervaloMinimo(voltasAtleta);
+          
+          if (!podeRegistrar) {
+            entradaWarning.textContent = `Aguarde 3 minutos entre as voltas! Atleta ${numero} registrou volta recentemente.`;
+            entradaWarning.style.display = 'block';
+            numeroInput.value = '';
+            numeroInput.focus();
+            return;
+          }
+          
           await registrarVoltaMtbFirebase(numero, athlete, chegadaStr, tempoStr);
           entradaSuccess.textContent = `Volta registrada para atleta ${numero} (MTB)`;
           entradaSuccess.style.display = 'block';
@@ -539,7 +668,6 @@
         entradaError.style.display = 'block';
       }
     }
-
     async function registrarVoltaMtb(){
       if(isVisitor || !auth.currentUser){
         alert('Ação proibida: modo visitante ou não autenticado. Faça login para registrar voltas.');
@@ -562,6 +690,18 @@
         if(athlete.modalidade !== 'MTB'){
           voltaError.textContent = `Atleta ${numero} não é da modalidade MTB!`;
           voltaError.style.display = 'block';
+          voltaNumeroInput.value = '';
+          voltaNumeroInput.focus();
+          return;
+        }
+        
+        // VERIFICAR INTERVALO MÍNIMO DE 3 MINUTOS
+        const voltasAtleta = latestVoltasMtb[numero] || [];
+        const podeRegistrar = verificarIntervaloMinimo(voltasAtleta);
+        
+        if (!podeRegistrar) {
+          voltaWarning.textContent = `Aguarde 3 minutos entre as voltas! Atleta ${numero} registrou volta recentemente.`;
+          voltaWarning.style.display = 'block';
           voltaNumeroInput.value = '';
           voltaNumeroInput.focus();
           return;
@@ -847,46 +987,44 @@
     }
 
     function renderVoltasMtb(voltasPorAtleta){
-      let html = `<table><thead><tr><th>Número</th><th>Atleta</th><th>Voltas</th><th>Última Volta</th><th>Tempo Última Volta</th><th>Ações</th></tr></thead><tbody>`;
+      const filtroNumero = (filtroVoltasNumero.value || '').trim().toLowerCase();
       
-      Object.keys(voltasPorAtleta).forEach(numero => {
+      let html = `<table><thead><tr><th>Número</th><th>Atleta</th><th>Volta #</th><th>Data/Hora</th><th>Tempo</th><th>Registrado Por</th></tr></thead><tbody>`;
+      
+      // Ordenar por número do atleta e depois por ordem de registro
+      const numerosOrdenados = Object.keys(voltasPorAtleta).sort((a, b) => {
+        return parseInt(a) - parseInt(b);
+      });
+      
+      numerosOrdenados.forEach(numero => {
+        // Aplicar filtro
+        if(filtroNumero && !numero.includes(filtroNumero)) return;
+        
         const voltas = voltasPorAtleta[numero];
         if(voltas && voltas.length > 0){
-          const primeiraVolta = voltas[0];
-          const ultimaVolta = voltas[voltas.length - 1];
-          html += `<tr>
-            <td>${numero}</td>
-            <td>${escapeHtml(primeiraVolta.atleta||'')}</td>
-            <td><strong>${voltas.length}</strong></td>
-            <td>${escapeHtml(ultimaVolta.dataHora||'')}</td>
-            <td>${escapeHtml(ultimaVolta.tempo||'')}</td>
-            <td>`;
-          if(!isVisitor && auth.currentUser){
-            html += `<button data-num="${numero}" class="btn-delete-voltas ghost">Apagar Voltas</button>`;
-          } else {
-            html += `<span class="small" style="color:#666">Somente leitura</span>`;
-          }
-          html += `</td></tr>`;
+          // Ordenar voltas por ordem de registro (mais antiga primeiro)
+          voltas.sort((a, b) => {
+            const dtA = parseDMYTime(a.dataHora) || new Date(a.registradaEmISO);
+            const dtB = parseDMYTime(b.dataHora) || new Date(b.registradaEmISO);
+            return dtA - dtB;
+          });
+          
+          // Mostrar cada volta individualmente
+          voltas.forEach((volta, index) => {
+            html += `<tr>
+              <td>${numero}</td>
+              <td>${escapeHtml(volta.atleta||'')}</td>
+              <td><strong>${index + 1}</strong></td>
+              <td>${escapeHtml(volta.dataHora||'')}</td>
+              <td>${escapeHtml(volta.tempo||'')}</td>
+              <td class="small">${escapeHtml(volta.registradoPor||'')}</td>
+            </tr>`;
+          });
         }
       });
       
       html += `</tbody></table>`;
       tableVoltasMtb.innerHTML = html;
-      
-      if(!isVisitor && auth.currentUser){
-        tableVoltasMtb.querySelectorAll('.btn-delete-voltas').forEach(btn=> {
-          btn.onclick = async ()=>{
-            if(!confirm(`Apagar TODAS as voltas do atleta ${btn.dataset.num}?`)) return;
-            try{ 
-              await remove(ref(db, `voltasMtb/${btn.dataset.num}`)); 
-              alert('Voltas apagadas'); 
-            }catch(err){ 
-              console.error(err); 
-              alert('Erro: '+(err.message||err)); 
-            }
-          };
-        });
-      }
     }
 
     // Edit athlete from Listagem (now allows editing number)
@@ -1008,6 +1146,121 @@
       });
     }
 
+    // Sistema de Comprovantes
+    btnComprovante.addEventListener('click', () => {
+      if (isVisitor) {
+        abrirModalComprovante();
+      } else {
+        alert('Esta funcionalidade está disponível apenas no modo visitante para geração de comprovantes pessoais.');
+      }
+    });
+
+    function abrirModalComprovante() {
+      // Por enquanto, vamos usar o primeiro atleta como exemplo
+      // Na implementação final, o usuário selecionaria um atleta
+      if (filteredResultadosCache.length === 0) {
+        alert('Nenhum resultado disponível para gerar comprovante.');
+        return;
+      }
+      
+      atletaSelecionadoComprovante = filteredResultadosCache[0]; // Exemplo - depois implementar seleção
+      atualizarPreviewComprovante();
+      modalComprovante.classList.remove('hidden');
+    }
+
+    function atualizarPreviewComprovante() {
+      if (!atletaSelecionadoComprovante) return;
+      
+      // Definir imagem de fundo baseada na modalidade
+      let bgImage = '';
+      if (atletaSelecionadoComprovante.modalidade === 'MTB') {
+        bgImage = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)'; // Verde para MTB
+      } else if (atletaSelecionadoComprovante.modalidade === 'TRAIL RUN') {
+        bgImage = 'linear-gradient(135deg, #FF9800 0%, #F57C00 100%)'; // Laranja para Trail Run
+      } else {
+        bgImage = 'linear-gradient(135deg, #2196F3 0%, #1976D2 100%)'; // Azul para outros
+      }
+      
+      comprovanteBg.style.background = bgImage;
+      
+      // Calcular posição na categoria
+      const atletasMesmaCategoria = filteredResultadosCache.filter(a => 
+        a.categoria === atletaSelecionadoComprovante.categoria && 
+        a.modalidade === atletaSelecionadoComprovante.modalidade
+      );
+      const posicaoCategoria = atletasMesmaCategoria.findIndex(a => a.numero === atletaSelecionadoComprovante.numero) + 1;
+      
+      // Calcular posição geral
+      const posicaoGeral = filteredResultadosCache.findIndex(a => a.numero === atletaSelecionadoComprovante.numero) + 1;
+      
+      // Atualizar dados do comprovante
+      comprovanteData.innerHTML = `
+        <div class="comprovante-item">
+          <span class="comprovante-item-label">Atleta:</span>
+          <span>${escapeHtml(atletaSelecionadoComprovante.atleta || '')}</span>
+        </div>
+        <div class="comprovante-item">
+          <span class="comprovante-item-label">Modalidade:</span>
+          <span>${escapeHtml(atletaSelecionadoComprovante.modalidade || '')}</span>
+        </div>
+        <div class="comprovante-item">
+          <span class="comprovante-item-label">Categoria:</span>
+          <span>${escapeHtml(atletaSelecionadoComprovante.categoria || '')}</span>
+        </div>
+        <div class="comprovante-item">
+          <span class="comprovante-item-label">Tempo Final:</span>
+          <span>${escapeHtml(atletaSelecionadoComprovante.tempo || '')}</span>
+        </div>
+        ${atletaSelecionadoComprovante.totalVoltas ? `
+        <div class="comprovante-item">
+          <span class="comprovante-item-label">Voltas:</span>
+          <span>${atletaSelecionadoComprovante.totalVoltas}</span>
+        </div>
+        ` : ''}
+        <div class="comprovante-item">
+          <span class="comprovante-item-label">Posição Geral:</span>
+          <span>${posicaoGeral}º</span>
+        </div>
+        <div class="comprovante-item">
+          <span class="comprovante-item-label">Posição Categoria:</span>
+          <span>${posicaoCategoria}º</span>
+        </div>
+        <div class="comprovante-item">
+          <span class="comprovante-item-label">Data:</span>
+          <span>${new Date().toLocaleDateString('pt-BR')}</span>
+        </div>
+      `;
+      
+      comprovanteTexto.textContent = `Concluí meu desafio em ${atletaSelecionadoComprovante.tempo || '--:--:--'}`;
+    }
+
+    // Event listeners para comprovante
+    btnComprovanteStory.addEventListener('click', () => {
+      formatoComprovanteAtual = 'story';
+      comprovantePreview.className = 'comprovante-story';
+      atualizarPreviewComprovante();
+    });
+
+    btnComprovanteFeed.addEventListener('click', () => {
+      formatoComprovanteAtual = 'feed';
+      comprovantePreview.className = 'comprovante-feed';
+      atualizarPreviewComprovante();
+    });
+
+    btnFecharComprovante.addEventListener('click', () => {
+      modalComprovante.classList.add('hidden');
+    });
+
+    btnDownloadComprovante.addEventListener('click', () => {
+      // Implementar download usando html2canvas
+      alert('Funcionalidade de download será implementada com html2canvas');
+      // html2canvas(comprovantePreview).then(canvas => {
+      //   const link = document.createElement('a');
+      //   link.download = `comprovante-${atletaSelecionadoComprovante.numero}.png`;
+      //   link.href = canvas.toDataURL();
+      //   link.click();
+      // });
+    });
     function rebuildResultFilters(){
       const modalidades = new Set();
       latestListagem.forEach(r=>{ if(r.modalidade) modalidades.add(r.modalidade); });
@@ -1157,7 +1410,7 @@
         if(!isVisitor && auth.currentUser){
           html += `<button data-num="${r.numero}" class="btn-edit-res">Editar</button>`;
         } else {
-          html += `<span class="small" style="color:#666">Somente leitura</span>`;
+          html += `<button data-num="${r.numero}" class="btn-comprovante-res secondary">Comprovante</button>`;
         }
         html += `</td></tr>`;
       });
@@ -1166,6 +1419,17 @@
       tableResultados.innerHTML = html;
       if(!isVisitor && auth.currentUser){
         tableResultados.querySelectorAll('.btn-edit-res').forEach(btn=> btn.onclick = ()=> openEditResultado(btn.dataset.num) );
+      } else {
+        tableResultados.querySelectorAll('.btn-comprovante-res').forEach(btn=> {
+          btn.onclick = () => {
+            const numero = btn.dataset.num;
+            const atleta = filteredResultadosCache.find(a => a.numero === numero);
+            if (atleta) {
+              atletaSelecionadoComprovante = atleta;
+              abrirModalComprovante();
+            }
+          };
+        });
       }
     }
 
@@ -1284,6 +1548,41 @@
     // initial UI
     showPage('entrada');
 
+  </script>
+
+  <!-- Incluir html2canvas para download dos comprovantes -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script>
+    // Configurar html2canvas para melhor qualidade
+    window.html2canvasSetup = function() {
+      if (window.html2canvas) {
+        // Substituir a função de download para usar html2canvas
+        document.getElementById('btn-download-comprovante').onclick = function() {
+          const comprovante = document.getElementById('comprovante-preview');
+          const scale = 3; // Aumenta a qualidade para 3x
+          
+          html2canvas(comprovante, {
+            scale: scale,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: null
+          }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `comprovante-${atletaSelecionadoComprovante?.numero || 'atleta'}.png`;
+            link.href = canvas.toDataURL('image/png', 1.0);
+            link.click();
+          });
+        };
+      }
+    };
+
+    // Inicializar quando html2canvas carregar
+    if (window.html2canvas) {
+      window.html2canvasSetup();
+    } else {
+      // Esperar o carregamento se ainda não estiver disponível
+      document.addEventListener('DOMContentLoaded', window.html2canvasSetup);
+    }
   </script>
 </body>
 </html>
