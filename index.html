@@ -157,15 +157,8 @@
         <div id="page-voltas-mtb" class="hidden">
           <h4>Registro de Voltas - MTB</h4>
           <div style="margin-bottom:16px">
-            <p class="small">Registre cada volta dos atletas de MTB. Cada registro conta 1 volta. O sistema calculará automaticamente a classificação baseada em maior número de voltas e menor tempo.</p>
+            <p class="small">Visualize as voltas registradas dos atletas de MTB. Cada registro conta 1 volta. O sistema calcula automaticamente a classificação baseada em maior número de voltas e menor tempo.</p>
             <p class="small warning">⚠️ Intervalo mínimo entre voltas: 3 minutos</p>
-            <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
-              <input id="volta-numero-input" placeholder="Número do atleta" style="padding:8px;border-radius:6px;border:1px solid #ddd;width:120px" />
-              <button id="btn-registrar-volta" class="secondary">Registrar Volta</button>
-            </div>
-            <p class="small success" id="volta-success" style="display:none"></p>
-            <p class="small error" id="volta-error" style="display:none"></p>
-            <p class="small warning" id="volta-warning" style="display:none"></p>
           </div>
           
           <!-- Filtro para voltas MTB -->
@@ -176,8 +169,7 @@
           
           <div id="table-voltas-mtb"></div>
         </div>
-
-        <!-- LISTAGEM -->
+                <!-- LISTAGEM -->
         <div id="page-listagem" class="hidden">
           <h4>Listagem Completa</h4>
           <div class="row" style="margin:8px 0;align-items:center">
@@ -310,11 +302,7 @@
     const tableLargadas = document.getElementById('table-largadas');
     const tableResultados = document.getElementById('table-resultados');
 
-    const voltaNumeroInput = document.getElementById('volta-numero-input');
-    const btnRegistrarVolta = document.getElementById('btn-registrar-volta');
-    const voltaSuccess = document.getElementById('volta-success');
-    const voltaError = document.getElementById('volta-error');
-    const voltaWarning = document.getElementById('volta-warning');
+    // Elementos removidos: voltaNumeroInput, btnRegistrarVolta, voltaSuccess, voltaError, voltaWarning
 
     // Novos elementos para filtro de voltas
     const filtroVoltasNumero = document.getElementById('filtro-voltas-numero');
@@ -418,9 +406,6 @@
             if(pageEntrada.classList.contains('hidden')) {
               numeroInput.value = x; 
               numeroInput.focus(); 
-            } else if(pageVoltasMtb.classList.contains('hidden')) {
-              voltaNumeroInput.value = x;
-              voltaNumeroInput.focus();
             }
           };
           el.appendChild(div);
@@ -504,10 +489,6 @@
       numeroInput.setAttribute('disabled','true');
       btnLimpar.classList.add('disabled');
       btnLimpar.setAttribute('disabled','true');
-      voltaNumeroInput.classList.add('disabled');
-      voltaNumeroInput.setAttribute('disabled','true');
-      btnRegistrarVolta.classList.add('disabled');
-      btnRegistrarVolta.setAttribute('disabled','true');
       btnAddAthlete.classList.add('disabled'); btnAddAthlete.setAttribute('disabled','true');
       csvUpload.classList.add('disabled'); csvUpload.disabled = true;
       btnAddLargada.classList.add('disabled'); btnAddLargada.setAttribute('disabled','true');
@@ -527,8 +508,6 @@
         navLargadas.style.display = '';
         numeroInput.classList.remove('disabled'); numeroInput.removeAttribute('disabled');
         btnLimpar.classList.remove('disabled'); btnLimpar.removeAttribute('disabled');
-        voltaNumeroInput.classList.remove('disabled'); voltaNumeroInput.removeAttribute('disabled');
-        btnRegistrarVolta.classList.remove('disabled'); btnRegistrarVolta.removeAttribute('disabled');
         btnAddAthlete.classList.remove('disabled'); btnAddAthlete.removeAttribute('disabled');
         csvUpload.classList.remove('disabled'); csvUpload.disabled = false;
         btnAddLargada.classList.remove('disabled'); btnAddLargada.removeAttribute('disabled');
@@ -561,9 +540,6 @@
       entradaSuccess.style.display = 'none';
       entradaError.style.display = 'none';
       entradaWarning.style.display = 'none';
-      voltaSuccess.style.display = 'none';
-      voltaError.style.display = 'none';
-      voltaWarning.style.display = 'none';
       
       if(p==='entrada'){ 
         if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; }
@@ -584,15 +560,6 @@
     });
     btnLimpar.addEventListener('click', ()=>{ numeroInput.value = ''; numeroInput.focus(); });
 
-    // Registrar volta MTB
-    voltaNumeroInput.addEventListener('keydown', (e) => {
-      if(e.key === 'Enter'){
-        e.preventDefault();
-        registrarVoltaMtb();
-      }
-    });
-    btnRegistrarVolta.addEventListener('click', registrarVoltaMtb);
-
     // Filtro de voltas MTB
     filtroVoltasNumero.addEventListener('input', () => {
       renderVoltasMtb(latestVoltasMtb);
@@ -601,8 +568,7 @@
       filtroVoltasNumero.value = '';
       renderVoltasMtb(latestVoltasMtb);
     });
-
-    async function registrarChegada(){
+      async function registrarChegada(){
       if(isVisitor || !auth.currentUser){
         alert('Ação proibida: modo visitante ou não autenticado. Faça login para registrar chegadas.');
         return;
@@ -690,78 +656,19 @@
         numeroInput.value = '';
         numeroInput.focus();
         
+        // ATUALIZAR RESULTADOS AUTOMATICAMENTE APÓS REGISTRO
+        atualizarResultadosAutomaticamente();
+        
       }catch(err){
         console.error('Erro registrar chegada:', err);
         entradaError.textContent = 'Erro ao registrar chegada: ' + (err.message||err);
         entradaError.style.display = 'block';
       }
     }
-    async function registrarVoltaMtb(){
-      if(isVisitor || !auth.currentUser){
-        alert('Ação proibida: modo visitante ou não autenticado. Faça login para registrar voltas.');
-        return;
-      }
-      
-      const raw = (voltaNumeroInput.value || '').trim();
-      if(!raw){ voltaNumeroInput.focus(); return; }
-      const numero = padNum(raw.replace(/\D/g,''));
-      
-      try{
-        const athleteSnap = await get(child(ref(db), `listagem/${numero}`));
-        if(!athleteSnap.exists()){
-          voltaError.textContent = `Atleta ${numero} não encontrado!`;
-          voltaError.style.display = 'block';
-          return;
-        }
-        
-        const athlete = athleteSnap.val();
-        if(athlete.modalidade !== 'MTB'){
-          voltaError.textContent = `Atleta ${numero} não é da modalidade MTB!`;
-          voltaError.style.display = 'block';
-          voltaNumeroInput.value = '';
-          voltaNumeroInput.focus();
-          return;
-        }
-        
-        // VERIFICAR INTERVALO MÍNIMO DE 3 MINUTOS
-        const voltasAtleta = latestVoltasMtb[numero] || [];
-        const podeRegistrar = verificarIntervaloMinimo(voltasAtleta);
-        
-        if (!podeRegistrar) {
-          voltaWarning.textContent = `Aguarde 3 minutos entre as voltas! Atleta ${numero} registrou volta recentemente.`;
-          voltaWarning.style.display = 'block';
-          voltaNumeroInput.value = '';
-          voltaNumeroInput.focus();
-          return;
-        }
-        
-        let largadaInicioStr = null;
-        const largSnap = await get(child(ref(db), `largadas/MTB/inicio`));
-        if(largSnap.exists()) largadaInicioStr = largSnap.val();
-        
-        const voltaDt = new Date();
-        const voltaStr = formatDMYTime(voltaDt);
-        let tempoStr = null;
-        
-        if(largadaInicioStr){
-          const largDt = parseDMYTime(largadaInicioStr);
-          const diffSec = Math.round((voltaDt.getTime() - largDt.getTime())/1000);
-          tempoStr = formatTempoFromSeconds(diffSec);
-        }
-        
-        await registrarVoltaMtbFirebase(numero, athlete, voltaStr, tempoStr);
-        
-        voltaSuccess.textContent = `Volta registrada para atleta ${numero}`;
-        voltaSuccess.style.display = 'block';
-        pushLastRegistrado(numero);
-        voltaNumeroInput.value = '';
-        voltaNumeroInput.focus();
-        
-      }catch(err){
-        console.error('Erro registrar volta:', err);
-        voltaError.textContent = 'Erro ao registrar volta: ' + (err.message||err);
-        voltaError.style.display = 'block';
-      }
+
+    // Função para atualizar resultados automaticamente
+    function atualizarResultadosAutomaticamente() {
+      renderResultados(latestResultados);
     }
 
     async function registrarVoltaMtbFirebase(numero, athlete, dataHora, tempo){
@@ -984,8 +891,7 @@
         rebuildResultFilters();
       }, (err)=>{ console.error('Erro listener voltas MTB:', err); });
     }
-
-    function renderListagem(rows){
+      function renderListagem(rows){
       const q = (searchListagem.value || '').trim().toLowerCase();
       const filtered = rows.filter(r => !q || (r.numero && r.numero.toLowerCase().includes(q)) || (r.atleta && r.atleta.toLowerCase().includes(q)));
       let html = `<table><thead><tr><th>Número</th><th>Nome</th><th>Gênero</th><th>Modalidade</th><th>Categoria</th><th>Idade</th><th>Ações</th></tr></thead><tbody>`;
@@ -1014,7 +920,7 @@
       }
     }
 
-       function renderVoltasMtb(voltasPorAtleta){
+    function renderVoltasMtb(voltasPorAtleta){
       const filtroNumero = (filtroVoltasNumero.value || '').trim().toLowerCase();
       
       let html = `<table><thead><tr><th>Número</th><th>Atleta</th><th>Volta #</th><th>Data/Hora</th><th>Tempo</th><th>Registrado Por</th></tr></thead><tbody>`;
@@ -1273,6 +1179,24 @@
 
     btnDownloadComprovante.addEventListener('click', (e) => {
       e.stopPropagation();
+      // Verificar se html2canvas está disponível
+      if (typeof html2canvas === 'undefined') {
+        // Tentar carregar a biblioteca dinamicamente
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+        script.onload = () => {
+          baixarComprovante();
+        };
+        script.onerror = () => {
+          alert('Funcionalidade de download temporariamente indisponível. Tente novamente em alguns instantes.');
+        };
+        document.head.appendChild(script);
+      } else {
+        baixarComprovante();
+      }
+    });
+
+    function baixarComprovante() {
       if (window.html2canvas) {
         const comprovante = document.getElementById('comprovante-preview');
         const scale = 3;
@@ -1287,11 +1211,14 @@
           link.download = `comprovante-${atletaSelecionadoComprovante?.numero || 'atleta'}.png`;
           link.href = canvas.toDataURL('image/png', 1.0);
           link.click();
+        }).catch(err => {
+          console.error('Erro ao gerar comprovante:', err);
+          alert('Erro ao gerar comprovante. Tente novamente.');
         });
       } else {
         alert('Funcionalidade de download temporariamente indisponível');
       }
-    });
+    }
 
     // Fechar modal clicando no overlay
     modalComprovante.addEventListener('click', (e) => {
@@ -1299,8 +1226,7 @@
         modalComprovante.style.display = 'none';
       }
     });
-
-    function rebuildResultFilters(){
+      function rebuildResultFilters(){
       const modalidades = new Set();
       latestListagem.forEach(r=>{ if(r.modalidade) modalidades.add(r.modalidade); });
       latestLargadas.forEach(r=>{ if(r.modalidade) modalidades.add(r.modalidade); });
