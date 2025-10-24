@@ -1014,30 +1014,26 @@
       }
     }
 
-    function renderVoltasMtb(voltasPorAtleta){
+       function renderVoltasMtb(voltasPorAtleta){
       const filtroNumero = (filtroVoltasNumero.value || '').trim().toLowerCase();
       
       let html = `<table><thead><tr><th>Número</th><th>Atleta</th><th>Volta #</th><th>Data/Hora</th><th>Tempo</th><th>Registrado Por</th></tr></thead><tbody>`;
       
-      // Ordenar por número do atleta e depois por ordem de registro
       const numerosOrdenados = Object.keys(voltasPorAtleta).sort((a, b) => {
         return parseInt(a) - parseInt(b);
       });
       
       numerosOrdenados.forEach(numero => {
-        // Aplicar filtro
         if(filtroNumero && !numero.includes(filtroNumero)) return;
         
         const voltas = voltasPorAtleta[numero];
         if(voltas && voltas.length > 0){
-          // Ordenar voltas por ordem de registro (mais antiga primeiro)
           voltas.sort((a, b) => {
             const dtA = parseDMYTime(a.dataHora) || new Date(a.registradaEmISO);
             const dtB = parseDMYTime(b.dataHora) || new Date(b.registradaEmISO);
             return dtA - dtB;
           });
           
-          // Mostrar cada volta individualmente
           voltas.forEach((volta, index) => {
             html += `<tr>
               <td>${numero}</td>
@@ -1055,7 +1051,7 @@
       tableVoltasMtb.innerHTML = html;
     }
 
-    // Edit athlete from Listagem (now allows editing number)
+    // Edit athlete from Listagem
     function openEditAthlete(numero){
       if(isVisitor || !auth.currentUser){ alert('Ação proibida: modo visitante. Faça login para editar.'); return; }
       get(child(ref(db), `listagem/${numero}`)).then(snap=>{
@@ -1177,7 +1173,11 @@
     // Sistema de Comprovantes
     btnComprovante.addEventListener('click', () => {
       if (isVisitor) {
-        abrirModalComprovante();
+        if (filteredResultadosCache.length === 0) {
+          alert('Nenhum resultado disponível para gerar comprovante.');
+          return;
+        }
+        alert('Clique no botão "Comprovante" de qualquer atleta na lista para gerar seu comprovante personalizado.');
       } else {
         alert('Esta funcionalidade está disponível apenas no modo visitante para geração de comprovantes pessoais.');
       }
@@ -1192,21 +1192,18 @@
       atualizarPreviewComprovante();
       modalComprovante.style.display = 'flex';
     }
-  
-  function atualizarPreviewComprovante() {
+
+    function atualizarPreviewComprovante() {
       if (!atletaSelecionadoComprovante) return;
       
-      // Calcular posição na categoria
       const atletasMesmaCategoria = filteredResultadosCache.filter(a => 
         a.categoria === atletaSelecionadoComprovante.categoria && 
         a.modalidade === atletaSelecionadoComprovante.modalidade
       );
       const posicaoCategoria = atletasMesmaCategoria.findIndex(a => a.numero === atletaSelecionadoComprovante.numero) + 1;
       
-      // Calcular posição geral
       const posicaoGeral = filteredResultadosCache.findIndex(a => a.numero === atletaSelecionadoComprovante.numero) + 1;
       
-      // Atualizar dados do comprovante
       comprovanteData.innerHTML = `
         <div class="comprovante-item">
           <span class="comprovante-item-label">Atleta:</span>
@@ -1247,7 +1244,7 @@
       comprovanteTexto.textContent = `Concluí meu desafio em ${atletaSelecionadoComprovante.tempo || '--:--:--'}`;
     }
 
-         // Event listeners para comprovante - VERSÃO CORRIGIDA
+    // Event listeners para comprovante
     btnComprovanteStory.addEventListener('click', (e) => {
       e.stopPropagation();
       formatoComprovanteAtual = 'story';
@@ -1262,21 +1259,13 @@
       atualizarPreviewComprovante();
     });
 
-        btnFecharComprovante.addEventListener('click', (e) => {
+    btnFecharComprovante.addEventListener('click', (e) => {
       e.stopPropagation();
       modalComprovante.style.display = 'none';
     });
 
-    // Fechar modal clicando no overlay
-    modalComprovante.addEventListener('click', (e) => {
-      if (e.target === modalComprovante) {
-        modalComprovante.style.display = 'none';
-      }
-    });
-
     btnDownloadComprovante.addEventListener('click', (e) => {
       e.stopPropagation();
-      // Implementar download usando html2canvas
       if (window.html2canvas) {
         const comprovante = document.getElementById('comprovante-preview');
         const scale = 3;
@@ -1300,23 +1289,10 @@
     // Fechar modal clicando no overlay
     modalComprovante.addEventListener('click', (e) => {
       if (e.target === modalComprovante) {
-        modalComprovante.classList.add('hidden');
+        modalComprovante.style.display = 'none';
       }
     });
 
-    // Sistema de Comprovantes - Botão principal
-    btnComprovante.addEventListener('click', () => {
-      if (isVisitor) {
-        if (filteredResultadosCache.length === 0) {
-          alert('Nenhum resultado disponível para gerar comprovante.');
-          return;
-        }
-        alert('Clique no botão "Comprovante" de qualquer atleta na lista para gerar seu comprovante personalizado.');
-      } else {
-        alert('Esta funcionalidade está disponível apenas no modo visitante para geração de comprovantes pessoais.');
-      }
-    });
-  
     function rebuildResultFilters(){
       const modalidades = new Set();
       latestListagem.forEach(r=>{ if(r.modalidade) modalidades.add(r.modalidade); });
@@ -1332,6 +1308,7 @@
       fillSelect(fCategoria, [...categorias].sort(), 'Todas');
       fillSelect(fGenero, [...generos].sort(), 'Todos');
     }
+
     function fillSelect(selectEl, arr, firstLabel){
       selectEl.innerHTML = `<option value="">${firstLabel||'Todos'}</option>`;
       arr.forEach(x=>{ const o=document.createElement('option'); o.value=x; o.textContent=x; selectEl.appendChild(o); });
@@ -1374,7 +1351,6 @@
         }
       });
       
-      // Ordenar por: maior número de voltas -> menor tempo total
       resultadosMtb.sort((a, b) => {
         if(b.totalVoltas !== a.totalVoltas){
           return b.totalVoltas - a.totalVoltas;
@@ -1397,14 +1373,9 @@
         return true;
       });
 
-      // Se filtrando por MTB ou todas modalidades, adicionar resultados MTB calculados
       if((!fm || fm === 'MTB') && latestVoltasMtb && Object.keys(latestVoltasMtb).length > 0){
         const resultadosMtb = calcularResultadosMtb();
-        
-        // Remover resultados MTB existentes para evitar duplicação
         filtered = filtered.filter(r => r.modalidade !== 'MTB');
-        
-        // Adicionar resultados MTB calculados
         resultadosMtb.forEach(rm => {
           if((!fc || rm.categoria === fc) && (!fg || rm.genero === fg)){
             filtered.push(rm);
@@ -1412,9 +1383,7 @@
         });
       }
 
-      // Ordenar resultados
       filtered.sort((a,b)=>{
-        // Se for MTB com sistema de voltas, usar ordenação especial
         if(a.modalidade === 'MTB' && b.modalidade === 'MTB' && a.totalVoltas && b.totalVoltas){
           if(b.totalVoltas !== a.totalVoltas){
             return b.totalVoltas - a.totalVoltas;
@@ -1422,7 +1391,6 @@
           return (a.tempoTotal || Infinity) - (b.tempoTotal || Infinity);
         }
         
-        // Ordenação normal para outras modalidades
         const ta = tempoToSeconds(a.tempo);
         const tb = tempoToSeconds(b.tempo);
         if(ta === tb) {
@@ -1473,9 +1441,10 @@
 
       html += `</tbody></table>`;
       tableResultados.innerHTML = html;
+      
       if(!isVisitor && auth.currentUser){
         tableResultados.querySelectorAll('.btn-edit-res').forEach(btn=> btn.onclick = ()=> openEditResultado(btn.dataset.num) );
-            } else {
+      } else {
         tableResultados.querySelectorAll('.btn-comprovante-res').forEach(btn=> {
           btn.onclick = () => {
             const numero = btn.dataset.num;
@@ -1487,6 +1456,7 @@
           };
         });
       }
+    }
 
     // Edit resultado modal
     async function openEditResultado(numero){
@@ -1603,41 +1573,6 @@
     // initial UI
     showPage('entrada');
 
-  </script>
-
-  <!-- Incluir html2canvas para download dos comprovantes -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script>
-    // Configurar html2canvas para melhor qualidade
-    window.html2canvasSetup = function() {
-      if (window.html2canvas) {
-        // Substituir a função de download para usar html2canvas
-        document.getElementById('btn-download-comprovante').onclick = function() {
-          const comprovante = document.getElementById('comprovante-preview');
-          const scale = 3; // Aumenta a qualidade para 3x
-          
-          html2canvas(comprovante, {
-            scale: scale,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: null
-          }).then(canvas => {
-            const link = document.createElement('a');
-            link.download = `comprovante-${atletaSelecionadoComprovante?.numero || 'atleta'}.png`;
-            link.href = canvas.toDataURL('image/png', 1.0);
-            link.click();
-          });
-        };
-      }
-    };
-
-    // Inicializar quando html2canvas carregar
-    if (window.html2canvas) {
-      window.html2canvasSetup();
-    } else {
-      // Esperar o carregamento se ainda não estiver disponível
-      document.addEventListener('DOMContentLoaded', window.html2canvasSetup);
-    }
   </script>
 </body>
 </html>
