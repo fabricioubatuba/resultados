@@ -221,8 +221,8 @@
     </div>
   </div>
 
-    <!-- Modal para Gerar Comprovante -->
-  <div id="modal-comprovante" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; display: flex; align-items: center; justify-content: center;">
+  <!-- Modal para Gerar Comprovante -->
+  <div id="modal-comprovante" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; display: none; align-items: center; justify-content: center;">
     <div class="overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);"></div>
     <div class="modal" style="position: relative; z-index: 1001; max-width: 500px; background: white; border-radius: 10px; padding: 20px; margin: 20px;">
       <h4>Gerar Comprovante</h4>
@@ -1190,9 +1190,10 @@
       }
       
       atualizarPreviewComprovante();
-      modalComprovante.classList.remove('hidden');
+      modalComprovante.style.display = 'flex';
     }
-        function atualizarPreviewComprovante() {
+  
+  function atualizarPreviewComprovante() {
       if (!atletaSelecionadoComprovante) return;
       
       // Calcular posição na categoria
@@ -1261,9 +1262,16 @@
       atualizarPreviewComprovante();
     });
 
-    btnFecharComprovante.addEventListener('click', (e) => {
+        btnFecharComprovante.addEventListener('click', (e) => {
       e.stopPropagation();
-      modalComprovante.classList.add('hidden');
+      modalComprovante.style.display = 'none';
+    });
+
+    // Fechar modal clicando no overlay
+    modalComprovante.addEventListener('click', (e) => {
+      if (e.target === modalComprovante) {
+        modalComprovante.style.display = 'none';
+      }
     });
 
     btnDownloadComprovante.addEventListener('click', (e) => {
@@ -1467,7 +1475,7 @@
       tableResultados.innerHTML = html;
       if(!isVisitor && auth.currentUser){
         tableResultados.querySelectorAll('.btn-edit-res').forEach(btn=> btn.onclick = ()=> openEditResultado(btn.dataset.num) );
-      } else {
+            } else {
         tableResultados.querySelectorAll('.btn-comprovante-res').forEach(btn=> {
           btn.onclick = () => {
             const numero = btn.dataset.num;
@@ -1479,7 +1487,6 @@
           };
         });
       }
-    }
 
     // Edit resultado modal
     async function openEditResultado(numero){
