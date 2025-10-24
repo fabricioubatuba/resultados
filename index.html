@@ -221,10 +221,10 @@
     </div>
   </div>
 
-  <!-- Modal para Gerar Comprovante -->
-  <div id="modal-comprovante" class="hidden">
-    <div class="overlay" id="overlay-comprovante"></div>
-    <div class="modal" style="max-width: 500px; z-index: 1000;">
+    <!-- Modal para Gerar Comprovante -->
+  <div id="modal-comprovante" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; display: flex; align-items: center; justify-content: center;">
+    <div class="overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);"></div>
+    <div class="modal" style="position: relative; z-index: 1001; max-width: 500px; background: white; border-radius: 10px; padding: 20px; margin: 20px;">
       <h4>Gerar Comprovante</h4>
       <div class="comprovante-formatos">
         <button id="btn-comprovante-story" class="secondary">Formato Story</button>
@@ -232,7 +232,6 @@
       </div>
       <div class="comprovante-container">
         <div id="comprovante-preview" class="comprovante-story">
-          <!-- As imagens de fundo serão definidas via CSS -->
           <div class="comprovante-content">
             <div class="comprovante-header">
               <div class="comprovante-title">4 HORAS MATA ATLÂNTICA</div>
@@ -256,6 +255,7 @@
       </div>
     </div>
   </div>
+  
 <script type="module">
     const firebaseConfig = {
       apiKey: "AIzaSyBZqXrKnRGvM0BG5qrrE38R8zR25tacOzw",
@@ -1183,21 +1183,15 @@
       }
     });
 
-function abrirModalComprovante() {
+    function abrirModalComprovante() {
       if (filteredResultadosCache.length === 0) {
         alert('Nenhum resultado disponível para gerar comprovante.');
         return;
       }
       
-      // Se não houver atleta selecionado, usar o primeiro como exemplo
-      if (!atletaSelecionadoComprovante) {
-        atletaSelecionadoComprovante = filteredResultadosCache[0];
-      }
-      
       atualizarPreviewComprovante();
       modalComprovante.classList.remove('hidden');
     }
-
         function atualizarPreviewComprovante() {
       if (!atletaSelecionadoComprovante) return;
       
@@ -1252,32 +1246,59 @@ function abrirModalComprovante() {
       comprovanteTexto.textContent = `Concluí meu desafio em ${atletaSelecionadoComprovante.tempo || '--:--:--'}`;
     }
 
-     // Event listeners para comprovante
-    btnComprovanteStory.addEventListener('click', () => {
+         // Event listeners para comprovante - VERSÃO CORRIGIDA
+    btnComprovanteStory.addEventListener('click', (e) => {
+      e.stopPropagation();
       formatoComprovanteAtual = 'story';
       comprovantePreview.className = 'comprovante-story';
       atualizarPreviewComprovante();
     });
 
-    btnComprovanteFeed.addEventListener('click', () => {
+    btnComprovanteFeed.addEventListener('click', (e) => {
+      e.stopPropagation();
       formatoComprovanteAtual = 'feed';
       comprovantePreview.className = 'comprovante-feed';
       atualizarPreviewComprovante();
     });
 
-    btnFecharComprovante.addEventListener('click', () => {
+    btnFecharComprovante.addEventListener('click', (e) => {
+      e.stopPropagation();
       modalComprovante.classList.add('hidden');
     });
 
-    // Event listener para o overlay
-    document.getElementById('overlay-comprovante').addEventListener('click', () => {
-      modalComprovante.classList.add('hidden');
+    btnDownloadComprovante.addEventListener('click', (e) => {
+      e.stopPropagation();
+      // Implementar download usando html2canvas
+      if (window.html2canvas) {
+        const comprovante = document.getElementById('comprovante-preview');
+        const scale = 3;
+        
+        html2canvas(comprovante, {
+          scale: scale,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: null
+        }).then(canvas => {
+          const link = document.createElement('a');
+          link.download = `comprovante-${atletaSelecionadoComprovante?.numero || 'atleta'}.png`;
+          link.href = canvas.toDataURL('image/png', 1.0);
+          link.click();
+        });
+      } else {
+        alert('Funcionalidade de download temporariamente indisponível');
+      }
+    });
+
+    // Fechar modal clicando no overlay
+    modalComprovante.addEventListener('click', (e) => {
+      if (e.target === modalComprovante) {
+        modalComprovante.classList.add('hidden');
+      }
     });
 
     // Sistema de Comprovantes - Botão principal
     btnComprovante.addEventListener('click', () => {
       if (isVisitor) {
-        // No modo visitante, mostrar mensagem para selecionar um atleta
         if (filteredResultadosCache.length === 0) {
           alert('Nenhum resultado disponível para gerar comprovante.');
           return;
