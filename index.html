@@ -1271,28 +1271,12 @@
       modalComprovante.style.display = 'none';
     });
 
-    btnDownloadComprovante.addEventListener('click', (e) => {
+        btnDownloadComprovante.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (window.html2canvas) {
-        const comprovante = document.getElementById('comprovante-preview');
-        const scale = 3;
-        
-        html2canvas(comprovante, {
-          scale: scale,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: null
-        }).then(canvas => {
-          const link = document.createElement('a');
-          link.download = `comprovante-${atletaSelecionadoComprovante?.numero || 'atleta'}.png`;
-          link.href = canvas.toDataURL('image/png', 1.0);
-          link.click();
-        });
-      } else {
-        alert('Funcionalidade de download temporariamente indisponível');
-      }
+      // O download agora é gerenciado pelo script global
+      // Esta função só previne o comportamento padrão
     });
-
+  
     // Fechar modal clicando no overlay
     modalComprovante.addEventListener('click', (e) => {
       if (e.target === modalComprovante) {
@@ -1579,6 +1563,58 @@
 
     // initial UI
     showPage('entrada');
+
+    <!-- Incluir html2canvas para download dos comprovantes -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  
+    // Função para configurar o download quando html2canvas carregar
+    function configurarDownloadComprovante() {
+      const btnDownload = document.getElementById('btn-download-comprovante');
+      if (btnDownload && window.html2canvas) {
+        btnDownload.onclick = function(e) {
+          e.stopPropagation();
+          const comprovante = document.getElementById('comprovante-preview');
+          if (!comprovante) {
+            alert('Erro: Elemento do comprovante não encontrado');
+            return;
+          }
+          
+          const scale = 3; // Alta qualidade
+          
+          html2canvas(comprovante, {
+            scale: scale,
+            useCORS: true,
+            allowTaint: false,
+            backgroundColor: null,
+            logging: false
+          }).then(canvas => {
+            const link = document.createElement('a');
+            const nomeArquivo = `comprovante-${window.atletaSelecionadoComprovante?.numero || 'atleta'}-${Date.now()}.png`;
+            link.download = nomeArquivo;
+            link.href = canvas.toDataURL('image/png', 1.0);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }).catch(err => {
+            console.error('Erro ao gerar imagem:', err);
+            alert('Erro ao gerar comprovante. Tente novamente.');
+          });
+        };
+      }
+    }
+
+    // Tentar configurar imediatamente se html2canvas já estiver carregado
+    if (window.html2canvas) {
+      configurarDownloadComprovante();
+    } else {
+      // Esperar o carregamento da página
+      document.addEventListener('DOMContentLoaded', configurarDownloadComprovante);
+      // Também tentar após um tempo caso ainda não esteja carregado
+      setTimeout(configurarDownloadComprovante, 1000);
+    }
+
+    // Expor a variável atletaSelecionadoComprovante globalmente para o html2canvas acessar
+    window.atletaSelecionadoComprovante = null;
 
   </script>
 </body>
