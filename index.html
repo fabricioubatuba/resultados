@@ -1567,7 +1567,8 @@
     <!-- Incluir html2canvas para download dos comprovantes -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   
-    // Função para configurar o download quando html2canvas carregar
+ <script>   
+  // Função para configurar o download quando html2canvas carregar
     function configurarDownloadComprovante() {
       const btnDownload = document.getElementById('btn-download-comprovante');
       if (btnDownload && window.html2canvas) {
