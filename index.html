@@ -56,6 +56,32 @@
     .comprovante-formatos { display: flex; gap: 10px; margin: 15px 0; }
     .comprovante-formatos button { flex: 1; }
 
+        /* Imagens de fundo para os comprovantes */
+    .comprovante-story {
+      background: url('https://lh3.googleusercontent.com/d/1pJrOTAbzY_3uTJZQKgKI72ATN3x3LoiR') center/cover no-repeat;
+    }
+    .comprovante-feed {
+      background: url('https://lh3.googleusercontent.com/d/1C4D7YRq2hEYLzq91o28aZa16kgO8figs') center/cover no-repeat;
+    }
+    
+    /* Ajustes para melhor legibilidade sobre as imagens */
+    .comprovante-content {
+      background: rgba(0, 0, 0, 0.6); /* Fundo escuro semi-transparente para melhor contraste */
+      position: relative;
+      z-index: 2;
+      padding: 20px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-radius: 12px;
+    }
+    
+    /* Remover o comprovante-bg anterior já que usamos background direto */
+    .comprovante-bg {
+      display: none;
+    }
+
     @media(max-width:900px){ 
       .big-input{width:100%;font-size:48px;padding:16px} 
       .container{padding:8px} 
@@ -197,8 +223,8 @@
 
   <!-- Modal para Gerar Comprovante -->
   <div id="modal-comprovante" class="hidden">
-    <div class="overlay"></div>
-    <div class="modal" style="max-width: 500px;">
+    <div class="overlay" id="overlay-comprovante"></div>
+    <div class="modal" style="max-width: 500px; z-index: 1000;">
       <h4>Gerar Comprovante</h4>
       <div class="comprovante-formatos">
         <button id="btn-comprovante-story" class="secondary">Formato Story</button>
@@ -206,7 +232,7 @@
       </div>
       <div class="comprovante-container">
         <div id="comprovante-preview" class="comprovante-story">
-          <div class="comprovante-bg" id="comprovante-bg"></div>
+          <!-- As imagens de fundo serão definidas via CSS -->
           <div class="comprovante-content">
             <div class="comprovante-header">
               <div class="comprovante-title">4 HORAS MATA ATLÂNTICA</div>
@@ -218,7 +244,9 @@
             <div class="comprovante-footer">
               <div id="comprovante-texto">Concluí meu desafio em --:--:--</div>
             </div>
-            <div class="comprovante-logo">MA</div>
+            <div class="comprovante-logo">
+              <img src="https://lh3.googleusercontent.com/d/1zHFiEJj1bpUN_ghxdq07dqjvVX0aLKv0" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;">
+            </div>
           </div>
         </div>
       </div>
@@ -1155,33 +1183,23 @@
       }
     });
 
-    function abrirModalComprovante() {
-      // Por enquanto, vamos usar o primeiro atleta como exemplo
-      // Na implementação final, o usuário selecionaria um atleta
+function abrirModalComprovante() {
       if (filteredResultadosCache.length === 0) {
         alert('Nenhum resultado disponível para gerar comprovante.');
         return;
       }
       
-      atletaSelecionadoComprovante = filteredResultadosCache[0]; // Exemplo - depois implementar seleção
+      // Se não houver atleta selecionado, usar o primeiro como exemplo
+      if (!atletaSelecionadoComprovante) {
+        atletaSelecionadoComprovante = filteredResultadosCache[0];
+      }
+      
       atualizarPreviewComprovante();
       modalComprovante.classList.remove('hidden');
     }
 
-    function atualizarPreviewComprovante() {
+        function atualizarPreviewComprovante() {
       if (!atletaSelecionadoComprovante) return;
-      
-      // Definir imagem de fundo baseada na modalidade
-      let bgImage = '';
-      if (atletaSelecionadoComprovante.modalidade === 'MTB') {
-        bgImage = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)'; // Verde para MTB
-      } else if (atletaSelecionadoComprovante.modalidade === 'TRAIL RUN') {
-        bgImage = 'linear-gradient(135deg, #FF9800 0%, #F57C00 100%)'; // Laranja para Trail Run
-      } else {
-        bgImage = 'linear-gradient(135deg, #2196F3 0%, #1976D2 100%)'; // Azul para outros
-      }
-      
-      comprovanteBg.style.background = bgImage;
       
       // Calcular posição na categoria
       const atletasMesmaCategoria = filteredResultadosCache.filter(a => 
@@ -1234,7 +1252,7 @@
       comprovanteTexto.textContent = `Concluí meu desafio em ${atletaSelecionadoComprovante.tempo || '--:--:--'}`;
     }
 
-    // Event listeners para comprovante
+     // Event listeners para comprovante
     btnComprovanteStory.addEventListener('click', () => {
       formatoComprovanteAtual = 'story';
       comprovantePreview.className = 'comprovante-story';
@@ -1251,16 +1269,25 @@
       modalComprovante.classList.add('hidden');
     });
 
-    btnDownloadComprovante.addEventListener('click', () => {
-      // Implementar download usando html2canvas
-      alert('Funcionalidade de download será implementada com html2canvas');
-      // html2canvas(comprovantePreview).then(canvas => {
-      //   const link = document.createElement('a');
-      //   link.download = `comprovante-${atletaSelecionadoComprovante.numero}.png`;
-      //   link.href = canvas.toDataURL();
-      //   link.click();
-      // });
+    // Event listener para o overlay
+    document.getElementById('overlay-comprovante').addEventListener('click', () => {
+      modalComprovante.classList.add('hidden');
     });
+
+    // Sistema de Comprovantes - Botão principal
+    btnComprovante.addEventListener('click', () => {
+      if (isVisitor) {
+        // No modo visitante, mostrar mensagem para selecionar um atleta
+        if (filteredResultadosCache.length === 0) {
+          alert('Nenhum resultado disponível para gerar comprovante.');
+          return;
+        }
+        alert('Clique no botão "Comprovante" de qualquer atleta na lista para gerar seu comprovante personalizado.');
+      } else {
+        alert('Esta funcionalidade está disponível apenas no modo visitante para geração de comprovantes pessoais.');
+      }
+    });
+  
     function rebuildResultFilters(){
       const modalidades = new Set();
       latestListagem.forEach(r=>{ if(r.modalidade) modalidades.add(r.modalidade); });
