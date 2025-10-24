@@ -49,10 +49,12 @@
     .comprovante-title { font-size: 24px; font-weight: bold; margin-bottom: 8px; }
     .comprovante-subtitle { font-size: 14px; opacity: 0.9; }
     .comprovante-data { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 12px; }
-    .comprovante-item { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.2); padding: 8px 0; }
+    .comprovante-item {  display: flex; justify-content: space-between;  border-bottom: 1px solid rgba(255,255,255,0.2);  padding: 8px 0; }
+/* Adicione esta nova regra para centralizar apenas a data */
+    .comprovante-item-centralizado {  display: flex;  justify-content: center;  border-bottom: 1px solid rgba(255,255,255,0.2);  padding: 8px 0;  text-align: center; }
     .comprovante-item-label { font-weight: bold; }
     .comprovante-footer { text-align: center; margin-top: 20px; }
-    .comprovante-logo { position: absolute; bottom: 10px; right: 10px; width: 40px; height: 40px; background: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; }
+    .comprovante-logo { position: absolute; bottom: 50px; right: 10px; width: 40px; height: 40px; background: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; }
     .comprovante-formatos { display: flex; gap: 10px; margin: 15px 0; }
     .comprovante-formatos button { flex: 1; }
 
@@ -1148,10 +1150,9 @@
           <span class="comprovante-item-label">Posição Categoria:</span>
           <span>${posicaoCategoria}º</span>
         </div>
-        <div class="comprovante-item">
-          <span class="comprovante-item-label">Data:</span>
-          <span>${new Date().toLocaleDateString('pt-BR')}</span>
-        </div>
+        <div class="comprovante-item-centralizado">
+  <span>${new Date().toLocaleDateString('pt-BR')}</span>
+</div>
       `;
       
       comprovanteTexto.textContent = `Concluí meu desafio em ${atletaSelecionadoComprovante.tempo || '--:--:--'}`;
