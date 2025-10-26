@@ -704,6 +704,7 @@
             <option value="">Selecione a modalidade</option>
             <option value="MTB">MTB</option>
             <option value="TRAIL RUN">TRAIL RUN</option>
+            <option value="DUATHLON CROSS">DUATHLON CROSS</option>
           </select>
           <input id="q_categoria" placeholder="Categoria" />
           <input id="q_data_nasc" placeholder="Data Nascimento (DD/MM/YYYY)" />
@@ -792,6 +793,7 @@
           <option value="">Selecione a modalidade</option>
           <option value="MTB">MTB</option>
           <option value="TRAIL RUN">TRAIL RUN</option>
+          <option value="DUATHLON CROSS">DUATHLON CROSS</option>
         </select>
         <input id="a_categoria" placeholder="Categoria" />
         <input id="a_data_nasc" placeholder="Data Nascimento (DD/MM/YYYY)" />
@@ -976,6 +978,7 @@
             <option value="">Selecione a modalidade</option>
             <option value="MTB" ${data.modalidade==='MTB'?'selected':''}>MTB</option>
             <option value="TRAIL RUN" ${data.modalidade==='TRAIL RUN'?'selected':''}>TRAIL RUN</option>
+            <option value="DUATHLON CROSS" ${data.modalidade==='DUATHLON CROSS'?'selected':''}>DUATHLON CROSS</option>
           </select>
           <input id="e_categoria" placeholder="Categoria" value="${escapeAttr(data.categoria||'')}" />
           <input id="e_data_nasc" placeholder="Data Nascimento (DD/MM/YYYY)" value="${escapeAttr(data.data_nascimento||'')}" />
