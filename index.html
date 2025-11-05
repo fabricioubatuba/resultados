@@ -370,6 +370,10 @@
     const btnAplicarFiltro = document.getElementById('btn-aplicar-filtro');
     const btnExport = document.getElementById('btn-export');
     const btnComprovante = document.getElementById('btn-comprovante');
+	btnAplicarFiltro.addEventListener('click', () => {
+  renderResultados(latestResultados);
+});
+
 
 // Botão para limpar todos os resultados registrados
 const btnLimparResultados = document.getElementById('btn-limpar-resultados');
