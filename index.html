@@ -139,6 +139,7 @@
         <nav id="main-nav">
           <button id="nav-entrada" class="secondary">Registrar Chegada</button>
           <button id="nav-voltas-mtb" class="secondary">Voltas MTB</button>
+          <button id="nav-voltas-duathlon" class="secondary">Voltas Duathlon</button>
           <button id="nav-listagem" class="secondary">Listagem Completa</button>
           <button id="nav-largadas" class="secondary">Largadas</button>
           <button id="nav-resultados" class="secondary">Resultados</button>
@@ -177,7 +178,26 @@
           
           <div id="table-voltas-mtb"></div>
         </div>
-                <!-- LISTAGEM -->
+
+        <!-- VOLTAS DUATHLON -->
+        <div id="page-voltas-duathlon" class="hidden">
+          <h4>Registro de Voltas - Duathlon Cross</h4>
+          <div style="margin-bottom:16px">
+            <p class="small">Visualize as voltas registradas dos atletas de Duathlon Cross. Cada registro conta 1 volta. O sistema calcula automaticamente a classificação baseada em maior número de voltas e menor tempo.</p>
+            <p class="small warning">⚠️ Intervalo mínimo entre voltas: 3 minutos</p>
+          </div>
+          
+          <!-- Filtro para voltas Duathlon -->
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+            <input id="filtro-voltas-duathlon-numero" placeholder="Filtrar por número do atleta" style="padding:8px;border-radius:6px;border:1px solid #ddd;width:200px" />
+            <button id="btn-limpar-filtro-voltas-duathlon" class="ghost">Limpar Filtro</button>
+	    <button id="btn-limpar-voltas-duathlon" class="secondary">Limpar Registro de Voltas</button>
+          </div>
+          
+          <div id="table-voltas-duathlon"></div>
+        </div>
+
+        <!-- LISTAGEM -->
         <div id="page-listagem" class="hidden">
           <h4>Listagem Completa</h4>
           <div class="row" style="margin:8px 0;align-items:center">
@@ -299,26 +319,29 @@
 
     const navEntrada = document.getElementById('nav-entrada');
     const navVoltasMtb = document.getElementById('nav-voltas-mtb');
+    const navVoltasDuathlon = document.getElementById('nav-voltas-duathlon');
     const navListagem = document.getElementById('nav-listagem');
     const navLargadas = document.getElementById('nav-largadas');
     const navResultados = document.getElementById('nav-resultados');
 
     const pageEntrada = document.getElementById('page-entrada');
     const pageVoltasMtb = document.getElementById('page-voltas-mtb');
+    const pageVoltasDuathlon = document.getElementById('page-voltas-duathlon');
     const pageListagem = document.getElementById('page-listagem');
     const pageLargadas = document.getElementById('page-largadas');
     const pageResultados = document.getElementById('page-resultados');
 
     const tableListagem = document.getElementById('table-listagem');
     const tableVoltasMtb = document.getElementById('table-voltas-mtb');
+    const tableVoltasDuathlon = document.getElementById('table-voltas-duathlon');
     const tableLargadas = document.getElementById('table-largadas');
     const tableResultados = document.getElementById('table-resultados');
 
-    // Elementos removidos: voltaNumeroInput, btnRegistrarVolta, voltaSuccess, voltaError, voltaWarning
-
-    // Novos elementos para filtro de voltas
+    // Elementos para filtro de voltas
     const filtroVoltasNumero = document.getElementById('filtro-voltas-numero');
     const btnLimparFiltroVoltas = document.getElementById('btn-limpar-filtro-voltas');
+    const filtroVoltasDuathlonNumero = document.getElementById('filtro-voltas-duathlon-numero');
+    const btnLimparFiltroVoltasDuathlon = document.getElementById('btn-limpar-filtro-voltas-duathlon');
 
     const btnAddAthlete = document.getElementById('btn-add-athlete');
     const csvUpload = document.getElementById('csv-upload');
@@ -417,101 +440,6 @@ btnImprimirResultados.addEventListener('click', () => {
   win.document.close();
   win.focus();
 });
-
-
-    // Elementos do modal de comprovante
-    const modalComprovante = document.getElementById('modal-comprovante');
-    const btnComprovanteStory = document.getElementById('btn-comprovante-story');
-    const btnComprovanteFeed = document.getElementById('btn-comprovante-feed');
-    const comprovantePreview = document.getElementById('comprovante-preview');
-    const comprovanteBg = document.getElementById('comprovante-bg');
-    const comprovanteData = document.getElementById('comprovante-data');
-    const comprovanteTexto = document.getElementById('comprovante-texto');
-    const btnFecharComprovante = document.getElementById('btn-fechar-comprovante');
-    const btnDownloadComprovante = document.getElementById('btn-download-comprovante');
-
-    // utils
-    function padNum(n){ return String(n).padStart(4,'0'); }
-    function parseDMYTime(s){
-      if(!s) return null;
-      const [datePart, timePart] = s.split(' ');
-      const [d,m,y] = datePart.split('/').map(Number);
-      let hh=0, mm=0, ss=0;
-      if(timePart){
-        [hh,mm,ss] = timePart.split(':').map(x=>Number(x));
-      }
-      return new Date(y, m-1, d, hh, mm, ss);
-    }
-    function formatDMYTime(dt){
-      if(!dt) return '';
-      const d = String(dt.getDate()).padStart(2,'0');
-      const m = String(dt.getMonth()+1).padStart(2,'0');
-      const y = String(dt.getFullYear());
-      const hh = String(dt.getHours()).padStart(2,'0');
-      const mm = String(dt.getMinutes()).padStart(2,'0');
-      const ss = String(dt.getSeconds()).padStart(2,'0');
-      return `${d}/${m}/${y} ${hh}:${mm}:${ss}`;
-    }
-    function formatTempoFromSeconds(totalSeconds){
-      if(totalSeconds == null) return '';
-      if(totalSeconds < 0) totalSeconds = 0;
-      const hh = Math.floor(totalSeconds/3600);
-      const mm = Math.floor((totalSeconds%3600)/60);
-      const ss = Math.floor(totalSeconds%60);
-      return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
-    }
-
-    // Função para verificar intervalo mínimo entre voltas
-    function verificarIntervaloMinimo(voltasAtleta) {
-      if (!voltasAtleta || voltasAtleta.length === 0) return true; // Sem voltas anteriores, pode registrar
-      
-      const ultimaVolta = voltasAtleta[voltasAtleta.length - 1];
-      const agora = new Date();
-      const ultimaVoltaDt = parseDMYTime(ultimaVolta.dataHora) || new Date(ultimaVolta.registradaEmISO);
-      
-      const diferencaMs = agora.getTime() - ultimaVoltaDt.getTime();
-      const diferencaMinutos = diferencaMs / (1000 * 60);
-      
-      return diferencaMinutos >= 3; // Retorna true se passaram 3 minutos ou mais
-    }
-
-    // Últimos 10 números compartilhados via Firebase
-    function pushLastRegistrado(num) {
-      const lastRef = ref(db, 'ultimosRegistrados');
-      get(lastRef).then((snap) => {
-        let arr = snap.exists() ? snap.val() : [];
-        arr = arr.filter(x => x !== num);
-        arr.unshift(num);
-        arr = arr.slice(0, 10);
-        set(lastRef, arr);
-      });
-    }
-
-    function renderUltimosRegistrados() {
-      const el = document.getElementById('last5');
-      const lastRef = ref(db, 'ultimosRegistrados');
-      onValue(lastRef, (snap) => {
-        el.innerHTML = '';
-        const arr = snap.exists() ? snap.val() : [];
-        if (!arr.length) {
-          el.innerHTML = `<span class="small" style="color:#666">Nenhum registro ainda</span>`;
-          return;
-        }
-        arr.forEach(x => {
-          const div = document.createElement('div');
-          div.className = 'pill';
-          div.textContent = x;
-          div.onclick = () => { 
-            if(pageEntrada.classList.contains('hidden')) {
-              numeroInput.value = x; 
-              numeroInput.focus(); 
-            }
-          };
-          el.appendChild(div);
-        });
-      });
-    }
-
 // Botão para limpar o histórico dos últimos 10 atletas registrados
 const btnLimparUltimos = document.getElementById('btn-limpar-ultimos');
 btnLimparUltimos.addEventListener('click', async () => {
@@ -528,7 +456,6 @@ btnLimparUltimos.addEventListener('click', async () => {
     alert('Erro ao limpar histórico: ' + (err.message || err));
   }
 });
-
 
     // Focus management (only on Entrada page)
     let focusInterval = null;
@@ -551,6 +478,7 @@ btnLimparUltimos.addEventListener('click', async () => {
     let latestLargadas = [];
     let latestResultados = [];
     let latestVoltasMtb = [];
+    let latestVoltasDuathlon = [];
     let filteredResultadosCache = [];
     let isVisitor = false;
     let atletaSelecionadoComprovante = null;
@@ -584,6 +512,7 @@ btnLimparUltimos.addEventListener('click', async () => {
         userArea.textContent = '';
         navEntrada.style.display = '';
         navVoltasMtb.style.display = '';
+        navVoltasDuathlon.style.display = '';
         navListagem.style.display = '';
         navLargadas.style.display = '';
         showPage('entrada');
@@ -600,6 +529,7 @@ btnLimparUltimos.addEventListener('click', async () => {
       userArea.textContent = 'Visitante (somente leitura)';
       navEntrada.style.display = 'none';
       navVoltasMtb.style.display = 'none';
+      navVoltasDuathlon.style.display = 'none';
       navListagem.style.display = 'none';
       navLargadas.style.display = 'none';
       numeroInput.classList.add('disabled');
@@ -621,6 +551,7 @@ btnLimparUltimos.addEventListener('click', async () => {
         userArea.textContent = user.email;
         navEntrada.style.display = '';
         navVoltasMtb.style.display = '';
+        navVoltasDuathlon.style.display = '';
         navListagem.style.display = '';
         navLargadas.style.display = '';
         numeroInput.classList.remove('disabled'); numeroInput.removeAttribute('disabled');
@@ -643,6 +574,7 @@ btnLimparUltimos.addEventListener('click', async () => {
     // Navigation
     navEntrada.addEventListener('click', ()=> { if(isVisitor){ alert('Modo visitante: acesso somente leitura.'); return; } showPage('entrada'); });
     navVoltasMtb.addEventListener('click', ()=> { if(isVisitor){ alert('Modo visitante: acesso somente leitura.'); return; } showPage('voltas-mtb'); });
+    navVoltasDuathlon.addEventListener('click', ()=> { if(isVisitor){ alert('Modo visitante: acesso somente leitura.'); return; } showPage('voltas-duathlon'); });
     navListagem.addEventListener('click', ()=> { if(isVisitor){ alert('Modo visitante: acesso somente leitura.'); return; } showPage('listagem'); });
     navLargadas.addEventListener('click', ()=> { if(isVisitor){ alert('Modo visitante: acesso somente leitura.'); return; } showPage('largadas'); });
     navResultados.addEventListener('click', ()=> showPage('resultados'));
@@ -650,6 +582,7 @@ btnLimparUltimos.addEventListener('click', async () => {
     function showPage(p){
       pageEntrada.classList.add('hidden');
       pageVoltasMtb.classList.add('hidden');
+      pageVoltasDuathlon.classList.add('hidden');
       pageListagem.classList.add('hidden');
       pageLargadas.classList.add('hidden');
       pageResultados.classList.add('hidden');
@@ -663,6 +596,7 @@ btnLimparUltimos.addEventListener('click', async () => {
         pageEntrada.classList.remove('hidden'); enableEntradaFocus(); 
       }
       if(p==='voltas-mtb'){ if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; } pageVoltasMtb.classList.remove('hidden'); }
+      if(p==='voltas-duathlon'){ if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; } pageVoltasDuathlon.classList.remove('hidden'); }
       if(p==='listagem'){ if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; } pageListagem.classList.remove('hidden'); }
       if(p==='largadas'){ if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; } pageLargadas.classList.remove('hidden'); }
       if(p==='resultados') pageResultados.classList.remove('hidden');
@@ -681,6 +615,7 @@ btnLimparUltimos.addEventListener('click', async () => {
     filtroVoltasNumero.addEventListener('input', () => {
       renderVoltasMtb(latestVoltasMtb);
     });
+
 // Botão para limpar todos os registros de voltas MTB
 const btnLimparVoltas = document.getElementById('btn-limpar-voltas');
 btnLimparVoltas.addEventListener('click', async () => {
@@ -691,10 +626,27 @@ btnLimparVoltas.addEventListener('click', async () => {
   if (!confirm('Tem certeza que deseja apagar TODOS os registros de voltas MTB? Essa ação não pode ser desfeita.')) return;
   try {
     await remove(ref(db, 'voltasMtb'));
-    alert('Todos os registros de voltas foram apagados com sucesso.');
+    alert('Todos os registros de voltas MTB foram apagados com sucesso.');
   } catch (err) {
-    console.error('Erro ao apagar voltas:', err);
-    alert('Erro ao limpar voltas: ' + (err.message || err));
+    console.error('Erro ao apagar voltas MTB:', err);
+    alert('Erro ao limpar voltas MTB: ' + (err.message || err));
+  }
+});
+
+// Botão para limpar todos os registros de voltas Duathlon
+const btnLimparVoltasDuathlon = document.getElementById('btn-limpar-voltas-duathlon');
+btnLimparVoltasDuathlon.addEventListener('click', async () => {
+  if (isVisitor || !auth.currentUser) {
+    alert('Ação proibida: modo visitante. Faça login para limpar voltas.');
+    return;
+  }
+  if (!confirm('Tem certeza que deseja apagar TODOS os registros de voltas Duathlon? Essa ação não pode ser desfeita.')) return;
+  try {
+    await remove(ref(db, 'voltasDuathlon'));
+    alert('Todos os registros de voltas Duathlon foram apagados com sucesso.');
+  } catch (err) {
+    console.error('Erro ao apagar voltas Duathlon:', err);
+    alert('Erro ao limpar voltas Duathlon: ' + (err.message || err));
   }
 });
 
@@ -702,6 +654,17 @@ btnLimparVoltas.addEventListener('click', async () => {
       filtroVoltasNumero.value = '';
       renderVoltasMtb(latestVoltasMtb);
     });
+
+    // Filtro de voltas Duathlon
+    filtroVoltasDuathlonNumero.addEventListener('input', () => {
+      renderVoltasDuathlon(latestVoltasDuathlon);
+    });
+
+    btnLimparFiltroVoltasDuathlon.addEventListener('click', () => {
+      filtroVoltasDuathlonNumero.value = '';
+      renderVoltasDuathlon(latestVoltasDuathlon);
+    });
+
       async function registrarChegada(){
       if(isVisitor || !auth.currentUser){
         alert('Ação proibida: modo visitante ou não autenticado. Faça login para registrar chegadas.');
@@ -723,8 +686,8 @@ btnLimparVoltas.addEventListener('click', async () => {
         
         const athlete = (await get(child(ref(db), `listagem/${numero}`))).val();
         
-        // VERIFICAR DUPLICAÇÃO (exceto MTB)
-        if(athlete.modalidade !== 'MTB'){
+        // VERIFICAR DUPLICAÇÃO (exceto MTB e Duathlon Cross)
+        if(athlete.modalidade !== 'MTB' && athlete.modalidade !== 'DUATHLON CROSS'){
           const resultadoSnap = await get(child(ref(db), `resultados/${numero}`));
           if(resultadoSnap.exists()){
             entradaError.textContent = `Atleta ${numero} já possui chegada registrada!`;
@@ -751,10 +714,16 @@ btnLimparVoltas.addEventListener('click', async () => {
           tempoStr = formatTempoFromSeconds(diffSec);
         }
 
-        // Se for MTB, registrar como volta especial
-        if(athlete.modalidade === 'MTB'){
-          // Verificar intervalo mínimo para MTB
-          const voltasAtleta = latestVoltasMtb[numero] || [];
+        // Se for MTB ou Duathlon Cross, registrar como volta especial
+        if(athlete.modalidade === 'MTB' || athlete.modalidade === 'DUATHLON CROSS'){
+          // Verificar intervalo mínimo para MTB e Duathlon
+          let voltasAtleta = [];
+          if(athlete.modalidade === 'MTB') {
+            voltasAtleta = latestVoltasMtb[numero] || [];
+          } else if(athlete.modalidade === 'DUATHLON CROSS') {
+            voltasAtleta = latestVoltasDuathlon[numero] || [];
+          }
+          
           const podeRegistrar = verificarIntervaloMinimo(voltasAtleta);
           
           if (!podeRegistrar) {
@@ -765,8 +734,13 @@ btnLimparVoltas.addEventListener('click', async () => {
             return;
           }
           
-          await registrarVoltaMtbFirebase(numero, athlete, chegadaStr, tempoStr);
-          entradaSuccess.textContent = `Volta registrada para atleta ${numero} (MTB)`;
+          if(athlete.modalidade === 'MTB') {
+            await registrarVoltaMtbFirebase(numero, athlete, chegadaStr, tempoStr);
+            entradaSuccess.textContent = `Volta registrada para atleta ${numero} (MTB)`;
+          } else {
+            await registrarVoltaDuathlonFirebase(numero, athlete, chegadaStr, tempoStr);
+            entradaSuccess.textContent = `Volta registrada para atleta ${numero} (Duathlon Cross)`;
+          }
           entradaSuccess.style.display = 'block';
         } else {
           // Outras modalidades: registro normal
@@ -807,6 +781,20 @@ btnLimparVoltas.addEventListener('click', async () => {
 
     async function registrarVoltaMtbFirebase(numero, athlete, dataHora, tempo){
       const voltaRef = push(ref(db, `voltasMtb/${numero}`));
+      await set(voltaRef, {
+        numero: numero,
+        atleta: athlete.atleta || '',
+        genero: athlete.genero || '',
+        categoria: athlete.categoria || '',
+        dataHora: dataHora,
+        tempo: tempo || '',
+        registradoPor: auth.currentUser ? auth.currentUser.email : null,
+        registradaEmISO: new Date().toISOString()
+      });
+    }
+
+    async function registrarVoltaDuathlonFirebase(numero, athlete, dataHora, tempo){
+      const voltaRef = push(ref(db, `voltasDuathlon/${numero}`));
       await set(voltaRef, {
         numero: numero,
         atleta: athlete.atleta || '',
@@ -1042,8 +1030,24 @@ btnLimparListagem.addEventListener('click', async () => {
         renderVoltasMtb(voltasPorAtleta);
         rebuildResultFilters();
       }, (err)=>{ console.error('Erro listener voltas MTB:', err); });
+
+      onValue(ref(db, 'voltasDuathlon'), (snap)=>{
+        const data = snap.val() || {};
+        const voltasPorAtleta = {};
+        Object.keys(data).forEach(numero => {
+          const voltasAtleta = data[numero];
+          if(voltasAtleta && typeof voltasAtleta === 'object'){
+            voltasPorAtleta[numero] = Object.keys(voltasAtleta).map(key => {
+              return Object.assign({id: key}, voltasAtleta[key]);
+            });
+          }
+        });
+        latestVoltasDuathlon = voltasPorAtleta;
+        renderVoltasDuathlon(voltasPorAtleta);
+        rebuildResultFilters();
+      }, (err)=>{ console.error('Erro listener voltas Duathlon:', err); });
     }
-      function renderListagem(rows){
+function renderListagem(rows){
       const q = (searchListagem.value || '').trim().toLowerCase();
       const filtered = rows.filter(r => !q || (r.numero && r.numero.toLowerCase().includes(q)) || (r.atleta && r.atleta.toLowerCase().includes(q)));
       let html = `<table><thead><tr><th>Número</th><th>Nome</th><th>Gênero</th><th>Modalidade</th><th>Categoria</th><th>Idade</th><th>Ações</th></tr></thead><tbody>`;
@@ -1107,6 +1111,43 @@ btnLimparListagem.addEventListener('click', async () => {
       
       html += `</tbody></table>`;
       tableVoltasMtb.innerHTML = html;
+    }
+
+    function renderVoltasDuathlon(voltasPorAtleta){
+      const filtroNumero = (filtroVoltasDuathlonNumero.value || '').trim().toLowerCase();
+      
+      let html = `<table><thead><tr><th>Número</th><th>Atleta</th><th>Volta #</th><th>Data/Hora</th><th>Tempo</th><th>Registrado Por</th></tr></thead><tbody>`;
+      
+      const numerosOrdenados = Object.keys(voltasPorAtleta).sort((a, b) => {
+        return parseInt(a) - parseInt(b);
+      });
+      
+      numerosOrdenados.forEach(numero => {
+        if(filtroNumero && !numero.includes(filtroNumero)) return;
+        
+        const voltas = voltasPorAtleta[numero];
+        if(voltas && voltas.length > 0){
+          voltas.sort((a, b) => {
+            const dtA = parseDMYTime(a.dataHora) || new Date(a.registradaEmISO);
+            const dtB = parseDMYTime(b.dataHora) || new Date(b.registradaEmISO);
+            return dtA - dtB;
+          });
+          
+          voltas.forEach((volta, index) => {
+            html += `<tr>
+              <td>${numero}</td>
+              <td>${escapeHtml(volta.atleta||'')}</td>
+              <td><strong>${index + 1}</strong></td>
+              <td>${escapeHtml(volta.dataHora||'')}</td>
+              <td>${escapeHtml(volta.tempo||'')}</td>
+              <td class="small">${escapeHtml(volta.registradoPor||'')}</td>
+            </tr>`;
+          });
+        }
+      });
+      
+      html += `</tbody></table>`;
+      tableVoltasDuathlon.innerHTML = html;
     }
 
     // Edit athlete from Listagem
@@ -1378,7 +1419,90 @@ btnLimparListagem.addEventListener('click', async () => {
         modalComprovante.style.display = 'none';
       }
     });
-      function rebuildResultFilters(){
+
+    // utils
+    function padNum(n){ return String(n).padStart(4,'0'); }
+    function parseDMYTime(s){
+      if(!s) return null;
+      const [datePart, timePart] = s.split(' ');
+      const [d,m,y] = datePart.split('/').map(Number);
+      let hh=0, mm=0, ss=0;
+      if(timePart){
+        [hh,mm,ss] = timePart.split(':').map(x=>Number(x));
+      }
+      return new Date(y, m-1, d, hh, mm, ss);
+    }
+    function formatDMYTime(dt){
+      if(!dt) return '';
+      const d = String(dt.getDate()).padStart(2,'0');
+      const m = String(dt.getMonth()+1).padStart(2,'0');
+      const y = String(dt.getFullYear());
+      const hh = String(dt.getHours()).padStart(2,'0');
+      const mm = String(dt.getMinutes()).padStart(2,'0');
+      const ss = String(dt.getSeconds()).padStart(2,'0');
+      return `${d}/${m}/${y} ${hh}:${mm}:${ss}`;
+    }
+    function formatTempoFromSeconds(totalSeconds){
+      if(totalSeconds == null) return '';
+      if(totalSeconds < 0) totalSeconds = 0;
+      const hh = Math.floor(totalSeconds/3600);
+      const mm = Math.floor((totalSeconds%3600)/60);
+      const ss = Math.floor(totalSeconds%60);
+      return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+    }
+
+    // Função para verificar intervalo mínimo entre voltas
+    function verificarIntervaloMinimo(voltasAtleta) {
+      if (!voltasAtleta || voltasAtleta.length === 0) return true; // Sem voltas anteriores, pode registrar
+      
+      const ultimaVolta = voltasAtleta[voltasAtleta.length - 1];
+      const agora = new Date();
+      const ultimaVoltaDt = parseDMYTime(ultimaVolta.dataHora) || new Date(ultimaVolta.registradaEmISO);
+      
+      const diferencaMs = agora.getTime() - ultimaVoltaDt.getTime();
+      const diferencaMinutos = diferencaMs / (1000 * 60);
+      
+      return diferencaMinutos >= 3; // Retorna true se passaram 3 minutos ou mais
+    }
+
+    // Últimos 10 números compartilhados via Firebase
+    function pushLastRegistrado(num) {
+      const lastRef = ref(db, 'ultimosRegistrados');
+      get(lastRef).then((snap) => {
+        let arr = snap.exists() ? snap.val() : [];
+        arr = arr.filter(x => x !== num);
+        arr.unshift(num);
+        arr = arr.slice(0, 10);
+        set(lastRef, arr);
+      });
+    }
+
+    function renderUltimosRegistrados() {
+      const el = document.getElementById('last5');
+      const lastRef = ref(db, 'ultimosRegistrados');
+      onValue(lastRef, (snap) => {
+        el.innerHTML = '';
+        const arr = snap.exists() ? snap.val() : [];
+        if (!arr.length) {
+          el.innerHTML = `<span class="small" style="color:#666">Nenhum registro ainda</span>`;
+          return;
+        }
+        arr.forEach(x => {
+          const div = document.createElement('div');
+          div.className = 'pill';
+          div.textContent = x;
+          div.onclick = () => { 
+            if(pageEntrada.classList.contains('hidden')) {
+              numeroInput.value = x; 
+              numeroInput.focus(); 
+            }
+          };
+          el.appendChild(div);
+        });
+      });
+    }
+
+    function rebuildResultFilters(){
       const modalidades = new Set();
       latestListagem.forEach(r=>{ if(r.modalidade) modalidades.add(r.modalidade); });
       latestLargadas.forEach(r=>{ if(r.modalidade) modalidades.add(r.modalidade); });
@@ -1446,6 +1570,39 @@ btnLimparListagem.addEventListener('click', async () => {
       return resultadosMtb;
     }
 
+    function calcularResultadosDuathlon(){
+      const resultadosDuathlon = [];
+      
+      Object.keys(latestVoltasDuathlon).forEach(numero => {
+        const voltas = latestVoltasDuathlon[numero];
+        if(voltas && voltas.length > 0){
+          const primeiraVolta = voltas[0];
+          const ultimaVolta = voltas[voltas.length - 1];
+          
+          resultadosDuathlon.push({
+            numero: numero,
+            atleta: primeiraVolta.atleta || '',
+            modalidade: 'DUATHLON CROSS',
+            categoria: primeiraVolta.categoria || '',
+            genero: primeiraVolta.genero || '',
+            chegada: ultimaVolta.dataHora || '',
+            tempo: ultimaVolta.tempo || '',
+            totalVoltas: voltas.length,
+            tempoTotal: tempoToSeconds(ultimaVolta.tempo)
+          });
+        }
+      });
+      
+      resultadosDuathlon.sort((a, b) => {
+        if(b.totalVoltas !== a.totalVoltas){
+          return b.totalVoltas - a.totalVoltas;
+        }
+        return a.tempoTotal - b.tempoTotal;
+      });
+      
+      return resultadosDuathlon;
+    }
+
     function renderResultados(rows){
       const fm = fModalidade.value;
       const fc = fCategoria.value;
@@ -1458,6 +1615,7 @@ btnLimparListagem.addEventListener('click', async () => {
         return true;
       });
 
+      // Adicionar resultados de MTB com voltas
       if((!fm || fm === 'MTB') && latestVoltasMtb && Object.keys(latestVoltasMtb).length > 0){
         const resultadosMtb = calcularResultadosMtb();
         filtered = filtered.filter(r => r.modalidade !== 'MTB');
@@ -1468,14 +1626,29 @@ btnLimparListagem.addEventListener('click', async () => {
         });
       }
 
+      // Adicionar resultados de Duathlon Cross com voltas
+      if((!fm || fm === 'DUATHLON CROSS') && latestVoltasDuathlon && Object.keys(latestVoltasDuathlon).length > 0){
+        const resultadosDuathlon = calcularResultadosDuathlon();
+        filtered = filtered.filter(r => r.modalidade !== 'DUATHLON CROSS');
+        resultadosDuathlon.forEach(rd => {
+          if((!fc || rd.categoria === fc) && (!fg || rd.genero === fg)){
+            filtered.push(rd);
+          }
+        });
+      }
+
       filtered.sort((a,b)=>{
-        if(a.modalidade === 'MTB' && b.modalidade === 'MTB' && a.totalVoltas && b.totalVoltas){
+        // Para MTB e Duathlon Cross, ordenar por voltas primeiro
+        if((a.modalidade === 'MTB' || a.modalidade === 'DUATHLON CROSS') && 
+           (b.modalidade === 'MTB' || b.modalidade === 'DUATHLON CROSS') && 
+           a.totalVoltas && b.totalVoltas){
           if(b.totalVoltas !== a.totalVoltas){
             return b.totalVoltas - a.totalVoltas;
           }
           return (a.tempoTotal || Infinity) - (b.tempoTotal || Infinity);
         }
         
+        // Para outras modalidades, ordenar por tempo
         const ta = tempoToSeconds(a.tempo);
         const tb = tempoToSeconds(b.tempo);
         if(ta === tb) {
