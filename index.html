@@ -4,6 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Resultados</title>
+<!-- Favicon (ícone na aba do navegador) -->
+    <link rel="icon" href="assets/img/favicon.ico" type="image/x-icon">
   <style>
     :root{--accent:#1e90ff;--accent-2:#ff8a00;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
     body{margin:0;background:#f6f8fb;color:#111;font-family:var(--font, Inter), sans-serif}
@@ -58,6 +60,15 @@
     .comprovante-formatos { display: flex; gap: 10px; margin: 15px 0; }
     .comprovante-formatos button { flex: 1; }
 
+    /* Estilo para a logo RC4 Sports */
+    .logo-rc4 {
+      height: 65px;
+      width: auto;
+      max-width: 140px;
+      object-fit: contain;
+      margin-left: 15px;
+    }
+
         /* Imagens de fundo para os comprovantes */
     .comprovante-story {
       background: url('https://lh3.googleusercontent.com/d/1pJrOTAbzY_3uTJZQKgKI72ATN3x3LoiR') center/cover no-repeat;
@@ -93,6 +104,10 @@
         max-width: 300px; 
         margin: 0 auto; 
       }
+      .logo-rc4 {
+        height: 40px;
+        max-width: 100px;
+      }
     }
   </style>
 </head>
@@ -124,8 +139,9 @@
           <div style="font-size:14px;color:#444">Entrada rápida de número (foco automático) — apenas pressione <strong>Enter</strong></div>
           <div style="margin-top:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
             <input id="numero-input" maxlength="10" class="big-input" placeholder="0000" autocomplete="off" inputmode="numeric" />
-            <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;flex-direction:row;gap:8px;align-items:center;margin-left:20px">
               <button id="btn-limpar" class="ghost">Limpar</button>
+              <img src="https://www.rc4sports.com.br/assets/img/Logo-RC4-Sports.png" alt="RC4 Sports" class="logo-rc4">
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
