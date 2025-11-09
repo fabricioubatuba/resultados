@@ -295,7 +295,6 @@
       </div>
     </div>
   </div>
-  
 <script type="module">
     const firebaseConfig = {
       apiKey: "AIzaSyBZqXrKnRGvM0BG5qrrE38R8zR25tacOzw",
@@ -370,112 +369,24 @@
     const btnAplicarFiltro = document.getElementById('btn-aplicar-filtro');
     const btnExport = document.getElementById('btn-export');
     const btnComprovante = document.getElementById('btn-comprovante');
-	btnAplicarFiltro.addEventListener('click', () => {
-  renderResultados(latestResultados);
-});
+    
+    // Elementos do modal de comprovante
+    const modalComprovante = document.getElementById('modal-comprovante');
+    const btnComprovanteStory = document.getElementById('btn-comprovante-story');
+    const btnComprovanteFeed = document.getElementById('btn-comprovante-feed');
+    const btnFecharComprovante = document.getElementById('btn-fechar-comprovante');
+    const btnDownloadComprovante = document.getElementById('btn-download-comprovante');
+    const comprovantePreview = document.getElementById('comprovante-preview');
+    const comprovanteData = document.getElementById('comprovante-data');
+    const comprovanteTexto = document.getElementById('comprovante-texto');
 
-
-// Botão para limpar todos os resultados registrados
-const btnLimparResultados = document.getElementById('btn-limpar-resultados');
-btnLimparResultados.addEventListener('click', async () => {
-  if (isVisitor || !auth.currentUser) {
-    alert('Ação proibida: modo visitante. Faça login para limpar resultados.');
-    return;
-  }
-  if (!confirm('Tem certeza que deseja apagar TODOS os resultados registrados? Essa ação não pode ser desfeita.')) return;
-  try {
-    await remove(ref(db, 'resultados'));
-    alert('Todos os resultados foram apagados com sucesso.');
-  } catch (err) {
-    console.error('Erro ao apagar resultados:', err);
-    alert('Erro ao limpar resultados: ' + (err.message || err));
-  }
-});
-
-// Botão para imprimir resultados filtrados
-const btnImprimirResultados = document.getElementById('btn-imprimir-resultados');
-btnImprimirResultados.addEventListener('click', () => {
-  // Verifica se há resultados exibidos
-  if (!filteredResultadosCache || filteredResultadosCache.length === 0) {
-    alert('Nenhum resultado disponível para impressão.');
-    return;
-  }
-
-  // Monta HTML de impressão
-  const win = window.open('', '_blank');
-  win.document.write(`
-    <html>
-      <head>
-        <title>Resultados Filtrados</title>
-        <style>
-          body { font-family: Arial, sans-serif; margin: 20px; }
-          h2 { text-align: center; }
-          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-          th, td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 14px; }
-          th { background: #f0f0f0; }
-          tr:nth-child(even) { background: #fafafa; }
-          @media print {
-            button { display: none; }
-          }
-        </style>
-      </head>
-      <body>
-        <h2>Resultados Filtrados</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Posição</th>
-              <th>Número</th>
-              <th>Atleta</th>
-              <th>Modalidade</th>
-              <th>Categoria</th>
-              <th>Gênero</th>
-              <th>Chegada</th>
-              <th>Tempo</th>
-              <th>Voltas</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${filteredResultadosCache.map((r, i) => `
-              <tr>
-                <td>${i + 1}º</td>
-                <td>${r.numero}</td>
-                <td>${r.atleta || ''}</td>
-                <td>${r.modalidade || ''}</td>
-                <td>${r.categoria || ''}</td>
-                <td>${r.genero || ''}</td>
-                <td>${r.chegada || ''}</td>
-                <td>${r.tempo || ''}</td>
-                <td>${r.totalVoltas ? r.totalVoltas : ''}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-        <div style="text-align:center;margin-top:30px;">
-          <button onclick="window.print()">🖨️ Imprimir</button>
-        </div>
-      </body>
-    </html>
-  `);
-  win.document.close();
-  win.focus();
-});
-// Botão para limpar o histórico dos últimos 10 atletas registrados
-const btnLimparUltimos = document.getElementById('btn-limpar-ultimos');
-btnLimparUltimos.addEventListener('click', async () => {
-  if (isVisitor || !auth.currentUser) {
-    alert('Ação proibida: modo visitante. Faça login para limpar o histórico.');
-    return;
-  }
-  if (!confirm('Tem certeza que deseja apagar o histórico dos últimos 10 atletas registrados?')) return;
-  try {
-    await remove(ref(db, 'ultimosRegistrados'));
-    alert('Histórico apagado com sucesso.');
-  } catch (err) {
-    console.error('Erro ao apagar últimos registrados:', err);
-    alert('Erro ao limpar histórico: ' + (err.message || err));
-  }
-});
+    // Botões de limpeza
+    const btnLimparResultados = document.getElementById('btn-limpar-resultados');
+    const btnImprimirResultados = document.getElementById('btn-imprimir-resultados');
+    const btnLimparUltimos = document.getElementById('btn-limpar-ultimos');
+    const btnLimparVoltas = document.getElementById('btn-limpar-voltas');
+    const btnLimparVoltasDuathlon = document.getElementById('btn-limpar-voltas-duathlon');
+    const btnLimparListagem = document.getElementById('btn-limpar-listagem');
 
     // Focus management (only on Entrada page)
     let focusInterval = null;
@@ -497,8 +408,8 @@ btnLimparUltimos.addEventListener('click', async () => {
     let latestListagem = [];
     let latestLargadas = [];
     let latestResultados = [];
-    let latestVoltasMtb = [];
-    let latestVoltasDuathlon = [];
+    let latestVoltasMtb = {};
+    let latestVoltasDuathlon = {};
     let filteredResultadosCache = [];
     let isVisitor = false;
     let atletaSelecionadoComprovante = null;
@@ -599,29 +510,32 @@ btnLimparUltimos.addEventListener('click', async () => {
     navLargadas.addEventListener('click', ()=> { if(isVisitor){ alert('Modo visitante: acesso somente leitura.'); return; } showPage('largadas'); });
     navResultados.addEventListener('click', ()=> showPage('resultados'));
 
-    function showPage(p){
-      pageEntrada.classList.add('hidden');
-      pageVoltasMtb.classList.add('hidden');
-      pageVoltasDuathlon.classList.add('hidden');
-      pageListagem.classList.add('hidden');
-      pageLargadas.classList.add('hidden');
-      pageResultados.classList.add('hidden');
-      disableEntradaFocus();
-      entradaSuccess.style.display = 'none';
-      entradaError.style.display = 'none';
-      entradaWarning.style.display = 'none';
-      
-      if(p==='entrada'){ 
-        if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; }
-        pageEntrada.classList.remove('hidden'); enableEntradaFocus(); 
-      }
-      if(p==='voltas-mtb'){ if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; } pageVoltasMtb.classList.remove('hidden'); }
-      if(p==='voltas-duathlon'){ if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; } pageVoltasDuathlon.classList.remove('hidden'); }
-      if(p==='listagem'){ if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; } pageListagem.classList.remove('hidden'); }
-      if(p==='largadas'){ if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; } pageLargadas.classList.remove('hidden'); }
-      if(p==='resultados') pageResultados.classList.remove('hidden');
-    }
-
+function showPage(p){
+  pageEntrada.classList.add('hidden');
+  pageVoltasMtb.classList.add('hidden');
+  pageVoltasDuathlon.classList.add('hidden');
+  pageListagem.classList.add('hidden');
+  pageLargadas.classList.add('hidden');
+  pageResultados.classList.add('hidden');
+  disableEntradaFocus();
+  entradaSuccess.style.display = 'none';
+  entradaError.style.display = 'none';
+  entradaWarning.style.display = 'none';
+  
+  if(p==='entrada'){ 
+    if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; }
+    pageEntrada.classList.remove('hidden'); enableEntradaFocus(); 
+  }
+  if(p==='voltas-mtb'){ if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; } pageVoltasMtb.classList.remove('hidden'); }
+  if(p==='voltas-duathlon'){ if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; } pageVoltasDuathlon.classList.remove('hidden'); }
+  if(p==='listagem'){ if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; } pageListagem.classList.remove('hidden'); }
+  if(p==='largadas'){ if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; } pageLargadas.classList.remove('hidden'); }
+  if(p==='resultados') {
+    pageResultados.classList.remove('hidden');
+    // ATUALIZAR OS RESULTADOS SEMPRE QUE A PÁGINA FOR ACESSADA
+    renderResultados(latestResultados);
+  }
+}
     // Enter registers arrival
     numeroInput.addEventListener('keydown', (e) => {
       if(e.key === 'Enter'){
@@ -635,40 +549,6 @@ btnLimparUltimos.addEventListener('click', async () => {
     filtroVoltasNumero.addEventListener('input', () => {
       renderVoltasMtb(latestVoltasMtb);
     });
-
-// Botão para limpar todos os registros de voltas MTB
-const btnLimparVoltas = document.getElementById('btn-limpar-voltas');
-btnLimparVoltas.addEventListener('click', async () => {
-  if (isVisitor || !auth.currentUser) {
-    alert('Ação proibida: modo visitante. Faça login para limpar voltas.');
-    return;
-  }
-  if (!confirm('Tem certeza que deseja apagar TODOS os registros de voltas MTB? Essa ação não pode ser desfeita.')) return;
-  try {
-    await remove(ref(db, 'voltasMtb'));
-    alert('Todos os registros de voltas MTB foram apagados com sucesso.');
-  } catch (err) {
-    console.error('Erro ao apagar voltas MTB:', err);
-    alert('Erro ao limpar voltas MTB: ' + (err.message || err));
-  }
-});
-
-// Botão para limpar todos os registros de voltas Duathlon
-const btnLimparVoltasDuathlon = document.getElementById('btn-limpar-voltas-duathlon');
-btnLimparVoltasDuathlon.addEventListener('click', async () => {
-  if (isVisitor || !auth.currentUser) {
-    alert('Ação proibida: modo visitante. Faça login para limpar voltas.');
-    return;
-  }
-  if (!confirm('Tem certeza que deseja apagar TODOS os registros de voltas Duathlon? Essa ação não pode ser desfeita.')) return;
-  try {
-    await remove(ref(db, 'voltasDuathlon'));
-    alert('Todos os registros de voltas Duathlon foram apagados com sucesso.');
-  } catch (err) {
-    console.error('Erro ao apagar voltas Duathlon:', err);
-    alert('Erro ao limpar voltas Duathlon: ' + (err.message || err));
-  }
-});
 
     btnLimparFiltroVoltas.addEventListener('click', () => {
       filtroVoltasNumero.value = '';
@@ -684,8 +564,184 @@ btnLimparVoltasDuathlon.addEventListener('click', async () => {
       filtroVoltasDuathlonNumero.value = '';
       renderVoltasDuathlon(latestVoltasDuathlon);
     });
+    // ========== FUNÇÕES DE LIMPEZA TRANSFERIDAS DO OFFLINE ==========
 
-      async function registrarChegada(){
+    // Botão para limpar TODOS os resultados (incluindo MTB e Duathlon)
+    btnLimparResultados.addEventListener('click', async () => {
+      if (isVisitor || !auth.currentUser) {
+        alert('Ação proibida: modo visitante. Faça login para limpar resultados.');
+        return;
+      }
+      
+      if (!confirm('Tem certeza que deseja apagar TODOS os resultados registrados? Isso inclui:\n\n- Resultados de chegada\n- Voltas MTB\n- Voltas Duathlon\n\nEssa ação não pode ser desfeita.')) return;
+      
+      try {
+        // Limpar resultados de chegada
+        await remove(ref(db, 'resultados'));
+        
+        // Limpar voltas MTB
+        await remove(ref(db, 'voltasMtb'));
+        
+        // Limpar voltas Duathlon
+        await remove(ref(db, 'voltasDuathlon'));
+        
+        // Limpar cache de resultados filtrados
+        filteredResultadosCache = [];
+        
+        // Atualizar todas as visualizações
+        renderResultados([]);
+        renderVoltasMtb({});
+        renderVoltasDuathlon({});
+        
+        alert('Todos os resultados foram apagados com sucesso!');
+      } catch (err) {
+        console.error('Erro ao apagar resultados:', err);
+        alert('Erro ao limpar resultados: ' + (err.message || err));
+      }
+    });
+
+    // Botão para limpar todos os registros de voltas MTB
+    btnLimparVoltas.addEventListener('click', async () => {
+      if (isVisitor || !auth.currentUser) {
+        alert('Ação proibida: modo visitante. Faça login para limpar voltas.');
+        return;
+      }
+      if (!confirm('Tem certeza que deseja apagar TODOS os registros de voltas MTB? Essa ação não pode ser desfeita.')) return;
+      try {
+        await remove(ref(db, 'voltasMtb'));
+        // Atualizar resultados para remover os resultados de MTB
+        renderResultados(latestResultados);
+        alert('Todos os registros de voltas MTB foram apagados com sucesso.');
+      } catch (err) {
+        console.error('Erro ao apagar voltas MTB:', err);
+        alert('Erro ao limpar voltas MTB: ' + (err.message || err));
+      }
+    });
+
+    // Botão para limpar todos os registros de voltas Duathlon
+    btnLimparVoltasDuathlon.addEventListener('click', async () => {
+      if (isVisitor || !auth.currentUser) {
+        alert('Ação proibida: modo visitante. Faça login para limpar voltas.');
+        return;
+      }
+      if (!confirm('Tem certeza que deseja apagar TODOS os registros de voltas Duathlon? Essa ação não pode ser desfeita.')) return;
+      try {
+        await remove(ref(db, 'voltasDuathlon'));
+        // Atualizar resultados para remover os resultados de Duathlon
+        renderResultados(latestResultados);
+        alert('Todos os registros de voltas Duathlon foram apagados com sucesso.');
+      } catch (err) {
+        console.error('Erro ao apagar voltas Duathlon:', err);
+        alert('Erro ao limpar voltas Duathlon: ' + (err.message || err));
+      }
+    });
+
+    // Botão para limpar lista completa de atletas
+    btnLimparListagem.addEventListener('click', async () => {
+      if (isVisitor || !auth.currentUser) {
+        alert('Ação proibida: modo visitante. Faça login para limpar a listagem.');
+        return;
+      }
+      if (!confirm('Tem certeza que deseja apagar TODOS os atletas registrados? Essa ação não pode ser desfeita.')) return;
+      try {
+        await remove(ref(db, 'listagem'));
+        alert('Todos os atletas foram apagados com sucesso.');
+      } catch (err) {
+        console.error('Erro ao apagar lista de atletas:', err);
+        alert('Erro ao limpar lista: ' + (err.message || err));
+      }
+    });
+
+    // Botão para limpar o histórico dos últimos 10 atletas registrados
+    btnLimparUltimos.addEventListener('click', async () => {
+      if (isVisitor || !auth.currentUser) {
+        alert('Ação proibida: modo visitante. Faça login para limpar o histórico.');
+        return;
+      }
+      if (!confirm('Tem certeza que deseja apagar o histórico dos últimos 10 atletas registrados?')) return;
+      try {
+        await remove(ref(db, 'ultimosRegistrados'));
+        alert('Histórico apagado com sucesso.');
+      } catch (err) {
+        console.error('Erro ao apagar últimos registrados:', err);
+        alert('Erro ao limpar histórico: ' + (err.message || err));
+      }
+    });
+
+    // Botão para imprimir resultados filtrados
+    btnImprimirResultados.addEventListener('click', () => {
+      // Verifica se há resultados exibidos
+      if (!filteredResultadosCache || filteredResultadosCache.length === 0) {
+        alert('Nenhum resultado disponível para impressão.');
+        return;
+      }
+
+      // Monta HTML de impressão
+      const win = window.open('', '_blank');
+      win.document.write(`
+        <html>
+          <head>
+            <title>Resultados Filtrados</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              h2 { text-align: center; }
+              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+              th, td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 14px; }
+              th { background: #f0f0f0; }
+              tr:nth-child(even) { background: #fafafa; }
+              @media print {
+                button { display: none; }
+              }
+            </style>
+          </head>
+          <body>
+            <h2>Resultados Filtrados</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Posição</th>
+                  <th>Número</th>
+                  <th>Atleta</th>
+                  <th>Modalidade</th>
+                  <th>Categoria</th>
+                  <th>Gênero</th>
+                  <th>Chegada</th>
+                  <th>Tempo</th>
+                  <th>Voltas</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${filteredResultadosCache.map((r, i) => `
+                  <tr>
+                    <td>${i + 1}º</td>
+                    <td>${r.numero}</td>
+                    <td>${r.atleta || ''}</td>
+                    <td>${r.modalidade || ''}</td>
+                    <td>${r.categoria || ''}</td>
+                    <td>${r.genero || ''}</td>
+                    <td>${r.chegada || ''}</td>
+                    <td>${r.tempo || ''}</td>
+                    <td>${r.totalVoltas ? r.totalVoltas : ''}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+            <div style="text-align:center;margin-top:30px;">
+              <button onclick="window.print()">🖨️ Imprimir</button>
+            </div>
+          </body>
+        </html>
+      `);
+      win.document.close();
+      win.focus();
+    });
+
+    btnAplicarFiltro.addEventListener('click', () => {
+      renderResultados(latestResultados);
+    });
+
+    // ========== FIM DAS FUNÇÕES DE LIMPEZA ==========
+    async function registrarChegada(){
       if(isVisitor || !auth.currentUser){
         alert('Ação proibida: modo visitante ou não autenticado. Faça login para registrar chegadas.');
         return;
@@ -919,23 +975,6 @@ btnLimparVoltasDuathlon.addEventListener('click', async () => {
       reader.readAsText(file, 'utf-8');
     });
 
-    // Botão para limpar lista completa de atletas
-const btnLimparListagem = document.getElementById('btn-limpar-listagem');
-btnLimparListagem.addEventListener('click', async () => {
-  if (isVisitor || !auth.currentUser) {
-    alert('Ação proibida: modo visitante. Faça login para limpar a listagem.');
-    return;
-  }
-  if (!confirm('Tem certeza que deseja apagar TODOS os atletas registrados? Essa ação não pode ser desfeita.')) return;
-  try {
-    await remove(ref(db, 'listagem'));
-    alert('Todos os atletas foram apagados com sucesso.');
-  } catch (err) {
-    console.error('Erro ao apagar lista de atletas:', err);
-    alert('Erro ao limpar lista: ' + (err.message || err));
-  }
-});
-
     btnAddAthlete.onclick = ()=>{
       if(isVisitor || !auth.currentUser){ alert('Ação proibida: modo visitante. Faça login para adicionar atletas.'); return; }
       const overlay = document.createElement('div'); overlay.className='overlay';
@@ -1030,10 +1069,13 @@ btnLimparListagem.addEventListener('click', async () => {
       }, (err)=>{ console.error('Erro listener largadas:', err); });
 
       onValue(ref(db, 'resultados'), (snap)=>{
-        const data = snap.val() || {};
-        latestResultados = Object.keys(data).map(k => Object.assign({numero: k}, data[k]));
-        renderResultados(latestResultados);
-      }, (err)=>{ console.error('Erro listener resultados:', err); });
+  const data = snap.val() || {};
+  latestResultados = Object.keys(data).map(k => Object.assign({numero: k}, data[k]));
+  // ATUALIZAR SE A PÁGINA DE RESULTADOS ESTIVER VISÍVEL
+  if(!pageResultados.classList.contains('hidden')) {
+    renderResultados(latestResultados);
+  }
+}, (err)=>{ console.error('Erro listener resultados:', err); });
 
       onValue(ref(db, 'voltasMtb'), (snap)=>{
         const data = snap.val() || {};
@@ -1067,7 +1109,8 @@ btnLimparListagem.addEventListener('click', async () => {
         rebuildResultFilters();
       }, (err)=>{ console.error('Erro listener voltas Duathlon:', err); });
     }
-function renderListagem(rows){
+
+    function renderListagem(rows){
       const q = (searchListagem.value || '').trim().toLowerCase();
       const filtered = rows.filter(r => !q || (r.numero && r.numero.toLowerCase().includes(q)) || (r.atleta && r.atleta.toLowerCase().includes(q)));
       let html = `<table><thead><tr><th>Número</th><th>Nome</th><th>Gênero</th><th>Modalidade</th><th>Categoria</th><th>Idade</th><th>Ações</th></tr></thead><tbody>`;
