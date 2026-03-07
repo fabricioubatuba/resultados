@@ -113,7 +113,7 @@
 </head>
 <body>
   <header>
-    <div class="brand">4 HORAS DE MTB E TRAIL RUN MATA ATLÂNTICA</div>
+    <div class="brand">Resultado Em Tempo Real</div>
     <div id="user-area" class="small"></div>
   </header>
 
@@ -135,27 +135,12 @@
     <!-- App -->
     <div class="card hidden" id="app-card">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-        <div style="flex:1;min-width:280px">
-          <div style="font-size:14px;color:#444">Entrada rápida de número (foco automático) — apenas pressione <strong>Enter</strong></div>
-          <div style="margin-top:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-            <input id="numero-input" maxlength="10" class="big-input" placeholder="0000" autocomplete="off" inputmode="numeric" />
-            <div style="display:flex;flex-direction:row;gap:8px;align-items:center;margin-left:20px">
-              <button id="btn-limpar" class="ghost">Limpar</button>
-              <img src="https://www.rc4sports.com.br/assets/img/Logo-RC4-Sports.png" alt="RC4 Sports" class="logo-rc4">
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
-  <div class="small">Últimos 10 atletas registrados (compartilhado)</div>
-  <button id="btn-limpar-ultimos" class="ghost">Limpar</button>
-</div>
-<div class="last5" id="last5"></div>
-
-        </div>
+        
 
         <nav id="main-nav">
           <button id="nav-entrada" class="secondary">Registrar Chegada</button>
-          <button id="nav-voltas-mtb" class="secondary">Voltas MTB</button>
-          <button id="nav-voltas-duathlon" class="secondary">Voltas Duathlon</button>
+          <button id="nav-voltas-mtb" class="secondary">Voltas MTB (4 horas)</button>
+          <button id="nav-voltas-duathlon" class="secondary">Voltas Duathlon (4 horas)</button>
           <button id="nav-listagem" class="secondary">Listagem Completa</button>
           <button id="nav-largadas" class="secondary">Largadas</button>
           <button id="nav-resultados" class="secondary">Resultados</button>
@@ -167,7 +152,32 @@
 
       <div id="pages">
         <!-- ENTRADA -->
-        <div id="page-entrada">
+<div id="page-entrada">
+  <!-- NOVO: Bloco movido para dentro da página de entrada -->
+  <div style="flex:1;min-width:280px; margin-bottom:20px;">
+    <div style="font-size:14px;color:#444">Entrada rápida de número (foco automático) — apenas pressione <strong>Enter</strong></div>
+    <div style="margin-top:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <input id="numero-input" maxlength="10" class="big-input" placeholder="0000" autocomplete="off" inputmode="numeric" />
+      <div style="display:flex;flex-direction:row;gap:8px;align-items:center;margin-left:20px">
+        <button id="btn-limpar" class="ghost">Limpar</button>
+        <img src="https://www.rc4sports.com.br/assets/img/Logo-RC4-Sports.png" alt="RC4 Sports" class="logo-rc4">
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
+      <div class="small">Últimos 10 atletas registrados (compartilhado)</div>
+      <button id="btn-limpar-ultimos" class="ghost">Limpar</button>
+    </div>
+    <div class="last5" id="last5"></div>
+  </div>
+  
+  <!-- Mensagens existentes -->
+  <div style="margin-top:12px">
+    <p class="small">Aponte o leitor de código de barras e pressione Enter. O cursor permanecerá aqui enquanto estiver nesta tela.</p>
+    <p class="small success" id="entrada-success" style="display:none"></p>
+    <p class="small error" id="entrada-error" style="display:none"></p>
+    <p class="small warning" id="entrada-warning" style="display:none"></p>
+  </div>
+</div>
           <div style="margin-top:12px">
             <p class="small">Aponte o leitor de código de barras e pressione Enter. O cursor permanecerá aqui enquanto estiver nesta tela.</p>
             <p class="small success" id="entrada-success" style="display:none"></p>
@@ -774,18 +784,28 @@ function showPage(p){
           }
         }
 
-        let largadaInicioStr = null;
-        if(athlete && athlete.modalidade){
-          const largSnap = await get(child(ref(db), `largadas/${athlete.modalidade}/inicio`));
-          if(largSnap.exists()) largadaInicioStr = largSnap.val();
-        }
-        
+let largadaInicioStr = null;
+
+if(athlete && athlete.modalidade_original) {
+  const modalidadeParaPath = processarModalidadeParaStorage(athlete.modalidade_original);
+  const largSnap = await get(child(ref(db), `largadas/${modalidadeParaPath}/inicio`));
+  if(largSnap.exists()) largadaInicioStr = largSnap.val();
+
+} else if(athlete && athlete.modalidade) {
+  const modalidadeParaPath = processarModalidadeParaStorage(athlete.modalidade);
+  console.log('Buscando largada para modalidade (fallback):', athlete.modalidade, '-> path:', modalidadeParaPath);
+  const largSnap = await get(child(ref(db), `largadas/${modalidadeParaPath}/inicio`));
+  if(largSnap.exists()) largadaInicioStr = largSnap.val();
+}
         const chegadaDt = new Date();
         const chegadaStr = formatDMYTime(chegadaDt);
         let tempoStr = null;
         
         if(largadaInicioStr){
           const largDt = parseDMYTime(largadaInicioStr);
+console.log("largadaInicioStr:", largadaInicioStr);
+console.log("largDt:", largDt);
+console.log("chegadaDt:", chegadaDt);
           const diffSec = Math.round((chegadaDt.getTime() - largDt.getTime())/1000);
           tempoStr = formatTempoFromSeconds(diffSec);
         }
@@ -821,17 +841,18 @@ function showPage(p){
         } else {
           // Outras modalidades: registro normal
           await set(ref(db, `resultados/${numero}`), {
-            chegada: chegadaStr,
-            tempo: tempoStr || '',
-            atleta: (athlete && athlete.atleta) || '',
-            genero: (athlete && athlete.genero) || '',
-            modalidade: (athlete && athlete.modalidade) || '',
-            categoria: (athlete && athlete.categoria) || '',
-            data_nascimento: (athlete && athlete.data_nascimento) || '',
-            idade: (athlete && athlete.idade) || '',
-            registradoPor: auth.currentUser ? auth.currentUser.email : null,
-            registradaEmISO: new Date().toISOString()
-          });
+  chegada: chegadaStr,
+  tempo: tempoStr || '',
+  atleta: (athlete && athlete.atleta) || '',
+  genero: (athlete && athlete.genero) || '',
+  modalidade: (athlete && athlete.modalidade) || '',
+  modalidade_original: (athlete && athlete.modalidade_original) || (athlete && athlete.modalidade) || '', // Adicionar esta linha
+  categoria: (athlete && athlete.categoria) || '',
+  data_nascimento: (athlete && athlete.data_nascimento) || '',
+  idade: (athlete && athlete.idade) || '',
+  registradoPor: auth.currentUser ? auth.currentUser.email : null,
+  registradaEmISO: new Date().toISOString()
+});
           entradaSuccess.textContent = `Chegada registrada para atleta ${numero}`;
           entradaSuccess.style.display = 'block';
         }
@@ -916,64 +937,171 @@ function showPage(p){
         form.onsubmit = async (e)=>{
           e.preventDefault();
           try{
-            await set(ref(db, `listagem/${numero}`), {
-              atleta: form.q_atleta.value,
-              genero: form.q_genero.value,
-              modalidade: form.q_modalidade.value,
-              categoria: form.q_categoria.value,
-              data_nascimento: form.q_data_nasc.value,
-              idade: form.q_idade.value
-            });
+const modalidadeOriginal = form.q_modalidade.value;
+const modalidadeSanitizada = processarModalidadeParaStorage(modalidadeOriginal);
+
+await set(ref(db, `listagem/${numero}`), {
+  atleta: form.q_atleta.value,
+  genero: form.q_genero.value,
+  modalidade: modalidadeSanitizada,
+  modalidade_original: modalidadeOriginal, // Opcional
+  categoria: form.q_categoria.value,
+  data_nascimento: form.q_data_nasc.value,
+  idade: form.q_idade.value
+});
             form.remove(); overlay.remove(); resolve();
           }catch(err){ form.remove(); overlay.remove(); reject(err); }
         };
       });
     }
 
-    // CSV upload (listagem)
-    csvUpload.addEventListener('change', (e)=>{
-      if(isVisitor || !auth.currentUser){
-        alert('Ação proibida: modo visitante. Faça login para importar CSV.');
-        csvUpload.value = '';
-        return;
+// CSV upload (listagem)
+csvUpload.addEventListener('change', (e)=>{
+  if(isVisitor || !auth.currentUser){
+    alert('Ação proibida: modo visitante. Faça login para importar CSV.');
+    csvUpload.value = '';
+    return;
+  }
+  const file = e.target.files[0];
+  if(!file) return;
+  
+  // Salvar o nome da prova no Firebase
+  const nomeProva = extrairNomeProva(file.name);
+  set(ref(db, 'config/nomeProva'), nomeProva)
+    .catch(err => console.error('Erro ao salvar nome da prova:', err));
+  
+  const reader = new FileReader();
+  reader.onload = async () => {
+    const text = reader.result;
+    const lines = text.split(/\r?\n/).filter(Boolean);
+    
+    // Detectar o separador (; ou ,)
+    let separator = ',';
+    if (lines.length > 0) {
+      if (lines[0].includes(';')) separator = ';';
+    }
+    
+    let start = 0;
+    if(lines.length>0){
+      const firstCols = lines[0].split(separator);
+      if(isNaN(Number(firstCols[0].replace(/\D/g,'')))) start = 1;
+    }
+    
+    // Mapa para armazenar modalidades encontradas no CSV
+    const modalidadesNoCSV = new Set();
+    
+    try{
+      // Primeira passada: identificar todas as modalidades
+      for(let i=start; i<lines.length; i++){
+        const cols = lines[i].split(separator).map(c=>c.trim().replace(/^"|"$/g, ''));
+        if(cols.length < 2) continue;
+        
+        const modalidadeOriginal = cols[3] || '';
+        if (modalidadeOriginal) {
+          modalidadesNoCSV.add(modalidadeOriginal.trim());
+        }
       }
-      const file = e.target.files[0];
-      if(!file) return;
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const text = reader.result;
-        const lines = text.split(/\r?\n/).filter(Boolean);
-        let start = 0;
-        if(lines.length>0){
-          const firstCols = lines[0].split(',');
-          if(isNaN(Number(firstCols[0].replace(/\D/g,'')))) start = 1;
-        }
-        try{
-          for(let i=start; i<lines.length; i++){
-            const cols = lines[i].split(',').map(c=>c.trim());
-            if(cols.length < 2) continue;
-            const rawNumero = cols[0].replace(/\D/g,'');
-            if(!rawNumero) continue;
-            const numero = padNum(rawNumero);
-            const data = {
-              atleta: cols[1] || '',
-              genero: cols[2] || '',
-              modalidade: cols[3] || '',
-              categoria: cols[4] || '',
-              data_nascimento: cols[5] || '',
-              idade: cols[6] || ''
-            };
-            await set(ref(db, `listagem/${numero}`), data);
+      
+      console.log('Modalidades encontradas no CSV:', [...modalidadesNoCSV]);
+      
+      // Verificar largadas para cada modalidade encontrada
+      const largadasSnapshot = await get(ref(db, 'largadas'));
+      const largadasExistentes = largadasSnapshot.exists() ? largadasSnapshot.val() : {};
+      
+      // Mapa de modalidades que precisam de largada
+      const modalidadesSemLargada = [];
+      
+      for (const modalidade of modalidadesNoCSV) {
+        const modalidadePath = processarModalidadeParaStorage(modalidade);
+        let largadaEncontrada = false;
+        
+        // Verificar se existe largada para esta modalidade
+        if (largadasExistentes[modalidadePath] && largadasExistentes[modalidadePath].inicio) {
+          largadaEncontrada = true;
+        } else {
+          // Verificar também por aproximação (ignorando underscores)
+          for (const [key, value] of Object.entries(largadasExistentes)) {
+            const keyNormalizada = key.replace(/_/g, ' ').toLowerCase();
+            const modalidadeNormalizada = modalidade.replace(/_/g, ' ').toLowerCase();
+            
+            if (keyNormalizada === modalidadeNormalizada || 
+                keyNormalizada.includes(modalidadeNormalizada) || 
+                modalidadeNormalizada.includes(keyNormalizada)) {
+              largadaEncontrada = true;
+              break;
+            }
           }
-          alert('CSV importado com sucesso!');
-          csvUpload.value = '';
-        }catch(err){
-          console.error('Erro importar CSV', err);
-          alert('Erro ao importar CSV: ' + (err.message||err));
         }
-      };
-      reader.readAsText(file, 'utf-8');
-    });
+        
+        if (!largadaEncontrada) {
+          modalidadesSemLargada.push(modalidade);
+        }
+      }
+      
+      // Se houver modalidades sem largada, mostrar alerta
+      if (modalidadesSemLargada.length > 0) {
+        const mensagem = `
+⚠️ ATENÇÃO: Foram encontradas modalidades sem largada cadastrada!
+
+${modalidadesSemLargada.map(m => `• ${m}`).join('\n')}
+
+Para que o tempo seja calculado corretamente durante o registro de chegadas, 
+você precisa cadastrar a largada para cada uma destas modalidades na seção "Largadas".
+
+Deseja continuar com o upload mesmo assim?
+        `;
+        
+        if (!confirm(mensagem)) {
+          csvUpload.value = '';
+          return;
+        }
+      }
+      
+      // Segunda passada: importar os dados
+      let contadorImportados = 0;
+      for(let i=start; i<lines.length; i++){
+        const cols = lines[i].split(separator).map(c=>c.trim().replace(/^"|"$/g, ''));
+        if(cols.length < 2) continue;
+        
+        const rawNumero = cols[0].replace(/\D/g,'');
+        if(!rawNumero) continue;
+        const numero = padNum(rawNumero);
+        
+        const modalidadeOriginal = cols[3] || '';
+        const modalidadeSanitizada = processarModalidadeParaStorage(modalidadeOriginal);
+        
+        const data = {
+          atleta: cols[1] || '',
+          genero: cols[2] || '',
+          modalidade: modalidadeSanitizada,
+          modalidade_original: modalidadeOriginal,
+          categoria: cols[4] || '',
+          data_nascimento: cols[5] || '',
+          idade: cols[5] || ''
+        };
+        
+        await set(ref(db, `listagem/${numero}`), data);
+        contadorImportados++;
+      }
+      
+      // Mostrar resumo final
+      if (modalidadesSemLargada.length > 0) {
+        alert(`✅ Upload concluído! ${contadorImportados} atletas importados.\n\n` +
+              `📋 Lembre-se de cadastrar as largadas para:\n` +
+              modalidadesSemLargada.map(m => `   • ${m}`).join('\n'));
+      } else {
+        alert(`✅ Upload concluído! ${contadorImportados} atletas importados.\n` +
+              `✅ Todas as modalidades já possuem largada cadastrada.`);
+      }
+      
+      csvUpload.value = '';
+    }catch(err){
+      console.error('Erro importar CSV', err);
+      alert('Erro ao importar CSV: ' + (err.message||err));
+    }
+  };
+  reader.readAsText(file, 'utf-8');
+});
 
     btnAddAthlete.onclick = ()=>{
       if(isVisitor || !auth.currentUser){ alert('Ação proibida: modo visitante. Faça login para adicionar atletas.'); return; }
@@ -1007,48 +1135,81 @@ function showPage(p){
         if(!raw){ alert('Número inválido'); return; }
         const numero = padNum(raw);
         try{
-          await set(ref(db, `listagem/${numero}`), {
-            atleta: form.a_nome.value,
-            genero: form.a_genero.value,
-            modalidade: form.a_modalidade.value,
-            categoria: form.a_categoria.value,
-            data_nascimento: form.a_data_nasc.value,
-            idade: form.a_idade.value
-          });
+const modalidadeOriginal = form.a_modalidade.value;
+const modalidadeSanitizada = processarModalidadeParaStorage(modalidadeOriginal);
+
+await set(ref(db, `listagem/${numero}`), {
+  atleta: form.a_nome.value,
+  genero: form.a_genero.value,
+  modalidade: modalidadeSanitizada,
+  modalidade_original: modalidadeOriginal, // Opcional
+  categoria: form.a_categoria.value,
+  data_nascimento: form.a_data_nasc.value,
+  idade: form.a_idade.value
+});
           form.remove(); overlay.remove();
         }catch(err){ console.error(err); alert('Erro ao salvar: '+(err.message||err)); }
       };
     };
 
-    // New largada modal
-    btnAddLargada.onclick = ()=>{
-      if(isVisitor || !auth.currentUser){ alert('Ação proibida: modo visitante. Faça login para adicionar largadas.'); return; }
-      const overlay = document.createElement('div'); overlay.className='overlay';
-      const form = document.createElement('form'); form.className='modal';
-      form.innerHTML = `
-        <h4>Nova Largada</h4>
-        <input id="l_modalidade" placeholder="Modalidade (ex: MTB)" required />
-        <label class="small">Início (DD/MM/YYYY HH:MM:SS)</label>
-        <input id="l_inicio" placeholder="22/10/2025 08:00:00" required />
-        <div class="form-actions">
-          <button type="button" id="l_cancel" class="ghost">Cancelar</button>
-          <button type="submit">Salvar</button>
-        </div>
-      `;
-      document.body.appendChild(overlay); document.body.appendChild(form);
-      form.l_modalidade.focus();
-      form.l_cancel.onclick = ()=>{ form.remove(); overlay.remove(); };
-      form.onsubmit = async (e)=>{
-        e.preventDefault();
-        const modalidade = form.l_modalidade.value.trim();
-        const inicioStr = form.l_inicio.value.trim();
-        if(!modalidade || !inicioStr){ alert('Preencha todos os campos'); return; }
-        try{
-          await set(ref(db, `largadas/${modalidade}/inicio`), inicioStr);
-          form.remove(); overlay.remove();
-        }catch(err){ console.error(err); alert('Erro ao salvar largada: '+(err.message||err)); }
-      };
-    };
+
+// New largada modal
+btnAddLargada.onclick = ()=>{
+  if(isVisitor || !auth.currentUser){ alert('Ação proibida: modo visitante. Faça login para adicionar largadas.'); return; }
+  const overlay = document.createElement('div'); overlay.className='overlay';
+  const form = document.createElement('form'); form.className='modal';
+  form.innerHTML = `
+    <h4>Nova Largada</h4>
+    <input id="l_modalidade" placeholder="Modalidade (ex: MTB)" required />
+    <label class="small">Início (DD/MM/YYYY HH:MM:SS)</label>
+    <input id="l_inicio" placeholder="22/10/2025 08:00:00" required />
+    <div class="form-actions">
+      <button type="button" id="l_cancel" class="ghost">Cancelar</button>
+      <button type="submit">Salvar</button>
+    </div>
+  `;
+  document.body.appendChild(overlay); document.body.appendChild(form);
+  form.l_modalidade.focus();
+  form.l_cancel.onclick = ()=>{ form.remove(); overlay.remove(); };
+  form.onsubmit = async (e)=>{
+    e.preventDefault();
+    const modalidadeOriginal = form.l_modalidade.value.trim();
+    const modalidadeSanitizada = processarModalidadeParaStorage(modalidadeOriginal);
+    const inicioStr = form.l_inicio.value.trim();
+    
+    if(!modalidadeOriginal || !inicioStr){ alert('Preencha todos os campos'); return; }
+    
+    // VALIDAÇÃO DO FORMATO DA DATA/HORA
+    const regexDataHoraCompleta = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}$/;
+    if (!regexDataHoraCompleta.test(inicioStr)) {
+      alert('Formato de data/hora inválido! Use o formato: DD/MM/AAAA HH:MM:SS (com segundos)');
+      return;
+    }
+    
+    // Validação adicional para verificar se a data é válida
+    const [dataPart, horaPart] = inicioStr.split(' ');
+    const [dia, mes, ano] = dataPart.split('/').map(Number);
+    const [hora, minuto, segundo] = horaPart.split(':').map(Number);
+    
+    const dataObj = new Date(ano, mes-1, dia, hora, minuto, segundo);
+    if (dataObj.getFullYear() !== ano || 
+        dataObj.getMonth() !== mes-1 || 
+        dataObj.getDate() !== dia ||
+        dataObj.getHours() !== hora ||
+        dataObj.getMinutes() !== minuto ||
+        dataObj.getSeconds() !== segundo) {
+      alert('Data inválida! Verifique se o dia, mês e ano estão corretos.');
+      return;
+    }
+    
+    try{
+      await set(ref(db, `largadas/${modalidadeSanitizada}/inicio`), inicioStr);
+      // Opcional: guardar o nome original
+      await set(ref(db, `largadas/${modalidadeSanitizada}/modalidade_original`), modalidadeOriginal);
+      form.remove(); overlay.remove();
+    }catch(err){ console.error(err); alert('Erro ao salvar largada: '+(err.message||err)); }
+  };
+};
 
     // Real-time listeners and state
     function startRealtimeListeners(){
@@ -1111,18 +1272,38 @@ function showPage(p){
     }
 
     function renderListagem(rows){
-      const q = (searchListagem.value || '').trim().toLowerCase();
-      const filtered = rows.filter(r => !q || (r.numero && r.numero.toLowerCase().includes(q)) || (r.atleta && r.atleta.toLowerCase().includes(q)));
-      let html = `<table><thead><tr><th>Número</th><th>Nome</th><th>Gênero</th><th>Modalidade</th><th>Categoria</th><th>Idade</th><th>Ações</th></tr></thead><tbody>`;
-      filtered.forEach(r=>{
-        html += `<tr>
-          <td>${r.numero}</td>
-          <td>${escapeHtml(r.atleta||'')}</td>
-          <td>${escapeHtml(r.genero||'')}</td>
-          <td>${escapeHtml(r.modalidade||'')}</td>
-          <td>${escapeHtml(r.categoria||'')}</td>
-          <td>${escapeHtml(r.idade||'')}</td>
-          <td>`;
+  const q = (searchListagem.value || '').trim().toLowerCase();
+  const filtered = rows.filter(r => !q || (r.numero && r.numero.toLowerCase().includes(q)) || (r.atleta && r.atleta.toLowerCase().includes(q)));
+  let html = `<table><thead><tr><th>Número</th><th>Nome</th><th>Gênero</th><th>Modalidade</th><th>Categoria</th><th>Idade</th><th>Ações</th></tr></thead><tbody>`;
+  filtered.forEach(r=>{
+    // Pega o nome original se existir, senão usa o sanitizado mesmo
+    // Função para garantir que a modalidade seja exibida corretamente
+function getModalidadeParaExibicao(r) {
+  if (r.modalidade_original) {
+    return r.modalidade_original;
+  }
+  if (r.modalidade) {
+    // Converte _ para . em números (ex: "Trail_Run_6_5K" -> "Trail Run 6.5K")
+    return r.modalidade
+      .replace(/_/g, ' ')
+      .replace(/(\d+)\s+(\d+)/g, '$1.$2')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+  return '';
+}
+
+// No loop de renderização, use:
+const modalidadeExibicao = getModalidadeParaExibicao(r);
+    
+    html += `<tr>
+      <td>${r.numero}</td>
+      <td>${escapeHtml(r.atleta||'')}</td>
+      <td>${escapeHtml(r.genero||'')}</td>
+      <td>${escapeHtml(modalidadeExibicao)}</td>  <!-- LINHA ALTERADA -->
+      <td>${escapeHtml(r.categoria||'')}</td>
+      <td>${escapeHtml(r.idade||'')}</td>
+      <td>`;
         if(!isVisitor && auth.currentUser){
           html += `<button data-num="${r.numero}" class="btn-edit">Editar</button>
                    <button data-num="${r.numero}" class="btn-delete ghost">Apagar</button>`;
@@ -1248,14 +1429,18 @@ function showPage(p){
             const rawNew = (form.e_numero.value || '').replace(/\D/g,'');
             if(!rawNew){ alert('Número inválido'); return; }
             const newNumero = padNum(rawNew);
-            const payload = {
-              atleta: form.e_nome.value,
-              genero: form.e_genero.value,
-              modalidade: form.e_modalidade.value,
-              categoria: form.e_categoria.value,
-              data_nascimento: form.e_data_nasc.value,
-              idade: form.e_idade.value
-            };
+const modalidadeOriginal = form.e_modalidade.value;
+const modalidadeSanitizada = processarModalidadeParaStorage(modalidadeOriginal);
+
+const payload = {
+  atleta: form.e_nome.value,
+  genero: form.e_genero.value,
+  modalidade: modalidadeSanitizada,
+  modalidade_original: modalidadeOriginal, // Opcional
+  categoria: form.e_categoria.value,
+  data_nascimento: form.e_data_nasc.value,
+  idade: form.e_idade.value
+};
             if(newNumero === numero){
               await update(ref(db, `listagem/${numero}`), payload);
             } else {
@@ -1346,72 +1531,94 @@ function showPage(p){
       }
     });
 
-    function abrirModalComprovante() {
-      if (filteredResultadosCache.length === 0) {
-        alert('Nenhum resultado disponível para gerar comprovante.');
-        return;
-      }
-      
-      atualizarPreviewComprovante();
-      modalComprovante.style.display = 'flex';
-    }
+function abrirModalComprovante() {
+  if (filteredResultadosCache.length === 0) {
+    alert('Nenhum resultado disponível para gerar comprovante.');
+    return;
+  }
+  
+  // Buscar o nome da prova do Firebase
+  get(ref(db, 'config/nomeProva')).then((snap) => {
+    const nomeProva = snap.exists() ? snap.val() : '4 HORAS MATA ATLÂNTICA';
+    
+    // Armazenar o nome da prova em uma variável global ou no próprio modal
+    window.nomeProvaAtual = nomeProva;
+    
+    atualizarPreviewComprovante();
+    modalComprovante.style.display = 'flex';
+  }).catch(err => {
+    console.error('Erro ao buscar nome da prova:', err);
+    window.nomeProvaAtual = '4 HORAS MATA ATLÂNTICA';
+    atualizarPreviewComprovante();
+    modalComprovante.style.display = 'flex';
+  });
+}
 
-    function atualizarPreviewComprovante() {
-      if (!atletaSelecionadoComprovante) return;
-      
-      const atletasMesmaCategoria = filteredResultadosCache.filter(a => 
-        a.categoria === atletaSelecionadoComprovante.categoria && 
-        a.modalidade === atletaSelecionadoComprovante.modalidade
-      );
-      const posicaoCategoria = atletasMesmaCategoria.findIndex(a => a.numero === atletaSelecionadoComprovante.numero) + 1;
-      
-      const posicaoGeral = filteredResultadosCache.findIndex(a => a.numero === atletaSelecionadoComprovante.numero) + 1;
-      
-      // EXTRAIR PRIMEIRO E ÚLTIMO NOME
-      const nomeCompleto = atletaSelecionadoComprovante.atleta || '';
-      const partesNome = nomeCompleto.split(' ').filter(part => part.trim() !== '');
-      const nomeSimplificado = partesNome.length > 1 
-        ? `${partesNome[0]} ${partesNome[partesNome.length - 1]}`
-        : partesNome[0] || '';
-      
-      comprovanteData.innerHTML = `
-        <div class="comprovante-item">
-          <span class="comprovante-item-label">Atleta:</span>
-          <span>${escapeHtml(nomeSimplificado)}</span>
-        </div>
-        <div class="comprovante-item">
-          <span class="comprovante-item-label">Modalidade:</span>
-          <span>${escapeHtml(atletaSelecionadoComprovante.modalidade || '')}</span>
-        </div>
-        <div class="comprovante-item">
-          <span class="comprovante-item-label">Categoria:</span>
-          <span>${escapeHtml(atletaSelecionadoComprovante.categoria || '')}</span>
-        </div>
-        <div class="comprovante-item">
-          <span class="comprovante-item-label">Tempo Final:</span>
-          <span>${escapeHtml(atletaSelecionadoComprovante.tempo || '')}</span>
-        </div>
-        ${atletaSelecionadoComprovante.totalVoltas ? `
-        <div class="comprovante-item">
-          <span class="comprovante-item-label">Voltas:</span>
-          <span>${atletaSelecionadoComprovante.totalVoltas}</span>
-        </div>
-        ` : ''}
-        <div class="comprovante-item">
-          <span class="comprovante-item-label">Posição Geral:</span>
-          <span>${posicaoGeral}º</span>
-        </div>
-        <div class="comprovante-item">
-          <span class="comprovante-item-label">Posição Categoria:</span>
-          <span>${posicaoCategoria}º</span>
-        </div>
-        <div class="comprovante-item-centralizado">
-  <span>${new Date().toLocaleDateString('pt-BR')}</span>
-</div>
-      `;
-      
-      comprovanteTexto.textContent = ` ${atletaSelecionadoComprovante.tempo || '--:--:--'}`;
-    }
+function atualizarPreviewComprovante() {
+  if (!atletaSelecionadoComprovante) return;
+  
+  // Usar o nome da prova armazenado ou o padrão
+  const nomeProva = window.nomeProvaAtual || '4 HORAS MATA ATLÂNTICA';
+  
+  const atletasMesmaCategoria = filteredResultadosCache.filter(a => 
+    a.categoria === atletaSelecionadoComprovante.categoria && 
+    a.modalidade === atletaSelecionadoComprovante.modalidade
+  );
+  const posicaoCategoria = atletasMesmaCategoria.findIndex(a => a.numero === atletaSelecionadoComprovante.numero) + 1;
+  
+  const posicaoGeral = filteredResultadosCache.findIndex(a => a.numero === atletaSelecionadoComprovante.numero) + 1;
+  
+  // EXTRAIR PRIMEIRO E ÚLTIMO NOME
+  const nomeCompleto = atletaSelecionadoComprovante.atleta || '';
+  const partesNome = nomeCompleto.split(' ').filter(part => part.trim() !== '');
+  const nomeSimplificado = partesNome.length > 1 
+    ? `${partesNome[0]} ${partesNome[partesNome.length - 1]}`
+    : partesNome[0] || '';
+  
+  // Atualizar o título do comprovante
+  const comprovanteTitle = document.querySelector('.comprovante-title');
+  if (comprovanteTitle) {
+    comprovanteTitle.textContent = nomeProva;
+  }
+  
+  comprovanteData.innerHTML = `
+    <div class="comprovante-item">
+      <span class="comprovante-item-label">Atleta:</span>
+      <span>${escapeHtml(nomeSimplificado)}</span>
+    </div>
+    <div class="comprovante-item">
+      <span class="comprovante-item-label">Modalidade:</span>
+      <span>${escapeHtml(atletaSelecionadoComprovante.modalidade || '')}</span>
+    </div>
+    <div class="comprovante-item">
+      <span class="comprovante-item-label">Categoria:</span>
+      <span>${escapeHtml(atletaSelecionadoComprovante.categoria || '')}</span>
+    </div>
+    <div class="comprovante-item">
+      <span class="comprovante-item-label">Tempo Final:</span>
+      <span>${escapeHtml(atletaSelecionadoComprovante.tempo || '')}</span>
+    </div>
+    ${atletaSelecionadoComprovante.totalVoltas ? `
+    <div class="comprovante-item">
+      <span class="comprovante-item-label">Voltas:</span>
+      <span>${atletaSelecionadoComprovante.totalVoltas}</span>
+    </div>
+    ` : ''}
+    <div class="comprovante-item">
+      <span class="comprovante-item-label">Posição Geral:</span>
+      <span>${posicaoGeral}º</span>
+    </div>
+    <div class="comprovante-item">
+      <span class="comprovante-item-label">Posição Categoria:</span>
+      <span>${posicaoCategoria}º</span>
+    </div>
+    <div class="comprovante-item-centralizado">
+      <span>${new Date().toLocaleDateString('pt-BR')}</span>
+    </div>
+  `;
+  
+  comprovanteTexto.textContent = ` ${atletaSelecionadoComprovante.tempo || '--:--:--'}`;
+}
 
     // Event listeners para comprovante
     btnComprovanteStory.addEventListener('click', (e) => {
@@ -1528,7 +1735,56 @@ function showPage(p){
       return diferencaMinutos >= 3; // Retorna true se passaram 3 minutos ou mais
     }
 
-    // Últimos 10 números compartilhados via Firebase
+// Função para sanitizar nomes de modalidade (remover caracteres proibidos)
+function sanitizarModalidade(modalidade) {
+  if (!modalidade) return '';
+  // Substitui caracteres proibidos por underscore
+  return modalidade
+    .replace(/\./g, '_')     // Ponto vira underscore
+    .replace(/#/g, '_')      // # vira underscore
+    .replace(/\$/g, '_')     // $ vira underscore
+    .replace(/\[/g, '_')     // [ vira underscore
+    .replace(/\]/g, '_')     // ] vira underscore
+    .trim();
+}
+
+// Função para restaurar o nome original para exibição (se necessário)
+function restaurarModalidade(modalidadeSanitizada) {
+  if (!modalidadeSanitizada) return '';
+  // Aqui você pode adicionar regras de restauração se precisar
+  // Por enquanto, só retorna o mesmo valor com _ no lugar do .
+  return modalidadeSanitizada.replace(/_/g, '.');
+}
+
+// Função para processar modalidade antes de salvar no Firebase
+function processarModalidadeParaStorage(modalidade) {
+  return sanitizarModalidade(modalidade);
+}
+
+// Função para extrair nome da prova do nome do arquivo
+function extrairNomeProva(nomeArquivo) {
+  if (!nomeArquivo) return '4 HORAS MATA ATLÂNTICA'; // Nome padrão
+  
+  // Remove a extensão .csv
+  let nomeSemExtensao = nomeArquivo.replace(/\.csv$/i, '');
+  
+  // Substitui underlines por espaços e remove caracteres especiais
+  let nomeFormatado = nomeSemExtensao
+    .replace(/_/g, ' ')
+    .replace(/-/g, ' ')
+    .replace(/\s+/g, ' ') // Remove espaços extras
+    .trim()
+    .toUpperCase(); // Deixa em maiúsculas como no original
+  
+  return nomeFormatado || '4 HORAS MATA ATLÂNTICA';
+}
+
+// Função para processar modalidade ao exibir para o usuário
+function processarModalidadeParaExibicao(modalidade) {
+  return modalidade; // Por enquanto, mantém como está
+}    
+
+// Últimos 10 números compartilhados via Firebase
     function pushLastRegistrado(num) {
       const lastRef = ref(db, 'ultimosRegistrados');
       get(lastRef).then((snap) => {
@@ -1566,20 +1822,68 @@ function showPage(p){
     }
 
     function rebuildResultFilters(){
-      const modalidades = new Set();
-      latestListagem.forEach(r=>{ if(r.modalidade) modalidades.add(r.modalidade); });
-      latestLargadas.forEach(r=>{ if(r.modalidade) modalidades.add(r.modalidade); });
-      const categorias = new Set();
-      latestListagem.forEach(r=>{ if(r.categoria) categorias.add(r.categoria); });
-      latestResultados.forEach(r=>{ if(r.categoria) categorias.add(r.categoria); });
-      const generos = new Set();
-      latestListagem.forEach(r=>{ if(r.genero) generos.add(r.genero); });
-      latestResultados.forEach(r=>{ if(r.genero) generos.add(r.genero); });
+  const modalidades = new Set();
+  
+  // Função para padronizar modalidade para exibição (converter _ para .)
+  function padronizarModalidadeParaExibicao(modalidade) {
+    if (!modalidade) return '';
+    // Substitui _ por . apenas quando for um separador decimal
+    // Exemplo: "Trail_Run_6_5K" -> "Trail Run 6.5K"
+    return modalidade
+      .replace(/_/g, ' ')  // Primeiro converte _ para espaço
+      .replace(/(\d+)\s+(\d+)/g, '$1.$2') // Converte "6 5" para "6.5"
+      .replace(/\s+/g, ' ') // Remove espaços extras
+      .trim();
+  }
 
-      fillSelect(fModalidade, [...modalidades].sort(), 'Todas');
-      fillSelect(fCategoria, [...categorias].sort(), 'Todas');
-      fillSelect(fGenero, [...generos].sort(), 'Todos');
+  // Coletar modalidades da listagem (usando modalidade_original se disponível)
+  latestListagem.forEach(r => { 
+    if (r.modalidade_original) {
+      modalidades.add(r.modalidade_original);
+    } else if (r.modalidade) {
+      // Se não tiver original, padroniza a versão sanitizada
+      const padronizada = padronizarModalidadeParaExibicao(r.modalidade);
+      modalidades.add(padronizada);
     }
+  });
+  
+  // Coletar modalidades das largadas
+  latestLargadas.forEach(r => { 
+    if (r.modalidade_original) {
+      modalidades.add(r.modalidade_original);
+    } else if (r.modalidade) {
+      const padronizada = padronizarModalidadeParaExibicao(r.modalidade);
+      modalidades.add(padronizada);
+    }
+  });
+
+  // Remover possíveis duplicatas com _ (versões sanitizadas)
+  const modalidadesLimpias = new Set();
+  modalidades.forEach(mod => {
+    // Se a modalidade contém _, tenta encontrar uma versão sem _
+    if (mod.includes('_')) {
+      const versaoLimpa = mod.replace(/_/g, ' ');
+      // Só adiciona se não existir uma versão igual sem _
+      if (![...modalidades].some(m => m.replace(/_/g, ' ') === versaoLimpa && !m.includes('_'))) {
+        modalidadesLimpias.add(mod);
+      }
+    } else {
+      modalidadesLimpias.add(mod);
+    }
+  });
+
+  const categorias = new Set();
+  latestListagem.forEach(r => { if(r.categoria) categorias.add(r.categoria); });
+  latestResultados.forEach(r => { if(r.categoria) categorias.add(r.categoria); });
+  
+  const generos = new Set();
+  latestListagem.forEach(r => { if(r.genero) generos.add(r.genero); });
+  latestResultados.forEach(r => { if(r.genero) generos.add(r.genero); });
+
+  fillSelect(fModalidade, [...modalidadesLimpias].sort(), 'Todas');
+  fillSelect(fCategoria, [...categorias].sort(), 'Todas');
+  fillSelect(fGenero, [...generos].sort(), 'Todos');
+}
 
     function fillSelect(selectEl, arr, firstLabel){
       selectEl.innerHTML = `<option value="">${firstLabel||'Todos'}</option>`;
@@ -1737,21 +2041,40 @@ function showPage(p){
         <th>Ações</th>
       </tr></thead><tbody>`;
 
-      filtered.forEach((r, i)=>{
-        const pos = (r.tempo || r.totalVoltas) ? `${i+1}º` : '';
-        const voltasInfo = r.totalVoltas ? `${r.totalVoltas} volta(s)` : '';
-        
-        html += `<tr>
-          <td><strong>${pos}</strong></td>
-          <td>${r.numero}</td>
-          <td>${escapeHtml(r.atleta||'')}</td>
-          <td>${escapeHtml(r.modalidade||'')}</td>
-          <td>${escapeHtml(r.categoria||'')}</td>
-          <td>${escapeHtml(r.genero||'')}</td>
-          <td>${escapeHtml(r.chegada||'')}</td>
-          <td>${escapeHtml(r.tempo||'')}</td>
-          <td>${voltasInfo}</td>
-          <td>`;
+filtered.forEach((r, i)=>{
+    const pos = (r.tempo || r.totalVoltas) ? `${i+1}º` : '';
+    const voltasInfo = r.totalVoltas ? `${r.totalVoltas} volta(s)` : '';
+    // Pega o nome original se existir, senão usa o sanitizado mesmo
+    // Função para garantir que a modalidade seja exibida corretamente
+function getModalidadeParaExibicao(r) {
+  if (r.modalidade_original) {
+    return r.modalidade_original;
+  }
+  if (r.modalidade) {
+    // Converte _ para . em números (ex: "Trail_Run_6_5K" -> "Trail Run 6.5K")
+    return r.modalidade
+      .replace(/_/g, ' ')
+      .replace(/(\d+)\s+(\d+)/g, '$1.$2')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+  return '';
+}
+
+// No loop de renderização, use:
+const modalidadeExibicao = getModalidadeParaExibicao(r);
+    
+    html += `<tr>
+      <td><strong>${pos}</strong></td>
+      <td>${r.numero}</td>
+      <td>${escapeHtml(r.atleta||'')}</td>
+      <td>${escapeHtml(modalidadeExibicao)}</td>  <!-- LINHA ALTERADA -->
+      <td>${escapeHtml(r.categoria||'')}</td>
+      <td>${escapeHtml(r.genero||'')}</td>
+      <td>${escapeHtml(r.chegada||'')}</td>
+      <td>${escapeHtml(r.tempo||'')}</td>
+      <td>${voltasInfo}</td>
+      <td>`;
         if(!isVisitor && auth.currentUser){
           html += `<button data-num="${r.numero}" class="btn-edit-res">Editar</button>`;
         } else {
