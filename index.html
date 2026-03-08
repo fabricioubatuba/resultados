@@ -1821,68 +1821,53 @@ function processarModalidadeParaExibicao(modalidade) {
       });
     }
 
-    function rebuildResultFilters(){
-  const modalidades = new Set();
+    function rebuildResultFilters() {
+  const modalidades = new Map(); // Usa Map para manter a versão original
+  const categorias = new Map();
+  const generos = new Map();
   
-  // Função para padronizar modalidade para exibição (converter _ para .)
-  function padronizarModalidadeParaExibicao(modalidade) {
-    if (!modalidade) return '';
-    // Substitui _ por . apenas quando for um separador decimal
-    // Exemplo: "Trail_Run_6_5K" -> "Trail Run 6.5K"
-    return modalidade
-      .replace(/_/g, ' ')  // Primeiro converte _ para espaço
-      .replace(/(\d+)\s+(\d+)/g, '$1.$2') // Converte "6 5" para "6.5"
-      .replace(/\s+/g, ' ') // Remove espaços extras
-      .trim();
+  function normalizarParaComparacao(str) {
+    return str.toLowerCase().trim().replace(/\s+/g, ' ');
   }
 
-  // Coletar modalidades da listagem (usando modalidade_original se disponível)
-  latestListagem.forEach(r => { 
-    if (r.modalidade_original) {
-      modalidades.add(r.modalidade_original);
-    } else if (r.modalidade) {
-      // Se não tiver original, padroniza a versão sanitizada
-      const padronizada = padronizarModalidadeParaExibicao(r.modalidade);
-      modalidades.add(padronizada);
-    }
-  });
-  
-  // Coletar modalidades das largadas
-  latestLargadas.forEach(r => { 
-    if (r.modalidade_original) {
-      modalidades.add(r.modalidade_original);
-    } else if (r.modalidade) {
-      const padronizada = padronizarModalidadeParaExibicao(r.modalidade);
-      modalidades.add(padronizada);
-    }
-  });
-
-  // Remover possíveis duplicatas com _ (versões sanitizadas)
-  const modalidadesLimpias = new Set();
-  modalidades.forEach(mod => {
-    // Se a modalidade contém _, tenta encontrar uma versão sem _
-    if (mod.includes('_')) {
-      const versaoLimpa = mod.replace(/_/g, ' ');
-      // Só adiciona se não existir uma versão igual sem _
-      if (![...modalidades].some(m => m.replace(/_/g, ' ') === versaoLimpa && !m.includes('_'))) {
-        modalidadesLimpias.add(mod);
+  // APENAS da listagem
+  latestListagem.forEach(atleta => {
+    // Categorias
+    if (atleta.categoria && atleta.categoria.trim() !== '') {
+      const normalizada = normalizarParaComparacao(atleta.categoria);
+      if (!categorias.has(normalizada)) {
+        categorias.set(normalizada, atleta.categoria.trim());
       }
-    } else {
-      modalidadesLimpias.add(mod);
+    }
+    
+    // Modalidades
+    let modalidadeOriginal = '';
+    if (atleta.modalidade_original && atleta.modalidade_original.trim() !== '') {
+      modalidadeOriginal = atleta.modalidade_original.trim();
+    } else if (atleta.modalidade && atleta.modalidade.trim() !== '') {
+      modalidadeOriginal = padronizarModalidadeParaExibicao(atleta.modalidade);
+    }
+    
+    if (modalidadeOriginal) {
+      const normalizada = normalizarParaComparacao(modalidadeOriginal);
+      if (!modalidades.has(normalizada)) {
+        modalidades.set(normalizada, modalidadeOriginal);
+      }
+    }
+    
+    // Gêneros
+    if (atleta.genero && atleta.genero.trim() !== '') {
+      const normalizada = normalizarParaComparacao(atleta.genero);
+      if (!generos.has(normalizada)) {
+        generos.set(normalizada, atleta.genero.trim());
+      }
     }
   });
 
-  const categorias = new Set();
-  latestListagem.forEach(r => { if(r.categoria) categorias.add(r.categoria); });
-  latestResultados.forEach(r => { if(r.categoria) categorias.add(r.categoria); });
-  
-  const generos = new Set();
-  latestListagem.forEach(r => { if(r.genero) generos.add(r.genero); });
-  latestResultados.forEach(r => { if(r.genero) generos.add(r.genero); });
-
-  fillSelect(fModalidade, [...modalidadesLimpias].sort(), 'Todas');
-  fillSelect(fCategoria, [...categorias].sort(), 'Todas');
-  fillSelect(fGenero, [...generos].sort(), 'Todos');
+  // Extrair os valores originais dos Maps e ordenar
+  fillSelect(fModalidade, [...modalidades.values()].sort((a, b) => a.localeCompare(b, 'pt-BR')), 'Todas');
+  fillSelect(fCategoria, [...categorias.values()].sort((a, b) => a.localeCompare(b, 'pt-BR')), 'Todas');
+  fillSelect(fGenero, [...generos.values()].sort((a, b) => a.localeCompare(b, 'pt-BR')), 'Todos');
 }
 
     function fillSelect(selectEl, arr, firstLabel){
@@ -1970,105 +1955,129 @@ function processarModalidadeParaExibicao(modalidade) {
       return resultadosDuathlon;
     }
 
-    function renderResultados(rows){
-      const fm = fModalidade.value;
-      const fc = fCategoria.value;
-      const fg = fGenero.value;
+function renderResultados(rows){
+  const fm = fModalidade.value;
+  const fc = fCategoria.value;
+  const fg = fGenero.value;
+  
+  // Função para normalizar modalidade para comparação
+  function normalizarModalidadeParaComparacao(modalidade) {
+    if (!modalidade) return '';
+    // Converte o formato de exibição (com espaços) para o formato de storage (com underscores)
+    return modalidade
+      .replace(/\./g, '_')     // Substitui ponto por underscore
+      .replace(/\s+/g, '_')     // Substitui espaços por underscores
+      .toUpperCase();           // Garante maiúsculas
+  }
+
+  let filtered = rows.filter(r => {
+    // Para modalidade, precisamos comparar considerando os diferentes formatos
+    if (fm) {
+      const modalidadeStorage = normalizarModalidadeParaComparacao(fm);
+      const modalidadeRow = r.modalidade || '';
+      const modalidadeOriginalRow = r.modalidade_original || '';
       
-      let filtered = rows.filter(r=>{
-        if(fm && r.modalidade !== fm) return false;
-        if(fc && r.categoria !== fc) return false;
-        if(fg && r.genero !== fg) return false;
-        return true;
-      });
+      // Verifica se alguma das versões corresponde
+      const corresponde = 
+        modalidadeRow === fm || 
+        modalidadeRow === modalidadeStorage ||
+        modalidadeOriginalRow === fm ||
+        modalidadeOriginalRow === modalidadeStorage;
+      
+      if (!corresponde) return false;
+    }
+    
+    if (fc && r.categoria !== fc) return false;
+    if (fg && r.genero !== fg) return false;
+    return true;
+  });
 
-      // Adicionar resultados de MTB com voltas
-      if((!fm || fm === 'MTB') && latestVoltasMtb && Object.keys(latestVoltasMtb).length > 0){
-        const resultadosMtb = calcularResultadosMtb();
-        filtered = filtered.filter(r => r.modalidade !== 'MTB');
-        resultadosMtb.forEach(rm => {
-          if((!fc || rm.categoria === fc) && (!fg || rm.genero === fg)){
-            filtered.push(rm);
-          }
-        });
+  // Adicionar resultados de MTB com voltas
+  if((!fm || fm === 'MTB' || fm === 'MTB') && latestVoltasMtb && Object.keys(latestVoltasMtb).length > 0){
+    const resultadosMtb = calcularResultadosMtb();
+    filtered = filtered.filter(r => r.modalidade !== 'MTB');
+    resultadosMtb.forEach(rm => {
+      if((!fc || rm.categoria === fc) && (!fg || rm.genero === fg)){
+        filtered.push(rm);
       }
+    });
+  }
 
-      // Adicionar resultados de Duathlon Cross com voltas
-      if((!fm || fm === 'DUATHLON CROSS') && latestVoltasDuathlon && Object.keys(latestVoltasDuathlon).length > 0){
-        const resultadosDuathlon = calcularResultadosDuathlon();
-        filtered = filtered.filter(r => r.modalidade !== 'DUATHLON CROSS');
-        resultadosDuathlon.forEach(rd => {
-          if((!fc || rd.categoria === fc) && (!fg || rd.genero === fg)){
-            filtered.push(rd);
-          }
-        });
+  // Adicionar resultados de Duathlon Cross com voltas
+  if((!fm || fm === 'DUATHLON CROSS' || fm === 'DUATHLON_CROSS') && latestVoltasDuathlon && Object.keys(latestVoltasDuathlon).length > 0){
+    const resultadosDuathlon = calcularResultadosDuathlon();
+    filtered = filtered.filter(r => r.modalidade !== 'DUATHLON CROSS');
+    resultadosDuathlon.forEach(rd => {
+      if((!fc || rd.categoria === fc) && (!fg || rd.genero === fg)){
+        filtered.push(rd);
       }
+    });
+  }
 
-      filtered.sort((a,b)=>{
-        // Para MTB e Duathlon Cross, ordenar por voltas primeiro
-        if((a.modalidade === 'MTB' || a.modalidade === 'DUATHLON CROSS') && 
-           (b.modalidade === 'MTB' || b.modalidade === 'DUATHLON CROSS') && 
-           a.totalVoltas && b.totalVoltas){
-          if(b.totalVoltas !== a.totalVoltas){
-            return b.totalVoltas - a.totalVoltas;
-          }
-          return (a.tempoTotal || Infinity) - (b.tempoTotal || Infinity);
-        }
-        
-        // Para outras modalidades, ordenar por tempo
-        const ta = tempoToSeconds(a.tempo);
-        const tb = tempoToSeconds(b.tempo);
-        if(ta === tb) {
-          const da = a.registradaEmISO ? new Date(a.registradaEmISO) : (a.chegada ? parseDMYTime(a.chegada) : new Date(0));
-          const dbb = b.registradaEmISO ? new Date(b.registradaEmISO) : (b.chegada ? parseDMYTime(b.chegada) : new Date(0));
-          return da - dbb;
-        }
-        return ta - tb;
-      });
+  filtered.sort((a,b)=>{
+    // Para MTB e Duathlon Cross, ordenar por voltas primeiro
+    if((a.modalidade === 'MTB' || a.modalidade === 'DUATHLON CROSS') && 
+       (b.modalidade === 'MTB' || b.modalidade === 'DUATHLON CROSS') && 
+       a.totalVoltas && b.totalVoltas){
+      if(b.totalVoltas !== a.totalVoltas){
+        return b.totalVoltas - a.totalVoltas;
+      }
+      return (a.tempoTotal || Infinity) - (b.tempoTotal || Infinity);
+    }
+    
+    // Para outras modalidades, ordenar por tempo
+    const ta = tempoToSeconds(a.tempo);
+    const tb = tempoToSeconds(b.tempo);
+    if(ta === tb) {
+      const da = a.registradaEmISO ? new Date(a.registradaEmISO) : (a.chegada ? parseDMYTime(a.chegada) : new Date(0));
+      const dbb = b.registradaEmISO ? new Date(b.registradaEmISO) : (b.chegada ? parseDMYTime(b.chegada) : new Date(0));
+      return da - dbb;
+    }
+    return ta - tb;
+  });
 
-      filteredResultadosCache = filtered;
+  filteredResultadosCache = filtered;
 
-      let html = `<table><thead><tr>
-        <th>Posição</th>
-        <th>Número</th>
-        <th>Atleta</th>
-        <th>Modalidade</th>
-        <th>Categoria</th>
-        <th>Gênero</th>
-        <th>Chegada</th>
-        <th>Tempo</th>
-        <th>Voltas</th>
-        <th>Ações</th>
-      </tr></thead><tbody>`;
+  let html = `<table><thead><tr>
+    <th>Posição</th>
+    <th>Número</th>
+    <th>Atleta</th>
+    <th>Modalidade</th>
+    <th>Categoria</th>
+    <th>Gênero</th>
+    <th>Chegada</th>
+    <th>Tempo</th>
+    <th>Voltas</th>
+    <th>Ações</th>
+  </tr></thead><tbody>`;
 
-filtered.forEach((r, i)=>{
+  filtered.forEach((r, i)=>{
     const pos = (r.tempo || r.totalVoltas) ? `${i+1}º` : '';
     const voltasInfo = r.totalVoltas ? `${r.totalVoltas} volta(s)` : '';
-    // Pega o nome original se existir, senão usa o sanitizado mesmo
+    
     // Função para garantir que a modalidade seja exibida corretamente
-function getModalidadeParaExibicao(r) {
-  if (r.modalidade_original) {
-    return r.modalidade_original;
-  }
-  if (r.modalidade) {
-    // Converte _ para . em números (ex: "Trail_Run_6_5K" -> "Trail Run 6.5K")
-    return r.modalidade
-      .replace(/_/g, ' ')
-      .replace(/(\d+)\s+(\d+)/g, '$1.$2')
-      .replace(/\s+/g, ' ')
-      .trim();
-  }
-  return '';
-}
+    function getModalidadeParaExibicao(r) {
+      if (r.modalidade_original) {
+        return r.modalidade_original;
+      }
+      if (r.modalidade) {
+        // Converte _ para . em números (ex: "Trail_Run_6_5K" -> "Trail Run 6.5K")
+        return r.modalidade
+          .replace(/_/g, ' ')
+          .replace(/(\d+)\s+(\d+)/g, '$1.$2')
+          .replace(/\s+/g, ' ')
+          .trim();
+      }
+      return '';
+    }
 
-// No loop de renderização, use:
-const modalidadeExibicao = getModalidadeParaExibicao(r);
+    const modalidadeExibicao = getModalidadeParaExibicao(r);
     
     html += `<tr>
       <td><strong>${pos}</strong></td>
       <td>${r.numero}</td>
       <td>${escapeHtml(r.atleta||'')}</td>
-      <td>${escapeHtml(modalidadeExibicao)}</td>  <!-- LINHA ALTERADA -->
+      <td>${escapeHtml(modalidadeExibicao)}</td>
       <td>${escapeHtml(r.categoria||'')}</td>
       <td>${escapeHtml(r.genero||'')}</td>
       <td>${escapeHtml(r.chegada||'')}</td>
@@ -2083,24 +2092,24 @@ const modalidadeExibicao = getModalidadeParaExibicao(r);
         html += `</td></tr>`;
       });
 
-      html += `</tbody></table>`;
-      tableResultados.innerHTML = html;
-      
-      if(!isVisitor && auth.currentUser){
-        tableResultados.querySelectorAll('.btn-edit-res').forEach(btn=> btn.onclick = ()=> openEditResultado(btn.dataset.num) );
-      } else {
-        tableResultados.querySelectorAll('.btn-comprovante-res').forEach(btn=> {
-          btn.onclick = () => {
-            const numero = btn.dataset.num;
-            const atleta = filteredResultadosCache.find(a => a.numero === numero);
-            if (atleta) {
-              atletaSelecionadoComprovante = atleta;
-              abrirModalComprovante();
-            }
-          };
-        });
-      }
-    }
+  html += `</tbody></table>`;
+  tableResultados.innerHTML = html;
+  
+  if(!isVisitor && auth.currentUser){
+    tableResultados.querySelectorAll('.btn-edit-res').forEach(btn=> btn.onclick = ()=> openEditResultado(btn.dataset.num) );
+  } else {
+    tableResultados.querySelectorAll('.btn-comprovante-res').forEach(btn=> {
+      btn.onclick = () => {
+        const numero = btn.dataset.num;
+        const atleta = filteredResultadosCache.find(a => a.numero === numero);
+        if (atleta) {
+          atletaSelecionadoComprovante = atleta;
+          abrirModalComprovante();
+        }
+      };
+    });
+  }
+}
 
     // Edit resultado modal
     async function openEditResultado(numero){
@@ -2213,6 +2222,576 @@ const modalidadeExibicao = getModalidadeParaExibicao(r);
 
     function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, (m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
     function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
+
+
+
+// Função para normalizar modalidade para comparação (mesma lógica usada no sistema)
+function normalizarModalidadeParaComparacao(modalidade) {
+  if (!modalidade) return '';
+  
+  // Primeiro, garantir que estamos trabalhando com o formato original se disponível
+  // Se for uma modalidade com ponto (ex: "Trail Run 6.5K"), queremos comparar com a versão com underscore
+  // Se for uma modalidade com underscore (ex: "Trail_Run_6_5K"), também precisamos normalizar
+  
+  // Passo 1: Remover espaços extras e converter para maiúsculas para comparação case-insensitive
+  let normalizada = modalidade.trim().toUpperCase();
+  
+  // Passo 2: Substituir pontos por underscores (para corresponder ao formato de storage)
+  normalizada = normalizada.replace(/\./g, '_');
+  
+  // Passo 3: Substituir espaços por underscores (para corresponder ao formato de storage)
+  normalizada = normalizada.replace(/\s+/g, '_');
+  
+  // Passo 4: Remover underscores múltiplos
+  normalizada = normalizada.replace(/_+/g, '_');
+  
+  return normalizada;
+}
+
+// Função para extrair o nome original da modalidade (para exibição)
+function extrairModalidadeOriginal(modalidade) {
+  if (!modalidade) return '';
+  
+  // Se já tem modalidade_original, usar ela
+  if (modalidade.modalidade_original) {
+    return modalidade.modalidade_original;
+  }
+  
+  // Se é uma string, tentar converter de volta para formato de exibição
+  if (typeof modalidade === 'string') {
+    return modalidade
+      .replace(/_/g, ' ')
+      .replace(/(\d+)\s+(\d+)/g, '$1.$2')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+  
+  return '';
+}
+
+// Função para verificar largadas pendentes e datas (VERSÃO CORRIGIDA)
+function verificarLargadasPendentes() {
+  if (!latestListagem || !latestLargadas) return { pendentes: [], todasCadastradas: false };
+  
+  console.log('Verificando largadas pendentes...');
+  console.log('Modalidades na listagem:', latestListagem.map(a => a.modalidade_original || a.modalidade));
+  console.log('Modalidades nas largadas:', latestLargadas.map(l => l.modalidade));
+  
+  // Coletar todas as modalidades únicas da listagem (usando a versão original para exibição)
+  const modalidadesListagem = new Map(); // Mapa de normalizada -> original
+  
+  latestListagem.forEach(atleta => {
+    // Priorizar modalidade_original se disponível
+    const modalidadeOriginal = atleta.modalidade_original || atleta.modalidade;
+    if (modalidadeOriginal) {
+      const modalidadeNormalizada = normalizarModalidadeParaComparacao(modalidadeOriginal);
+      
+      // Guardar a versão original para exibição posterior
+      if (!modalidadesListagem.has(modalidadeNormalizada)) {
+        modalidadesListagem.set(modalidadeNormalizada, modalidadeOriginal);
+      }
+    }
+  });
+  
+  // Coletar todas as modalidades que já têm largada cadastrada
+  const modalidadesComLargada = new Map(); // Mapa de normalizada -> objeto largada
+  
+  latestLargadas.forEach(largada => {
+    if (largada.modalidade) {
+      const modalidadeNormalizada = normalizarModalidadeParaComparacao(largada.modalidade);
+      modalidadesComLargada.set(modalidadeNormalizada, largada);
+    }
+  });
+  
+  // Encontrar modalidades que estão na listagem mas não têm largada
+  const modalidadesPendentes = [];
+  
+  modalidadesListagem.forEach((original, normalizada) => {
+    if (!modalidadesComLargada.has(normalizada)) {
+      modalidadesPendentes.push(original); // Usar a versão original para exibição
+    }
+  });
+  
+  // Verificar se TODAS as modalidades da listagem têm largada cadastrada
+  const todasCadastradas = modalidadesPendentes.length === 0 && modalidadesListagem.size > 0;
+  
+  const resultado = {
+    pendentes: modalidadesPendentes,
+    todasCadastradas: todasCadastradas
+  };
+  
+  console.log('Resultado da verificação:', resultado);
+  
+  return resultado;
+}
+
+// Função para criar/atualizar o alerta de largadas (VERSÃO CORRIGIDA)
+function atualizarAlertaLargadas() {
+  const { pendentes, todasCadastradas } = verificarLargadasPendentes();
+  
+  // Remover alerta existente se houver
+  const alertaExistente = document.getElementById('alerta-largadas');
+  if (alertaExistente) {
+    alertaExistente.remove();
+  }
+  
+  // Se não houver modalidades na listagem, não mostrar alerta
+  if (latestListagem.length === 0) {
+    return;
+  }
+  
+  // Se houver pendências, mostrar alerta vermelho
+  if (pendentes.length > 0) {
+    criarAlertaVermelho(pendentes);
+  } 
+  // Se todas as modalidades estiverem cadastradas, mostrar alerta laranja (SEMPRE)
+  else if (todasCadastradas) {
+    criarAlertaLaranja();
+  }
+}
+
+// Função para criar alerta vermelho (faltam largadas)
+function criarAlertaVermelho(pendentes) {
+  const alerta = document.createElement('div');
+  alerta.id = 'alerta-largadas';
+  
+  alerta.style.cssText = `
+    background-color: #ff6b6b;
+    color: white;
+    padding: 12px 20px;
+    margin: 10px auto;
+    border-radius: 8px;
+    font-weight: bold;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    max-width: 1100px;
+    animation: slideDown 0.3s ease-out;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  `;
+  
+  // Adicionar animação se não existir
+  adicionarAnimacaoSeNecessario();
+  
+  // Conteúdo do alerta
+  const conteudo = document.createElement('div');
+  conteudo.style.cssText = `
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    flex: 1;
+  `;
+  
+  conteudo.innerHTML = `
+    <span style="font-size: 20px;">⚠️</span>
+    <span style="font-weight: 600;">Falta cadastrar largadas!</span>
+    <span style="flex: 1;">Faltam:</span>
+    <span style="font-family: monospace; background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 20px; font-size: 14px;">
+      ${pendentes.join(' | ')}
+    </span>
+  `;
+  
+  alerta.appendChild(conteudo);
+  adicionarBotaoFechar(alerta);
+  inserirAlertaNaPagina(alerta);
+}
+
+// Função para criar alerta laranja (verificar datas)
+function criarAlertaLaranja() {
+  const alerta = document.createElement('div');
+  alerta.id = 'alerta-largadas';
+  
+  alerta.style.cssText = `
+    background-color: #ffa500;
+    color: white;
+    padding: 12px 20px;
+    margin: 10px auto;
+    border-radius: 8px;
+    font-weight: bold;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    max-width: 1100px;
+    animation: slideDown 0.3s ease-out;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  `;
+  
+  // Adicionar animação se não existir
+  adicionarAnimacaoSeNecessario();
+  
+  // Listar todas as modalidades cadastradas
+  const modalidadesCadastradas = latestLargadas.map(l => l.modalidade_original || l.modalidade).join(', ');
+  
+  // Conteúdo do alerta
+  const conteudo = document.createElement('div');
+  conteudo.style.cssText = `
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    flex: 1;
+  `;
+  
+  conteudo.innerHTML = `
+    <span style="font-size: 20px;">🔍</span>
+    <span style="font-weight: 600;">Verifique as largadas!</span>
+    <span style="flex: 1;">Confira se todas as datas e horários estão corretos:</span>
+    <span style="font-family: monospace; background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 20px; font-size: 14px; cursor: help;" 
+          title="Modalidades cadastradas: ${modalidadesCadastradas}">
+      ${latestLargadas.length} modalidade(s)
+    </span>
+  `;
+  
+  alerta.appendChild(conteudo);
+  adicionarBotaoFechar(alerta);
+  inserirAlertaNaPagina(alerta);
+}
+
+// Função auxiliar para adicionar animação
+function adicionarAnimacaoSeNecessario() {
+  if (!document.querySelector('style[data-alerta="true"]')) {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    `;
+    style.setAttribute('data-alerta', 'true');
+    document.head.appendChild(style);
+  }
+}
+
+// Função auxiliar para adicionar botão de fechar
+function adicionarBotaoFechar(alerta) {
+  const fecharBtn = document.createElement('button');
+  fecharBtn.innerHTML = 'ok';
+  fecharBtn.style.cssText = `
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0 5px;
+    margin-left: 10px;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+  `;
+  fecharBtn.onmouseover = () => fecharBtn.style.opacity = '1';
+  fecharBtn.onmouseout = () => fecharBtn.style.opacity = '0.8';
+  fecharBtn.onclick = (e) => {
+    e.stopPropagation();
+    alerta.remove();
+  };
+  fecharBtn.title = 'Fechar alerta';
+  alerta.appendChild(fecharBtn);
+}
+
+// Função auxiliar para inserir alerta na página
+function inserirAlertaNaPagina(alerta) {
+  const container = document.querySelector('.container');
+  const header = document.querySelector('header');
+  if (header && container) {
+    header.parentNode.insertBefore(alerta, container);
+  }
+}
+
+// Modificar a função startRealtimeListeners para incluir a verificação
+const originalStartRealtimeListeners = startRealtimeListeners;
+startRealtimeListeners = function() {
+  originalStartRealtimeListeners();
+  
+  // Adicionar listeners adicionais para atualizar o alerta quando os dados mudarem
+  onValue(ref(db, 'listagem'), (snap) => {
+    setTimeout(atualizarAlertaLargadas, 100);
+  }, (err) => console.error('Erro listener listagem:', err));
+
+  onValue(ref(db, 'largadas'), (snap) => {
+    setTimeout(atualizarAlertaLargadas, 100);
+  }, (err) => console.error('Erro listener largadas:', err));
+};
+
+// Chamar a verificação inicial após carregar os dados
+setTimeout(() => {
+  if (latestListagem.length > 0 || latestLargadas.length > 0) {
+    atualizarAlertaLargadas();
+  }
+}, 2000);
+
+// ========== MÁSCARA PARA DATA/HORA NAS LARGADAS ==========
+
+// Função para aplicar máscara de data/hora
+function aplicarMascaraDataHora(input) {
+  input.addEventListener('input', function(e) {
+    let valor = this.value.replace(/\D/g, ''); // Remove tudo que não é dígito
+    
+    if (valor.length <= 8) {
+      // Máscara para data: DDMMAAAA
+      if (valor.length > 2) {
+        valor = valor.substring(0, 2) + '/' + valor.substring(2);
+      }
+      if (valor.length > 5) {
+        valor = valor.substring(0, 5) + '/' + valor.substring(5);
+      }
+      this.value = valor;
+    } else {
+      // Máscara para data + hora: DDMMAAAAHHMMSS
+      if (valor.length > 2) {
+        valor = valor.substring(0, 2) + '/' + valor.substring(2);
+      }
+      if (valor.length > 5) {
+        valor = valor.substring(0, 5) + '/' + valor.substring(5);
+      }
+      if (valor.length > 10) {
+        valor = valor.substring(0, 10) + ' ' + valor.substring(10);
+      }
+      if (valor.length > 13) {
+        valor = valor.substring(0, 13) + ':' + valor.substring(13);
+      }
+      if (valor.length > 16) {
+        valor = valor.substring(0, 16) + ':' + valor.substring(16);
+      }
+      this.value = valor;
+    }
+    
+    // Limitar o tamanho máximo (10 caracteres para data + 1 espaço + 8 para hora = 19)
+    if (this.value.length > 19) {
+      this.value = this.value.substring(0, 19);
+    }
+  });
+  
+  // Adicionar tecla de atalho para apagar
+  input.addEventListener('keydown', function(e) {
+    // Se pressionar Backspace e o campo estiver vazio ou com máscara parcial
+    if (e.key === 'Backspace') {
+      const pos = this.selectionStart;
+      const valor = this.value;
+      
+      // Se estiver em posições de caracteres especiais, apagar também
+      if (pos === 3 || pos === 6) { // Posições das barras
+        this.value = valor.substring(0, pos-1) + valor.substring(pos);
+        this.setSelectionRange(pos-1, pos-1);
+        e.preventDefault();
+      } else if (pos === 11) { // Posição do espaço
+        this.value = valor.substring(0, pos-1) + valor.substring(pos);
+        this.setSelectionRange(pos-1, pos-1);
+        e.preventDefault();
+      } else if (pos === 14 || pos === 17) { // Posições dos dois pontos
+        this.value = valor.substring(0, pos-1) + valor.substring(pos);
+        this.setSelectionRange(pos-1, pos-1);
+        e.preventDefault();
+      }
+    }
+  });
+  
+  // Colocar o cursor no final do campo
+  input.addEventListener('focus', function() {
+    setTimeout(() => {
+      this.setSelectionRange(this.value.length, this.value.length);
+    }, 0);
+  });
+}
+
+// SUBSTITUIR o btnAddLargada.onclick original
+btnAddLargada.onclick = function() {
+  if(isVisitor || !auth.currentUser){ 
+    alert('Ação proibida: modo visitante. Faça login para adicionar largadas.'); 
+    return; 
+  }
+  
+  const overlay = document.createElement('div'); 
+  overlay.className = 'overlay';
+  
+  const form = document.createElement('form'); 
+  form.className = 'modal';
+  
+  form.innerHTML = `
+    <h4>Nova Largada</h4>
+    <input id="l_modalidade" placeholder="Modalidade (ex: MTB)" required />
+    <label class="small">Início (DD/MM/AAAA HH:MM:SS)</label>
+    <div style="position: relative; margin-bottom: 10px;">
+      <input id="l_inicio" 
+             placeholder="Digite a data e hora" 
+             style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-family: monospace; font-size: 16px;" 
+             autocomplete="off" />
+      <small style="display: block; margin-top: 5px; color: #666;">
+        Digite: DDMMAAAAHHMMSS (ex: 08032026120000 = 08/03/2026 12:00:00)
+      </small>
+    </div>
+    <div class="form-actions">
+      <button type="button" id="l_cancel" class="ghost">Cancelar</button>
+      <button type="submit">Salvar</button>
+    </div>
+  `;
+  
+  document.body.appendChild(overlay); 
+  document.body.appendChild(form);
+  
+  const modalidadeInput = document.getElementById('l_modalidade');
+  const dataHoraInput = document.getElementById('l_inicio');
+  
+  modalidadeInput.focus();
+  
+  // Aplicar máscara ao campo de data/hora
+  aplicarMascaraDataHora(dataHoraInput);
+  
+  // Cancelar
+  document.getElementById('l_cancel').onclick = () => { 
+    form.remove(); 
+    overlay.remove(); 
+  };
+  
+  // Salvar
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    
+    const modalidadeOriginal = modalidadeInput.value.trim();
+    const modalidadeSanitizada = processarModalidadeParaStorage(modalidadeOriginal);
+    const inicioStr = dataHoraInput.value.trim();
+    
+    if(!modalidadeOriginal || !inicioStr){ 
+      alert('Preencha todos os campos'); 
+      return; 
+    }
+    
+    // VALIDAÇÃO DO FORMATO DA DATA/HORA
+    const regexDataHoraCompleta = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}$/;
+    if (!regexDataHoraCompleta.test(inicioStr)) {
+      alert('Formato de data/hora inválido! Use o formato: DD/MM/AAAA HH:MM:SS');
+      return;
+    }
+    
+    // Validação adicional para verificar se a data é válida
+    const [dataPart, horaPart] = inicioStr.split(' ');
+    const [dia, mes, ano] = dataPart.split('/').map(Number);
+    const [hora, minuto, segundo] = horaPart.split(':').map(Number);
+    
+    const dataObj = new Date(ano, mes-1, dia, hora, minuto, segundo);
+    if (dataObj.getFullYear() !== ano || 
+        dataObj.getMonth() !== mes-1 || 
+        dataObj.getDate() !== dia ||
+        dataObj.getHours() !== hora ||
+        dataObj.getMinutes() !== minuto ||
+        dataObj.getSeconds() !== segundo) {
+      alert('Data inválida! Verifique se o dia, mês e ano estão corretos.');
+      return;
+    }
+    
+    try{
+      await set(ref(db, `largadas/${modalidadeSanitizada}/inicio`), inicioStr);
+      await set(ref(db, `largadas/${modalidadeSanitizada}/modalidade_original`), modalidadeOriginal);
+      form.remove(); 
+      overlay.remove();
+    } catch(err){ 
+      console.error(err); 
+      alert('Erro ao salvar largada: '+(err.message||err)); 
+    }
+  };
+};
+
+// SUBSTITUIR a função openEditLargada original
+openEditLargada = function(modalidade) {
+  if(isVisitor || !auth.currentUser){ 
+    alert('Ação proibida: modo visitante. Faça login para editar largadas.'); 
+    return; 
+  }
+  
+  get(child(ref(db), `largadas/${modalidade}/inicio`)).then(snap => {
+    const inicio = snap.exists() ? snap.val() : '';
+    const overlay = document.createElement('div'); 
+    overlay.className = 'overlay';
+    
+    const form = document.createElement('form'); 
+    form.className = 'modal';
+    
+    form.innerHTML = `
+      <h4>Editar Largada - ${modalidade}</h4>
+      <label class="small">Início (DD/MM/AAAA HH:MM:SS)</label>
+      <div style="position: relative; margin-bottom: 10px;">
+        <input id="el_inicio" 
+               value="${escapeAttr(inicio)}" 
+               style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-family: monospace; font-size: 16px;" 
+               autocomplete="off" />
+        <small style="display: block; margin-top: 5px; color: #666;">
+          Digite: DDMMAAAAHHMMSS (ex: 08032026120000 = 08/03/2026 12:00:00)
+        </small>
+      </div>
+      <div class="form-actions">
+        <button type="button" id="el_cancel" class="ghost">Cancelar</button>
+        <button type="submit">Salvar</button>
+      </div>
+    `;
+    
+    document.body.appendChild(overlay); 
+    document.body.appendChild(form);
+    
+    const dataHoraInput = document.getElementById('el_inicio');
+    
+    // Aplicar máscara ao campo de data/hora
+    aplicarMascaraDataHora(dataHoraInput);
+    
+    dataHoraInput.focus();
+    
+    document.getElementById('el_cancel').onclick = () => { 
+      form.remove(); 
+      overlay.remove(); 
+    };
+    
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      
+      const inicioStr = dataHoraInput.value.trim();
+      
+      if(!inicioStr){ 
+        alert('Preencha o campo de data/hora'); 
+        return; 
+      }
+      
+      // VALIDAÇÃO DO FORMATO DA DATA/HORA
+      const regexDataHoraCompleta = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}$/;
+      if (!regexDataHoraCompleta.test(inicioStr)) {
+        alert('Formato de data/hora inválido! Use o formato: DD/MM/AAAA HH:MM:SS');
+        return;
+      }
+      
+      // Validação adicional para verificar se a data é válida
+      const [dataPart, horaPart] = inicioStr.split(' ');
+      const [dia, mes, ano] = dataPart.split('/').map(Number);
+      const [hora, minuto, segundo] = horaPart.split(':').map(Number);
+      
+      const dataObj = new Date(ano, mes-1, dia, hora, minuto, segundo);
+      if (dataObj.getFullYear() !== ano || 
+          dataObj.getMonth() !== mes-1 || 
+          dataObj.getDate() !== dia ||
+          dataObj.getHours() !== hora ||
+          dataObj.getMinutes() !== minuto ||
+          dataObj.getSeconds() !== segundo) {
+        alert('Data inválida! Verifique se o dia, mês e ano estão corretos.');
+        return;
+      }
+      
+      try{
+        await set(ref(db, `largadas/${modalidade}/inicio`), inicioStr);
+        form.remove(); 
+        overlay.remove();
+      } catch(err){ 
+        console.error(err); 
+        alert('Erro ao salvar largada: '+(err.message||err)); 
+      }
+    };
+  });
+};
+
+// ========== FIM DA MÁSCARA ==========
 
     // initial UI
     showPage('entrada');
