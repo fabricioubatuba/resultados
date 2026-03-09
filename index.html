@@ -178,7 +178,13 @@
     <p class="small warning" id="entrada-warning" style="display:none"></p>
   </div>
 </div>
-
+          <div style="margin-top:12px">
+            <p class="small">Aponte o leitor de código de barras e pressione Enter. O cursor permanecerá aqui enquanto estiver nesta tela.</p>
+            <p class="small success" id="entrada-success" style="display:none"></p>
+            <p class="small error" id="entrada-error" style="display:none"></p>
+            <p class="small warning" id="entrada-warning" style="display:none"></p>
+          </div>
+        </div>
 
         <!-- VOLTAS MTB -->
         <div id="page-voltas-mtb" class="hidden">
@@ -1954,14 +1960,15 @@ function renderResultados(rows){
   const fc = fCategoria.value;
   const fg = fGenero.value;
   
-  // Função para normalizar modalidade para comparação
-  function normalizarModalidadeParaComparacao(modalidade) {
-    if (!modalidade) return '';
-    // Converte o formato de exibição (com espaços) para o formato de storage (com underscores)
-    return modalidade
-      .replace(/\./g, '_')     // Substitui ponto por underscore
-      .replace(/\s+/g, '_')     // Substitui espaços por underscores
-      .toUpperCase();           // Garante maiúsculas
+  // Função para normalizar strings para comparação (remover acentos, espaços extras, maiúsculas/minúsculas)
+  function normalizarString(str) {
+    if (!str) return '';
+    return str
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+      .replace(/\s+/g, ' ') // Remove espaços extras
+      .trim();
   }
 
   let filtered = rows.filter(r => {
@@ -1981,8 +1988,22 @@ function renderResultados(rows){
       if (!corresponde) return false;
     }
     
-    if (fc && r.categoria !== fc) return false;
-    if (fg && r.genero !== fg) return false;
+    // CORREÇÃO: Para categoria, usar normalização de string
+    if (fc) {
+      const categoriaFiltroNormalizada = normalizarString(fc);
+      const categoriaRowNormalizada = normalizarString(r.categoria || '');
+      
+      if (categoriaRowNormalizada !== categoriaFiltroNormalizada) return false;
+    }
+    
+    // CORREÇÃO: Para gênero, usar normalização de string
+    if (fg) {
+      const generoFiltroNormalizado = normalizarString(fg);
+      const generoRowNormalizado = normalizarString(r.genero || '');
+      
+      if (generoRowNormalizado !== generoFiltroNormalizado) return false;
+    }
+    
     return true;
   });
 
@@ -1991,7 +2012,11 @@ function renderResultados(rows){
     const resultadosMtb = calcularResultadosMtb();
     filtered = filtered.filter(r => r.modalidade !== 'MTB');
     resultadosMtb.forEach(rm => {
-      if((!fc || rm.categoria === fc) && (!fg || rm.genero === fg)){
+      // CORREÇÃO: Usar normalização também aqui
+      const passaCategoria = !fc || normalizarString(rm.categoria) === normalizarString(fc);
+      const passaGenero = !fg || normalizarString(rm.genero) === normalizarString(fg);
+      
+      if(passaCategoria && passaGenero){
         filtered.push(rm);
       }
     });
@@ -2002,12 +2027,17 @@ function renderResultados(rows){
     const resultadosDuathlon = calcularResultadosDuathlon();
     filtered = filtered.filter(r => r.modalidade !== 'DUATHLON CROSS');
     resultadosDuathlon.forEach(rd => {
-      if((!fc || rd.categoria === fc) && (!fg || rd.genero === fg)){
+      // CORREÇÃO: Usar normalização também aqui
+      const passaCategoria = !fc || normalizarString(rd.categoria) === normalizarString(fc);
+      const passaGenero = !fg || normalizarString(rd.genero) === normalizarString(fg);
+      
+      if(passaCategoria && passaGenero){
         filtered.push(rd);
       }
     });
   }
 
+  // O resto da função permanece igual...
   filtered.sort((a,b)=>{
     // Para MTB e Duathlon Cross, ordenar por voltas primeiro
     if((a.modalidade === 'MTB' || a.modalidade === 'DUATHLON CROSS') && 
