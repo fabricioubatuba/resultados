@@ -259,11 +259,15 @@
               <button id="btn-aplicar-filtro" class="secondary">Aplicar</button>
             </div>
             <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-              <button id="btn-export" class="secondary">Exportar CSV</button>
-	      <button id="btn-imprimir-resultados" class="secondary">Imprimir Resultados</button>
-              <button id="btn-comprovante" class="secondary">Gerar Comprovante</button>
-	      <button id="btn-limpar-resultados" class="secondary">Limpar Resultados</button>
-            </div>
+  <button id="btn-upload-resultados" class="secondary">📤 Upload CSV</button>
+  <button id="btn-export" class="secondary">Exportar CSV</button>
+  <button id="btn-imprimir-resultados" class="secondary">Imprimir Resultados</button>
+  <button id="btn-comprovante" class="secondary">Gerar Comprovante</button>
+  <button id="btn-limpar-resultados" class="secondary">Limpar Resultados</button>
+</div>
+
+<!-- Input de arquivo oculto -->
+<input type="file" id="csv-upload-resultados" accept=".csv" style="display:none" />
           </div>
           <div id="table-resultados"></div>
         </div>
@@ -332,6 +336,8 @@
     const passInput = document.getElementById('password');
     const btnLogin = document.getElementById('btn-login');
     const btnRegister = document.getElementById('btn-register');
+const btnUploadResultados = document.getElementById('btn-upload-resultados');
+const csvUploadResultados = document.getElementById('csv-upload-resultados');
     const btnVisitante = document.getElementById('btn-visitante');
     const btnLogout = document.getElementById('btn-logout');
     const authError = document.getElementById('auth-error');
@@ -1971,33 +1977,55 @@ function renderResultados(rows){
       .trim();
   }
 
+  // Função para normalizar modalidade específica para comparação
+  function normalizarModalidadeParaFiltro(modalidade) {
+    if (!modalidade) return '';
+    // Converte para minúsculo e remove espaços extras
+    let normalizada = modalidade.toLowerCase().trim();
+    // Substitui espaços por underscore (para corresponder ao formato salvo)
+    normalizada = normalizada.replace(/\s+/g, '_');
+    // Substitui pontos por underscore
+    normalizada = normalizada.replace(/\./g, '_');
+    return normalizada;
+  }
+
   let filtered = rows.filter(r => {
-    // Para modalidade, precisamos comparar considerando os diferentes formatos
-    if (fm) {
-      const modalidadeStorage = normalizarModalidadeParaComparacao(fm);
-      const modalidadeRow = r.modalidade || '';
-      const modalidadeOriginalRow = r.modalidade_original || '';
+    // FILTRO POR MODALIDADE (CORRIGIDO)
+    if (fm && fm !== '') {
+      // Normalizar o valor do filtro
+      const filtroNormalizado = normalizarModalidadeParaFiltro(fm);
       
-      // Verifica se alguma das versões corresponde
-      const corresponde = 
-        modalidadeRow === fm || 
-        modalidadeRow === modalidadeStorage ||
-        modalidadeOriginalRow === fm ||
-        modalidadeOriginalRow === modalidadeStorage;
+      // Obter a modalidade do atleta (priorizar modalidade_original)
+      let modalidadeAtleta = '';
+      if (r.modalidade_original) {
+        modalidadeAtleta = r.modalidade_original;
+      } else if (r.modalidade) {
+        modalidadeAtleta = r.modalidade;
+      }
       
-      if (!corresponde) return false;
+      // Normalizar a modalidade do atleta para comparação
+      const modalidadeAtletaNormalizada = normalizarModalidadeParaFiltro(modalidadeAtleta);
+      
+      // Comparar (normalizada vs normalizada OU valor original vs filtro original)
+      const correspondeModalidade = 
+        modalidadeAtletaNormalizada === filtroNormalizado ||
+        modalidadeAtleta === fm ||
+        r.modalidade === fm ||
+        modalidadeAtleta.toLowerCase() === fm.toLowerCase();
+      
+      if (!correspondeModalidade) return false;
     }
     
-    // CORREÇÃO: Para categoria, usar normalização de string
-    if (fc) {
+    // FILTRO POR CATEGORIA
+    if (fc && fc !== '') {
       const categoriaFiltroNormalizada = normalizarString(fc);
       const categoriaRowNormalizada = normalizarString(r.categoria || '');
       
       if (categoriaRowNormalizada !== categoriaFiltroNormalizada) return false;
     }
     
-    // CORREÇÃO: Para gênero, usar normalização de string
-    if (fg) {
+    // FILTRO POR GÊNERO
+    if (fg && fg !== '') {
       const generoFiltroNormalizado = normalizarString(fg);
       const generoRowNormalizado = normalizarString(r.genero || '');
       
@@ -2008,41 +2036,102 @@ function renderResultados(rows){
   });
 
   // Adicionar resultados de MTB com voltas
-  if((!fm || fm === 'MTB' || fm === 'MTB') && latestVoltasMtb && Object.keys(latestVoltasMtb).length > 0){
+  if((!fm || fm === 'MTB' || fm === 'MTB' || normalizarModalidadeParaFiltro(fm) === 'mtb') && latestVoltasMtb && Object.keys(latestVoltasMtb).length > 0){
     const resultadosMtb = calcularResultadosMtb();
-    filtered = filtered.filter(r => r.modalidade !== 'MTB');
+    // Filtrar resultados MTB existentes que não são de MTB
+    filtered = filtered.filter(r => {
+      let modalidadeAtleta = '';
+      if (r.modalidade_original) {
+        modalidadeAtleta = r.modalidade_original;
+      } else if (r.modalidade) {
+        modalidadeAtleta = r.modalidade;
+      }
+      return normalizarModalidadeParaFiltro(modalidadeAtleta) !== 'mtb';
+    });
+    
     resultadosMtb.forEach(rm => {
-      // CORREÇÃO: Usar normalização também aqui
-      const passaCategoria = !fc || normalizarString(rm.categoria) === normalizarString(fc);
-      const passaGenero = !fg || normalizarString(rm.genero) === normalizarString(fg);
+      // Aplicar filtros aos resultados MTB
+      let passaFiltro = true;
       
-      if(passaCategoria && passaGenero){
+      // Verificar filtro de modalidade (já garantido pelo if acima)
+      if (fm && fm !== '') {
+        const filtroNormalizado = normalizarModalidadeParaFiltro(fm);
+        const modalidadeMtbNormalizada = normalizarModalidadeParaFiltro('MTB');
+        if (filtroNormalizado !== modalidadeMtbNormalizada) passaFiltro = false;
+      }
+      
+      // Verificar filtro de categoria
+      if (passaFiltro && fc && fc !== '') {
+        const categoriaFiltroNormalizada = normalizarString(fc);
+        const categoriaMtbNormalizada = normalizarString(rm.categoria);
+        if (categoriaMtbNormalizada !== categoriaFiltroNormalizada) passaFiltro = false;
+      }
+      
+      // Verificar filtro de gênero
+      if (passaFiltro && fg && fg !== '') {
+        const generoFiltroNormalizado = normalizarString(fg);
+        const generoMtbNormalizado = normalizarString(rm.genero);
+        if (generoMtbNormalizado !== generoFiltroNormalizado) passaFiltro = false;
+      }
+      
+      if(passaFiltro){
         filtered.push(rm);
       }
     });
   }
 
   // Adicionar resultados de Duathlon Cross com voltas
-  if((!fm || fm === 'DUATHLON CROSS' || fm === 'DUATHLON_CROSS') && latestVoltasDuathlon && Object.keys(latestVoltasDuathlon).length > 0){
+  if((!fm || fm === 'DUATHLON CROSS' || fm === 'DUATHLON_CROSS' || normalizarModalidadeParaFiltro(fm) === 'duathlon_cross') && latestVoltasDuathlon && Object.keys(latestVoltasDuathlon).length > 0){
     const resultadosDuathlon = calcularResultadosDuathlon();
-    filtered = filtered.filter(r => r.modalidade !== 'DUATHLON CROSS');
+    // Filtrar resultados Duathlon existentes que não são de Duathlon
+    filtered = filtered.filter(r => {
+      let modalidadeAtleta = '';
+      if (r.modalidade_original) {
+        modalidadeAtleta = r.modalidade_original;
+      } else if (r.modalidade) {
+        modalidadeAtleta = r.modalidade;
+      }
+      return normalizarModalidadeParaFiltro(modalidadeAtleta) !== 'duathlon_cross';
+    });
+    
     resultadosDuathlon.forEach(rd => {
-      // CORREÇÃO: Usar normalização também aqui
-      const passaCategoria = !fc || normalizarString(rd.categoria) === normalizarString(fc);
-      const passaGenero = !fg || normalizarString(rd.genero) === normalizarString(fg);
+      // Aplicar filtros aos resultados Duathlon
+      let passaFiltro = true;
       
-      if(passaCategoria && passaGenero){
+      // Verificar filtro de modalidade
+      if (fm && fm !== '') {
+        const filtroNormalizado = normalizarModalidadeParaFiltro(fm);
+        const modalidadeDuathlonNormalizada = normalizarModalidadeParaFiltro('DUATHLON CROSS');
+        if (filtroNormalizado !== modalidadeDuathlonNormalizada) passaFiltro = false;
+      }
+      
+      // Verificar filtro de categoria
+      if (passaFiltro && fc && fc !== '') {
+        const categoriaFiltroNormalizada = normalizarString(fc);
+        const categoriaDuathlonNormalizada = normalizarString(rd.categoria);
+        if (categoriaDuathlonNormalizada !== categoriaFiltroNormalizada) passaFiltro = false;
+      }
+      
+      // Verificar filtro de gênero
+      if (passaFiltro && fg && fg !== '') {
+        const generoFiltroNormalizado = normalizarString(fg);
+        const generoDuathlonNormalizado = normalizarString(rd.genero);
+        if (generoDuathlonNormalizado !== generoFiltroNormalizado) passaFiltro = false;
+      }
+      
+      if(passaFiltro){
         filtered.push(rd);
       }
     });
   }
 
-  // O resto da função permanece igual...
+  // Ordenar resultados
   filtered.sort((a,b)=>{
     // Para MTB e Duathlon Cross, ordenar por voltas primeiro
-    if((a.modalidade === 'MTB' || a.modalidade === 'DUATHLON CROSS') && 
-       (b.modalidade === 'MTB' || b.modalidade === 'DUATHLON CROSS') && 
-       a.totalVoltas && b.totalVoltas){
+    let isAVolta = (a.modalidade === 'MTB' || a.modalidade === 'DUATHLON CROSS' || a.totalVoltas);
+    let isBVolta = (b.modalidade === 'MTB' || b.modalidade === 'DUATHLON CROSS' || b.totalVoltas);
+    
+    if(isAVolta && isBVolta && a.totalVoltas && b.totalVoltas){
       if(b.totalVoltas !== a.totalVoltas){
         return b.totalVoltas - a.totalVoltas;
       }
@@ -2062,7 +2151,7 @@ function renderResultados(rows){
 
   filteredResultadosCache = filtered;
 
-  let html = `<table><thead><tr>
+  let html = `<table class="resultados-table"><thead><tr>
     <th>Posição</th>
     <th>Número</th>
     <th>Atleta</th>
@@ -2079,7 +2168,7 @@ function renderResultados(rows){
     const pos = (r.tempo || r.totalVoltas) ? `${i+1}º` : '';
     const voltasInfo = r.totalVoltas ? `${r.totalVoltas} volta(s)` : '';
     
-    // Função para garantir que a modalidade seja exibida corretamente
+    // Função para exibir modalidade corretamente
     function getModalidadeParaExibicao(r) {
       if (r.modalidade_original) {
         return r.modalidade_original;
@@ -2113,8 +2202,9 @@ function renderResultados(rows){
         } else {
           html += `<button data-num="${r.numero}" class="btn-comprovante-res secondary">Comprovante</button>`;
         }
-        html += `</td></tr>`;
-      });
+        html += `</td>
+    </tr>`;
+  });
 
   html += `</tbody></table>`;
   tableResultados.innerHTML = html;
@@ -2247,7 +2337,126 @@ function renderResultados(rows){
     function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, (m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
     function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
 
+// Upload de Resultados via CSV
+btnUploadResultados.onclick = () => {
+  if(isVisitor || !auth.currentUser) {
+    alert('Ação proibida: modo visitante. Faça login para importar resultados.');
+    return;
+  }
+  csvUploadResultados.click();
+};
 
+csvUploadResultados.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  
+  if(!confirm('⚠️ ATENÇÃO: Isso irá SOBRESCREVER todos os resultados atuais com os dados do arquivo CSV.\n\nDeseja continuar?')) {
+    csvUploadResultados.value = '';
+    return;
+  }
+  
+  const reader = new FileReader();
+  reader.onload = async () => {
+    const text = reader.result;
+    const lines = text.split(/\r?\n/).filter(Boolean);
+    
+    if(lines.length === 0) {
+      alert('Arquivo vazio!');
+      csvUploadResultados.value = '';
+      return;
+    }
+    
+    // Detectar separador (; ou ,)
+    let separador = ',';
+    if (lines[0].includes(';')) separador = ';';
+    
+    // Ler cabeçalho
+    const cabecalho = lines[0].split(separador).map(h => h.replace(/^"|"$/g, '').toLowerCase().trim());
+    
+    // Mapear índices das colunas
+    const indice = {
+      numero: cabecalho.findIndex(h => h === 'numero' || h === 'number'),
+      atleta: cabecalho.findIndex(h => h === 'atleta' || h === 'athlete' || h === 'nome'),
+      modalidade: cabecalho.findIndex(h => h === 'modalidade' || h === 'modality'),
+      categoria: cabecalho.findIndex(h => h === 'categoria' || h === 'category'),
+      genero: cabecalho.findIndex(h => h === 'genero' || h === 'gender'),
+      chegada: cabecalho.findIndex(h => h === 'chegada' || h === 'arrival'),
+      tempo: cabecalho.findIndex(h => h === 'tempo' || h === 'time'),
+      voltas: cabecalho.findIndex(h => h === 'voltas' || h === 'laps')
+    };
+    
+    let importados = 0;
+    let erros = 0;
+    let errosLista = [];
+    
+    for(let i = 1; i < lines.length; i++) {
+      const colunas = lines[i].split(separador).map(c => c.trim().replace(/^"|"$/g, ''));
+      if(colunas.length < 2) continue;
+      
+      const numeroRaw = colunas[indice.numero]?.replace(/\D/g, '') || '';
+      const numero = padNum(numeroRaw);
+      
+      if(!numero) {
+        erros++;
+        errosLista.push(`Linha ${i+1}: Número inválido`);
+        continue;
+      }
+      
+      // Montar objeto do resultado
+      const resultadoData = {
+        chegada: colunas[indice.chegada] || '',
+        tempo: colunas[indice.tempo] || '',
+        atleta: colunas[indice.atleta] || '',
+        genero: colunas[indice.genero] || '',
+        modalidade: colunas[indice.modalidade] || '',
+        modalidade_original: colunas[indice.modalidade] || '',
+        categoria: colunas[indice.categoria] || '',
+        registradoPor: auth.currentUser ? auth.currentUser.email : 'upload_csv',
+        registradaEmISO: new Date().toISOString()
+      };
+      
+      // Adicionar informação de voltas se presente
+      if(indice.voltas >= 0 && colunas[indice.voltas]) {
+        const voltasStr = colunas[indice.voltas].toString();
+        const voltasNum = parseInt(voltasStr);
+        if(!isNaN(voltasNum) && voltasNum > 0) {
+          resultadoData.totalVoltas = voltasNum;
+        }
+      }
+      
+      try {
+        await set(ref(db, `resultados/${numero}`), resultadoData);
+        importados++;
+      } catch(err) {
+        console.error(`Erro ao importar ${numero}:`, err);
+        erros++;
+        errosLista.push(`Linha ${i+1}: ${err.message}`);
+      }
+    }
+    
+    // Mostrar resumo da importação
+    let mensagem = `✅ Upload concluído!\n\n📊 Importados: ${importados} resultados\n❌ Erros: ${erros}`;
+    
+    if(errosLista.length > 0 && errosLista.length <= 5) {
+      mensagem += `\n\nDetalhes:\n${errosLista.join('\n')}`;
+    } else if(errosLista.length > 5) {
+      mensagem += `\n\nÚltimos erros:\n${errosLista.slice(0, 5).join('\n')}\n... e mais ${errosLista.length - 5} erros.`;
+    }
+    
+    alert(mensagem);
+    csvUploadResultados.value = '';
+    
+    // Atualizar a exibição dos resultados
+    renderResultados(latestResultados);
+  };
+  
+  reader.onerror = () => {
+    alert('Erro ao ler o arquivo CSV. Verifique se o arquivo não está corrompido.');
+    csvUploadResultados.value = '';
+  };
+  
+  reader.readAsText(file, 'utf-8');
+});
 
 // Função para normalizar modalidade para comparação (mesma lógica usada no sistema)
 function normalizarModalidadeParaComparacao(modalidade) {
