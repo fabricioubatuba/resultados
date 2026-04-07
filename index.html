@@ -1,3034 +1,828 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Resultados</title>
-<!-- Favicon (ícone na aba do navegador) -->
-    <link rel="icon" href="https://www.rc4sports.com.br/assets/img/favicon.ico" type="image/x-icon">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RC4 Sports - Resultados Oficiais</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="https://raw.githubusercontent.com/fabricioubatuba/ruc2/refs/heads/main/assets/img/favicon.ico">
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- html2canvas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
   <style>
-    :root{--accent:#1e90ff;--accent-2:#ff8a00;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
-    body{margin:0;background:#f6f8fb;color:#111;font-family:var(--font, Inter), sans-serif}
-    header{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#fff;padding:12px 18px;display:flex;align-items:center;justify-content:space-between}
-    .brand{font-weight:700}
-    .container{max-width:1100px;margin:20px auto;padding:12px}
-    .card{background:#fff;border-radius:10px;padding:16px;box-shadow:0 6px 18px rgba(20,30,60,0.06);}
-    .big-input{font-size:72px;letter-spacing:10px;padding:28px 20px;text-align:center;width:720px;box-sizing:border-box;border-radius:8px;border:1px solid #ddd}
-    .row{display:flex;gap:12px;align-items:center}
-    button{background:var(--accent);color:#fff;border:none;padding:10px 14px;border-radius:8px;cursor:pointer}
-    button.secondary{background:#e6eefc;color:#1e3a8a}
-    .ghost{background:transparent;border:1px solid #ddd;color:#333}
-    nav{
-      display: flex;
-      gap: 8px;
-      margin-top: 24px;
-      flex-basis: 100%;
-      justify-content: flex-start;
-    }
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:6px 8px;border-bottom:1px solid #f0f0f0;text-align:left}
-    .small{font-size:13px;color:#666}
-    .last5{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-    .pill{background:#f1f5f9;padding:6px 10px;border-radius:999px;font-weight:600;cursor:pointer}
-    .hidden{display:none}
-    .filters{display:flex;gap:8px;align-items:center}
-    form.modal{background:#fff;border:1px solid #ccc;border-radius:10px;padding:16px;box-shadow:0 8px 30px rgba(0,0,0,0.18);position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:60;min-width:320px}
-    form.modal input, form.modal select{width:100%;padding:8px;margin:6px 0;border:1px solid #ccc;border-radius:6px;box-sizing:border-box}
-    .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:50}
-    .form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
-    .error{color:#b00020}
-    .disabled{opacity:0.6;pointer-events:none}
-    .success{color:#00c853}
-    .warning{color:#ff6d00}
-
-    /* Estilos para os comprovantes */
-    .comprovante-container { position: relative; width: 100%; margin: 20px 0; }
-    .comprovante-story { width: 270px; height: 480px; position: relative; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; overflow: hidden; color: white; font-family: 'Arial', sans-serif; }
-    .comprovante-feed { width: 400px; height: 400px; position: relative; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; overflow: hidden; color: white; font-family: 'Arial', sans-serif; }
-    .comprovante-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; opacity: 0.3; }
-    .comprovante-content { position: relative; z-index: 2; padding: 20px; height: 100%; display: flex; flex-direction: column; justify-content: space-between; }
-    .comprovante-header { text-align: center; margin-bottom: 20px; }
-    .comprovante-title { font-size: 24px; font-weight: bold; margin-bottom: 8px; }
-    .comprovante-subtitle { font-size: 14px; opacity: 0.9; }
-    .comprovante-data { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 10px; font-size: 13px; }
-    .comprovante-item {  display: flex; justify-content: space-between;  border-bottom: 1px solid rgba(255,255,255,0.2);  padding: 8px 0; }
-/* Adicione esta nova regra para centralizar apenas a data */
-    .comprovante-item-centralizado {  display: flex;  justify-content: center;  border-bottom: 1px solid rgba(255,255,255,0.2);  padding: 8px 0;  text-align: center; }
-    .comprovante-item-label { font-weight: bold; }
-    .comprovante-footer { text-align: center; margin-top: 20px; }
-    .comprovante-logo { position: absolute; bottom: 50px; right: 10px; width: 40px; height: 40px; background: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; }
-    .comprovante-formatos { display: flex; gap: 10px; margin: 15px 0; }
-    .comprovante-formatos button { flex: 1; }
-
-    /* Estilo para a logo RC4 Sports */
-    .logo-rc4 {
-      height: 65px;
-      width: auto;
-      max-width: 140px;
-      object-fit: contain;
-      margin-left: 15px;
-    }
-
-        /* Imagens de fundo para os comprovantes */
-    .comprovante-story {
-      background: url('https://lh3.googleusercontent.com/d/1pJrOTAbzY_3uTJZQKgKI72ATN3x3LoiR') center/cover no-repeat;
-    }
-    .comprovante-feed {
-      background: url('https://lh3.googleusercontent.com/d/1C4D7YRq2hEYLzq91o28aZa16kgO8figs') center/cover no-repeat;
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --primary-color: #2196F3;
+      --primary-dark: #1976D2;
+      --success-color: #4CAF50;
+      --danger-color: #F44336;
+      --warning-color: #FF9800;
+      --dark-color: #2c3e50;
+      --text-color: #333;
+      --text-light: #7f8c8d;
+      --border-radius: 8px;
+      --box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      --transition: all 0.3s ease;
     }
     
-    /* Ajustes para melhor legibilidade sobre as imagens */
-    .comprovante-content {
-      background: rgba(0, 0, 0, 0.6); /* Fundo escuro semi-transparente para melhor contraste */
-      position: relative;
-      z-index: 2;
-      padding: 20px;
-      height: 100%;
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f6f8fb;
+      color: var(--text-color);
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
-      border-radius: 12px;
     }
     
-    /* Remover o comprovante-bg anterior já que usamos background direto */
-    .comprovante-bg {
+    .main-header {
+      background: linear-gradient(135deg, #1a252f 0%, var(--dark-color) 100%);
+      padding: 25px 20px;
+      text-align: center;
+      color: white;
+    }
+    
+    .logo {
+      height: 70px;
+      width: auto;
+      object-fit: contain;
+      margin-bottom: 10px;
+      filter: brightness(0) invert(1);
+    }
+    
+    .brand-text h1 {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 700;
+      font-size: 1.6rem;
+      margin-bottom: 5px;
+    }
+    
+    .brand-text p { font-size: 0.85rem; opacity: 0.8; }
+    
+    .container { max-width: 1300px; margin: 30px auto; padding: 0 20px; flex: 1; }
+    
+    .card {
+      background: white;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      border: 1px solid #e0e0e0;
+      overflow: hidden;
+    }
+    
+    .card-header {
+      background: #f8f9fa;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 18px 25px;
+    }
+    
+    .card-header h2 {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 600;
+      font-size: 1.2rem;
+      color: var(--dark-color);
+    }
+    
+    .card-body { padding: 25px; }
+    
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: var(--border-radius);
+      font-family: 'Poppins', sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+      font-size: 0.85rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: center;
+    }
+    
+    .btn-primary { background: var(--primary-color); color: white; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-success { background: var(--success-color); color: white; }
+    .btn-success:hover { background: #388E3C; }
+    .btn-danger { background: var(--danger-color); color: white; }
+    .btn-outline { background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); }
+    .btn-outline:hover { background: var(--primary-color); color: white; }
+    .btn-sm { padding: 6px 12px; font-size: 0.75rem; }
+    
+    .events-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 25px;
+      margin-top: 20px;
+    }
+    
+    .event-card {
+      background: white;
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      box-shadow: var(--box-shadow);
+      transition: var(--transition);
+      border: 1px solid #e0e0e0;
+      cursor: pointer;
+    }
+    
+    .event-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
+    
+    .event-card-header {
+      background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+      color: white;
+      padding: 20px;
+    }
+    
+    .event-card-header h3 {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 600;
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+    }
+    
+    .event-date { font-size: 0.7rem; opacity: 0.8; }
+    
+    .event-card-body { padding: 20px; }
+    
+    .event-stats { display: flex; justify-content: space-around; margin-bottom: 15px; }
+    .event-stat { text-align: center; }
+    .event-stat-value { font-size: 1.3rem; font-weight: 700; color: var(--primary-color); }
+    .event-stat-label { font-size: 0.7rem; color: var(--text-light); }
+    
+    .admin-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .nav-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+    
+    .filters-bar {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: var(--border-radius);
+      margin-bottom: 20px;
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+    
+    .filters-bar .form-group { margin-bottom: 0; flex: 1; min-width: 150px; }
+    
+    .form-group { margin-bottom: 15px; }
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      font-size: 0.8rem;
+      color: var(--text-light);
+    }
+    
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: var(--border-radius);
+      font-family: 'Poppins', sans-serif;
+      font-size: 0.85rem;
+    }
+    
+    .form-group input:focus, .form-group select:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+    
+    .results-table-container { overflow-x: auto; margin-top: 20px; }
+    .results-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .results-table th, .results-table td { padding: 12px 10px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+    .results-table th { background: #f8f9fa; font-weight: 600; color: var(--dark-color); }
+    .results-table tr:hover { background: #fafafa; }
+    
+    .modal {
       display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      align-items: center;
+      justify-content: center;
     }
-
-    @media(max-width:900px){ 
-      .big-input{width:100%;font-size:48px;padding:16px} 
-      .container{padding:8px} 
-      nav{flex-wrap:wrap} 
-      .comprovante-story, .comprovante-feed { 
-        width: 100%; 
-        max-width: 300px; 
-        margin: 0 auto; 
-      }
-      .logo-rc4 {
-        height: 40px;
-        max-width: 100px;
-      }
+    
+    .modal-content {
+      background: white;
+      border-radius: var(--border-radius);
+      width: 90%;
+      max-width: 700px;
+      max-height: 85vh;
+      overflow-y: auto;
+      animation: modalFadeIn 0.3s ease;
     }
+    
+    @keyframes modalFadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .modal-header {
+      background: #f8f9fa;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 18px 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .modal-header h3 { font-family: 'Montserrat', sans-serif; font-weight: 600; color: var(--dark-color); }
+    .close { font-size: 28px; font-weight: bold; cursor: pointer; color: #999; }
+    .close:hover { color: var(--danger-color); }
+    .modal-body { padding: 25px; }
+    
+    .upload-area {
+      border: 2px dashed #ddd;
+      border-radius: var(--border-radius);
+      padding: 20px;
+      text-align: center;
+      background: #fafafa;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .upload-area:hover { border-color: var(--primary-color); background: #f0f8ff; }
+    
+    .comprovante-container { position: relative; width: 100%; margin: 20px 0; display: flex; justify-content: center; }
+    .comprovante-story { width: 270px; height: 480px; background: linear-gradient(135deg, #1a252f 0%, var(--dark-color) 100%); border-radius: 20px; overflow: hidden; color: white; }
+    .comprovante-feed { width: 400px; height: 400px; background: linear-gradient(135deg, #1a252f 0%, var(--dark-color) 100%); border-radius: 20px; overflow: hidden; color: white; }
+    .comprovante-content { padding: 20px; height: 100%; display: flex; flex-direction: column; justify-content: space-between; position: relative; z-index: 1; }
+    .comprovante-title { font-size: 18px; font-weight: bold; margin-bottom: 4px; font-family: 'Montserrat', sans-serif; }
+    .comprovante-data { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 10px; font-size: 12px; }
+    .comprovante-item { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.2); padding: 6px 0; }
+    .comprovante-item-centralizado { display: flex; justify-content: center; border-bottom: 1px solid rgba(255,255,255,0.2); padding: 6px 0; text-align: center; }
+    .comprovante-logo { position: absolute; bottom: 12px; right: 12px; width: 35px; height: 35px; background: white; border-radius: 6px; display: flex; align-items: center; justify-content: center; padding: 5px; }
+    .comprovante-logo img { width: 100%; height: 100%; object-fit: contain; }
+    .comprovante-formatos { display: flex; gap: 12px; margin: 15px 0; justify-content: center; }
+    
+    .hidden { display: none !important; }
+    .alert { padding: 12px 16px; border-radius: var(--border-radius); margin-bottom: 20px; font-size: 0.85rem; }
+    .alert-error { background: #ffebee; color: #c62828; border-left: 3px solid #c62828; }
+    
+    .footer-login-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-light);
+      cursor: pointer;
+      font-size: 0.8rem;
+      padding: 8px 16px;
+      transition: var(--transition);
+    }
+    .footer-login-btn:hover { color: var(--primary-color); }
+    
+    .main-footer {
+      background: #f8f9fa;
+      border-top: 1px solid #e0e0e0;
+      padding: 20px;
+      text-align: center;
+      margin-top: 40px;
+    }
+    
+    @media (max-width: 768px) { .events-grid { grid-template-columns: 1fr; } .filters-bar { flex-direction: column; } }
   </style>
 </head>
 <body>
-  <header>
-    <div class="brand">Resultado Em Tempo Real</div>
-    <div id="user-area" class="small"></div>
+  <header class="main-header">
+    <img src="https://www.rc4sports.com.br/assets/img/Logo-RC4-Sports.png" alt="RC4 Sports" class="logo" onerror="this.style.display='none'">
+    <div class="brand-text">
+      <p>Resultados oficiais das competições</p>
+    </div>
   </header>
 
   <div class="container">
-    <!-- Auth -->
-    <div class="card" id="auth-card">
-      <h3>Entrar</h3>
-      <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap">
-        <input id="email" placeholder="email" style="padding:8px;border-radius:6px;border:1px solid #ddd" />
-        <input id="password" placeholder="senha" type="password" style="padding:8px;border-radius:6px;border:1px solid #ddd" />
-        <button id="btn-login">Entrar</button>
-        <button id="btn-register" class="secondary">Criar conta</button>
-        <button id="btn-visitante" class="ghost">Entrar como Visitante</button>
+    <!-- Conteúdo Principal - Visível para TODOS -->
+    <div id="main-content">
+      <div class="admin-nav" id="admin-nav" style="display: none;">
+        <div class="nav-buttons">
+          <button class="btn btn-primary" id="btn-novo-evento">➕ Novo Evento</button>
+          <button class="btn btn-outline" id="btn-atualizar-eventos">🔄 Atualizar</button>
+        </div>
+        <button class="btn btn-outline" id="btn-logout-admin">Sair</button>
       </div>
-      <p class="small">Autenticação via Firebase (Email/Senha). Faça login para acessar o painel. Ou entre como visitante para somente leitura nos resultados.</p>
-      <p class="small error" id="auth-error" style="display:none"></p>
-    </div>
-
-    <!-- App -->
-    <div class="card hidden" id="app-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-        
-
-        <nav id="main-nav">
-          <button id="nav-entrada" class="secondary">Registrar Chegada</button>
-          <button id="nav-voltas-mtb" class="secondary">Voltas MTB (4 horas)</button>
-          <button id="nav-voltas-duathlon" class="secondary">Voltas Duathlon (4 horas)</button>
-          <button id="nav-listagem" class="secondary">Listagem Completa</button>
-          <button id="nav-largadas" class="secondary">Largadas</button>
-          <button id="nav-resultados" class="secondary">Resultados</button>
-          <button id="btn-logout" class="ghost">Sair</button>
-        </nav>
+      
+      <div id="events-list-container">
+        <h2 style="margin-bottom: 20px;">Eventos Realizados</h2>
+        <div id="events-grid" class="events-grid"></div>
       </div>
 
-      <hr style="margin:12px 0" />
+      <div id="event-results-container" class="hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+          <button class="btn btn-outline" id="btn-voltar-lista">← Voltar para eventos</button>
+          <h2 id="event-title" style="font-family: 'Montserrat', sans-serif; font-size: 1.3rem;"></h2>
+          <div>
+            <button class="btn btn-primary" id="btn-edit-event-admin" style="display: none;">✏️ Editar Evento</button>
+            <button class="btn btn-success" id="btn-export-csv">📎 Exportar CSV</button>
+            <button class="btn btn-primary" id="btn-print-results">🖨️ Imprimir</button>
+          </div>
+        </div>
 
-      <div id="pages">
-        <!-- ENTRADA -->
-<div id="page-entrada">
-  <!-- NOVO: Bloco movido para dentro da página de entrada -->
-  <div style="flex:1;min-width:280px; margin-bottom:20px;">
-    <div style="font-size:14px;color:#444">Entrada rápida de número (foco automático) — apenas pressione <strong>Enter</strong></div>
-    <div style="margin-top:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <input id="numero-input" maxlength="10" class="big-input" placeholder="0000" autocomplete="off" inputmode="numeric" />
-      <div style="display:flex;flex-direction:row;gap:8px;align-items:center;margin-left:20px">
-        <button id="btn-limpar" class="ghost">Limpar</button>
-        <img src="https://www.rc4sports.com.br/assets/img/Logo-RC4-Sports.png" alt="RC4 Sports" class="logo-rc4">
+        <div class="filters-bar">
+          <div class="form-group"><label>🏷️ Modalidade</label><select id="f-modalidade"><option value="">Todas</option></select></div>
+          <div class="form-group"><label>📂 Categoria</label><select id="f-categoria"><option value="">Todas</option></select></div>
+          <div class="form-group"><label>⚧ Gênero</label><select id="f-genero"><option value="">Todos</option></select></div>
+          <button class="btn btn-primary" id="btn-aplicar-filtro">Filtrar</button>
+          <button class="btn btn-outline" id="btn-limpar-filtros">Limpar Filtro</button>
+        </div>
+
+        <div class="results-table-container" id="table-resultados"></div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
-      <div class="small">Últimos 10 atletas registrados (compartilhado)</div>
-      <button id="btn-limpar-ultimos" class="ghost">Limpar</button>
+
+    <!-- Login Admin (inicialmente oculto) -->
+    <div class="card" id="admin-login-card" style="max-width: 450px; margin: 0 auto; display: none;">
+      <div class="card-header"><h2>🔐 Acesso Administrativo</h2><p>Entre para gerenciar eventos e resultados</p></div>
+      <div class="card-body">
+        <div class="form-group"><label>E-mail</label><input type="email" id="admin-email" placeholder="seu@email.com"></div>
+        <div class="form-group"><label>Senha</label><input type="password" id="admin-password" placeholder="********"></div>
+        <div id="admin-login-error" class="alert alert-error hidden"></div>
+        <button class="btn btn-primary" id="admin-login-btn" style="width: 100%;">Entrar</button>
+        <button class="btn btn-outline" id="btn-voltar-main" style="width: 100%; margin-top: 10px;">Voltar</button>
+      </div>
     </div>
-    <div class="last5" id="last5"></div>
   </div>
-  
-  <!-- Mensagens existentes -->
-  <div style="margin-top:12px">
-    <p class="small">Aponte o leitor de código de barras e pressione Enter. O cursor permanecerá aqui enquanto estiver nesta tela.</p>
-    <p class="small success" id="entrada-success" style="display:none"></p>
-    <p class="small error" id="entrada-error" style="display:none"></p>
-    <p class="small warning" id="entrada-warning" style="display:none"></p>
-  </div>
-</div>
-          <div style="margin-top:12px">
-            <p class="small">Aponte o leitor de código de barras e pressione Enter. O cursor permanecerá aqui enquanto estiver nesta tela.</p>
-            <p class="small success" id="entrada-success" style="display:none"></p>
-            <p class="small error" id="entrada-error" style="display:none"></p>
-            <p class="small warning" id="entrada-warning" style="display:none"></p>
+
+  <footer class="main-footer">
+    <button class="footer-login-btn" id="footer-login-btn">Login</button>
+  </footer>
+
+  <!-- Modal Novo/Editar Evento -->
+  <div id="modal-evento" class="modal">
+    <div class="modal-content">
+      <div class="modal-header"><h3 id="modal-evento-titulo">Novo Evento</h3><span class="close close-evento">&times;</span></div>
+      <div class="modal-body">
+        <div class="form-group"><label>Nome do Evento *</label><input type="text" id="evento-nome" placeholder="Ex: 4 HORAS MATA ATLÂNTICA"></div>
+        <div class="form-group"><label>Data do Evento</label><input type="date" id="evento-data"></div>
+        <div class="form-group">
+          <label>Upload de Resultados (CSV)</label>
+          <div class="upload-area" id="upload-area-evento">
+            <p>📁 Clique ou arraste um arquivo CSV</p>
+            <p style="font-size: 11px; color: #999;">Formato: numero,atleta,modalidade,categoria,genero,chegada,tempo,voltas</p>
+            <input type="file" id="evento-csv" accept=".csv" style="display: none;">
           </div>
+          <div id="csv-preview" style="margin-top: 10px; font-size: 12px;"></div>
         </div>
-
-        <!-- VOLTAS MTB -->
-        <div id="page-voltas-mtb" class="hidden">
-          <h4>Registro de Voltas - MTB</h4>
-          <div style="margin-bottom:16px">
-            <p class="small">Visualize as voltas registradas dos atletas de MTB. Cada registro conta 1 volta. O sistema calcula automaticamente a classificação baseada em maior número de voltas e menor tempo.</p>
-            <p class="small warning">⚠️ Intervalo mínimo entre voltas: 3 minutos</p>
-          </div>
-          
-          <!-- Filtro para voltas MTB -->
-          <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
-            <input id="filtro-voltas-numero" placeholder="Filtrar por número do atleta" style="padding:8px;border-radius:6px;border:1px solid #ddd;width:200px" />
-            <button id="btn-limpar-filtro-voltas" class="ghost">Limpar Filtro</button>
-	    <button id="btn-limpar-voltas" class="secondary">Limpar Registro de Voltas</button>
-
-          </div>
-          
-          <div id="table-voltas-mtb"></div>
-        </div>
-
-        <!-- VOLTAS DUATHLON -->
-        <div id="page-voltas-duathlon" class="hidden">
-          <h4>Registro de Voltas - Duathlon Cross</h4>
-          <div style="margin-bottom:16px">
-            <p class="small">Visualize as voltas registradas dos atletas de Duathlon Cross. Cada registro conta 1 volta. O sistema calcula automaticamente a classificação baseada em maior número de voltas e menor tempo.</p>
-            <p class="small warning">⚠️ Intervalo mínimo entre voltas: 3 minutos</p>
-          </div>
-          
-          <!-- Filtro para voltas Duathlon -->
-          <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
-            <input id="filtro-voltas-duathlon-numero" placeholder="Filtrar por número do atleta" style="padding:8px;border-radius:6px;border:1px solid #ddd;width:200px" />
-            <button id="btn-limpar-filtro-voltas-duathlon" class="ghost">Limpar Filtro</button>
-	    <button id="btn-limpar-voltas-duathlon" class="secondary">Limpar Registro de Voltas</button>
-          </div>
-          
-          <div id="table-voltas-duathlon"></div>
-        </div>
-
-        <!-- LISTAGEM -->
-        <div id="page-listagem" class="hidden">
-          <h4>Listagem Completa</h4>
-          <div class="row" style="margin:8px 0;align-items:center">
-            <button id="btn-add-athlete" class="secondary">Novo Atleta</button>
-	    <button id="btn-limpar-listagem" class="secondary">Limpar Lista de Atletas</button>
-
-            <input type="file" id="csv-upload" accept=".csv" />
-            <input id="search-listagem" placeholder="Pesquisar por nome ou número" style="flex:1;padding:8px;border-radius:6px;border:1px solid #ddd" />
-          </div>
-          <div id="table-listagem"></div>
-        </div>
-
-        <!-- LARGADAS -->
-        <div id="page-largadas" class="hidden">
-          <h4>Largadas</h4>
-          <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
-            <button id="btn-add-largada" class="secondary">Nova Largada</button>
-          </div>
-          <div id="table-largadas"></div>
-        </div>
-
-        <!-- RESULTADOS -->
-        <div id="page-resultados" class="hidden">
-          <h4>Resultados</h4>
-          <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
-            <div class="filters" style="align-items:center">
-              <label class="small">Modalidade</label>
-              <select id="f-modalidade"><option value="">Todas</option></select>
-              <label class="small">Categoria</label>
-              <select id="f-categoria"><option value="">Todas</option></select>
-              <label class="small">Gênero</label>
-              <select id="f-genero"><option value="">Todos</option></select>
-              <button id="btn-aplicar-filtro" class="secondary">Aplicar</button>
-            </div>
-            <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-  <button id="btn-upload-resultados" class="secondary">📤 Upload CSV</button>
-  <button id="btn-export" class="secondary">Exportar CSV</button>
-  <button id="btn-imprimir-resultados" class="secondary">Imprimir Resultados</button>
-  <button id="btn-comprovante" class="secondary">Gerar Comprovante</button>
-  <button id="btn-limpar-resultados" class="secondary">Limpar Resultados</button>
-</div>
-
-<!-- Input de arquivo oculto -->
-<input type="file" id="csv-upload-resultados" accept=".csv" style="display:none" />
-          </div>
-          <div id="table-resultados"></div>
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+          <button class="btn btn-outline" id="btn-cancelar-evento">Cancelar</button>
+          <button class="btn btn-primary" id="btn-salvar-evento">Salvar Evento</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Modal para Gerar Comprovante -->
-  <div id="modal-comprovante" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1000; display: none; align-items: center; justify-content: center;">
-    <div class="overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);"></div>
-    <div class="modal" style="position: relative; z-index: 1001; max-width: 500px; background: white; border-radius: 10px; padding: 20px; margin: 20px;">
-      <h4>Gerar Comprovante</h4>
-      <div class="comprovante-formatos">
-        <button id="btn-comprovante-story" class="secondary">Formato Story</button>
-        <button id="btn-comprovante-feed" class="secondary">Formato Feed</button>
-      </div>
-      <div class="comprovante-container">
-        <div id="comprovante-preview" class="comprovante-story">
-          <div class="comprovante-content">
-            <div class="comprovante-header">
-              <div class="comprovante-title">4 HORAS MATA ATLÂNTICA</div>
-              <div class="comprovante-subtitle">Desafio Concluído!</div>
-            </div>
-            <div class="comprovante-data" id="comprovante-data">
-              <!-- Dados serão preenchidos via JavaScript -->
-            </div>
-            <div class="comprovante-footer">
-              <div id="comprovante-texto"></div>
-            </div>
-            <div class="comprovante-logo">
-              <img src="https://lh3.googleusercontent.com/d/1zHFiEJj1bpUN_ghxdq07dqjvVX0aLKv0" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;">
+  <!-- Modal Comprovante -->
+  <div id="modal-comprovante" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header"><h3>🏅 Comprovante de Participação</h3><span class="close close-comprovante">&times;</span></div>
+      <div class="modal-body">
+        <div class="comprovante-formatos">
+          <button class="btn btn-sm btn-primary" id="btn-comprovante-story">Story (9:16)</button>
+          <button class="btn btn-sm btn-primary" id="btn-comprovante-feed">Feed (1:1)</button>
+        </div>
+        <div class="comprovante-container">
+          <div id="comprovante-preview" class="comprovante-story">
+            <div class="comprovante-content">
+              <div class="comprovante-title" id="comprovante-prova-nome">Carregando...</div>
+              <div class="comprovante-data" id="comprovante-data"></div>
+              <div class="comprovante-logo"><img src="https://www.rc4sports.com.br/assets/img/Logo-RC4-Sports.png" alt="Logo"></div>
             </div>
           </div>
         </div>
-      </div>
-      <div class="form-actions">
-        <button id="btn-fechar-comprovante" class="ghost">Fechar</button>
-        <button id="btn-download-comprovante" class="secondary">Download</button>
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+          <button class="btn btn-outline" id="btn-fechar-comprovante">Fechar</button>
+          <button class="btn btn-primary" id="btn-download-comprovante">📸 Baixar</button>
+        </div>
       </div>
     </div>
   </div>
-<script type="module">
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
+    import { getDatabase, ref, onValue, set, remove, get, push } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js';
+
     const firebaseConfig = {
       apiKey: "AIzaSyBZqXrKnRGvM0BG5qrrE38R8zR25tacOzw",
       authDomain: "teste-c702e.firebaseapp.com",
-      databaseURL: "https://teste-c702e-default-rtdb.firebaseio.com",
+      databaseURL: "https://teste-c702e-2510a.firebaseio.com",
       projectId: "teste-c702e",
       storageBucket: "teste-c702e.firebasestorage.app",
       messagingSenderId: "478905955045",
       appId: "1:478905955045:web:86bc4f77bf4296c6e85a0c"
     };
 
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js';
-    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
-    import { getDatabase, ref, set, get, onValue, child, remove, update, push } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js';
-
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
+    
+    const PATH_EVENTS = 'events';
+    
+    let isAdmin = false;
+    let eventsList = [];
+    let currentEventId = null;
+    let currentEventData = { info: {}, results: [] };
+    let filteredResults = [];
+    let pendingCSVData = null;
+    let atletaSelecionadoComprovante = null;
 
-    // UI refs
-    const authCard = document.getElementById('auth-card');
-    const appCard = document.getElementById('app-card');
-    const userArea = document.getElementById('user-area');
-    const emailInput = document.getElementById('email');
-    const passInput = document.getElementById('password');
-    const btnLogin = document.getElementById('btn-login');
-    const btnRegister = document.getElementById('btn-register');
-const btnUploadResultados = document.getElementById('btn-upload-resultados');
-const csvUploadResultados = document.getElementById('csv-upload-resultados');
-    const btnVisitante = document.getElementById('btn-visitante');
-    const btnLogout = document.getElementById('btn-logout');
-    const authError = document.getElementById('auth-error');
-
-    const numeroInput = document.getElementById('numero-input');
-    const btnLimpar = document.getElementById('btn-limpar');
-    const entradaSuccess = document.getElementById('entrada-success');
-    const entradaError = document.getElementById('entrada-error');
-    const entradaWarning = document.getElementById('entrada-warning');
-
-    const navEntrada = document.getElementById('nav-entrada');
-    const navVoltasMtb = document.getElementById('nav-voltas-mtb');
-    const navVoltasDuathlon = document.getElementById('nav-voltas-duathlon');
-    const navListagem = document.getElementById('nav-listagem');
-    const navLargadas = document.getElementById('nav-largadas');
-    const navResultados = document.getElementById('nav-resultados');
-
-    const pageEntrada = document.getElementById('page-entrada');
-    const pageVoltasMtb = document.getElementById('page-voltas-mtb');
-    const pageVoltasDuathlon = document.getElementById('page-voltas-duathlon');
-    const pageListagem = document.getElementById('page-listagem');
-    const pageLargadas = document.getElementById('page-largadas');
-    const pageResultados = document.getElementById('page-resultados');
-
-    const tableListagem = document.getElementById('table-listagem');
-    const tableVoltasMtb = document.getElementById('table-voltas-mtb');
-    const tableVoltasDuathlon = document.getElementById('table-voltas-duathlon');
-    const tableLargadas = document.getElementById('table-largadas');
+    // DOM Elements
+    const eventsGrid = document.getElementById('events-grid');
+    const eventsListContainer = document.getElementById('events-list-container');
+    const eventResultsContainer = document.getElementById('event-results-container');
+    const adminNav = document.getElementById('admin-nav');
+    const adminLoginCard = document.getElementById('admin-login-card');
+    const mainContent = document.getElementById('main-content');
+    const eventTitle = document.getElementById('event-title');
     const tableResultados = document.getElementById('table-resultados');
-
-    // Elementos para filtro de voltas
-    const filtroVoltasNumero = document.getElementById('filtro-voltas-numero');
-    const btnLimparFiltroVoltas = document.getElementById('btn-limpar-filtro-voltas');
-    const filtroVoltasDuathlonNumero = document.getElementById('filtro-voltas-duathlon-numero');
-    const btnLimparFiltroVoltasDuathlon = document.getElementById('btn-limpar-filtro-voltas-duathlon');
-
-    const btnAddAthlete = document.getElementById('btn-add-athlete');
-    const csvUpload = document.getElementById('csv-upload');
-    const searchListagem = document.getElementById('search-listagem');
-    const btnAddLargada = document.getElementById('btn-add-largada');
-
     const fModalidade = document.getElementById('f-modalidade');
     const fCategoria = document.getElementById('f-categoria');
     const fGenero = document.getElementById('f-genero');
-    const btnAplicarFiltro = document.getElementById('btn-aplicar-filtro');
-    const btnExport = document.getElementById('btn-export');
-    const btnComprovante = document.getElementById('btn-comprovante');
+    const btnEditEventAdmin = document.getElementById('btn-edit-event-admin');
+
+    function escapeHtml(s) { if (!s) return ''; return String(s).replace(/[&<>"']/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m])); }
     
-    // Elementos do modal de comprovante
-    const modalComprovante = document.getElementById('modal-comprovante');
-    const btnComprovanteStory = document.getElementById('btn-comprovante-story');
-    const btnComprovanteFeed = document.getElementById('btn-comprovante-feed');
-    const btnFecharComprovante = document.getElementById('btn-fechar-comprovante');
-    const btnDownloadComprovante = document.getElementById('btn-download-comprovante');
-    const comprovantePreview = document.getElementById('comprovante-preview');
-    const comprovanteData = document.getElementById('comprovante-data');
-    const comprovanteTexto = document.getElementById('comprovante-texto');
-
-    // Botões de limpeza
-    const btnLimparResultados = document.getElementById('btn-limpar-resultados');
-    const btnImprimirResultados = document.getElementById('btn-imprimir-resultados');
-    const btnLimparUltimos = document.getElementById('btn-limpar-ultimos');
-    const btnLimparVoltas = document.getElementById('btn-limpar-voltas');
-    const btnLimparVoltasDuathlon = document.getElementById('btn-limpar-voltas-duathlon');
-    const btnLimparListagem = document.getElementById('btn-limpar-listagem');
-
-    // Focus management (only on Entrada page)
-    let focusInterval = null;
-    function enableEntradaFocus(){
-      if(!auth.currentUser || !numeroInput || numeroInput.offsetParent === null) return;
-      numeroInput.focus();
-      if(focusInterval) clearInterval(focusInterval);
-      focusInterval = setInterval(()=>{
-        if(document.activeElement !== numeroInput && numeroInput.offsetParent !== null){
-          numeroInput.focus();
-        }
-      }, 900);
-    }
-    function disableEntradaFocus(){
-      if(focusInterval) { clearInterval(focusInterval); focusInterval = null; }
-    }
-
-    // State
-    let latestListagem = [];
-    let latestLargadas = [];
-    let latestResultados = [];
-    let latestVoltasMtb = {};
-    let latestVoltasDuathlon = {};
-    let filteredResultadosCache = [];
-    let isVisitor = false;
-    let atletaSelecionadoComprovante = null;
-    let formatoComprovanteAtual = 'story';
-
-    // Auth handlers
-    btnLogin.onclick = async () => {
-      try{
-        await signInWithEmailAndPassword(auth, emailInput.value, passInput.value);
-      }catch(err){
-        authError.style.display='block';
-        authError.textContent = 'Erro login: ' + err.message;
-        console.error(err);
-      }
-    };
-    btnRegister.onclick = async () => {
-      try{
-        await createUserWithEmailAndPassword(auth, emailInput.value, passInput.value);
-        alert('Conta criada. Faça login.');
-      }catch(err){
-        authError.style.display='block';
-        authError.textContent = 'Erro criar conta: ' + err.message;
-        console.error(err);
-      }
-    };
-    btnLogout.onclick = async ()=>{ 
-      if(isVisitor){
-        isVisitor = false;
-        authCard.classList.remove('hidden');
-        appCard.classList.add('hidden');
-        userArea.textContent = '';
-        navEntrada.style.display = '';
-        navVoltasMtb.style.display = '';
-        navVoltasDuathlon.style.display = '';
-        navListagem.style.display = '';
-        navLargadas.style.display = '';
-        showPage('entrada');
-      } else {
-        await signOut(auth); 
-      }
-    };
-
-    // Entrar como visitante
-    btnVisitante.onclick = () => {
-      isVisitor = true;
-      authCard.classList.add('hidden');
-      appCard.classList.remove('hidden');
-      userArea.textContent = 'Visitante (somente leitura)';
-      navEntrada.style.display = 'none';
-      navVoltasMtb.style.display = 'none';
-      navVoltasDuathlon.style.display = 'none';
-      navListagem.style.display = 'none';
-      navLargadas.style.display = 'none';
-      numeroInput.classList.add('disabled');
-      numeroInput.setAttribute('disabled','true');
-      btnLimpar.classList.add('disabled');
-      btnLimpar.setAttribute('disabled','true');
-      btnAddAthlete.classList.add('disabled'); btnAddAthlete.setAttribute('disabled','true');
-      csvUpload.classList.add('disabled'); csvUpload.disabled = true;
-      btnAddLargada.classList.add('disabled'); btnAddLargada.setAttribute('disabled','true');
-      startRealtimeListeners();
-      showPage('resultados');
-    };
-
-    onAuthStateChanged(auth, user => {
-      if(user){
-        isVisitor = false;
-        authCard.classList.add('hidden');
-        appCard.classList.remove('hidden');
-        userArea.textContent = user.email;
-        navEntrada.style.display = '';
-        navVoltasMtb.style.display = '';
-        navVoltasDuathlon.style.display = '';
-        navListagem.style.display = '';
-        navLargadas.style.display = '';
-        numeroInput.classList.remove('disabled'); numeroInput.removeAttribute('disabled');
-        btnLimpar.classList.remove('disabled'); btnLimpar.removeAttribute('disabled');
-        btnAddAthlete.classList.remove('disabled'); btnAddAthlete.removeAttribute('disabled');
-        csvUpload.classList.remove('disabled'); csvUpload.disabled = false;
-        btnAddLargada.classList.remove('disabled'); btnAddLargada.removeAttribute('disabled');
-        startRealtimeListeners();
-        showPage('entrada');
-      } else {
-        if(!isVisitor){
-          authCard.classList.remove('hidden');
-          appCard.classList.add('hidden');
-          userArea.textContent = '';
-          disableEntradaFocus();
-        }
-      }
-    });
-
-    // Navigation
-    navEntrada.addEventListener('click', ()=> { if(isVisitor){ alert('Modo visitante: acesso somente leitura.'); return; } showPage('entrada'); });
-    navVoltasMtb.addEventListener('click', ()=> { if(isVisitor){ alert('Modo visitante: acesso somente leitura.'); return; } showPage('voltas-mtb'); });
-    navVoltasDuathlon.addEventListener('click', ()=> { if(isVisitor){ alert('Modo visitante: acesso somente leitura.'); return; } showPage('voltas-duathlon'); });
-    navListagem.addEventListener('click', ()=> { if(isVisitor){ alert('Modo visitante: acesso somente leitura.'); return; } showPage('listagem'); });
-    navLargadas.addEventListener('click', ()=> { if(isVisitor){ alert('Modo visitante: acesso somente leitura.'); return; } showPage('largadas'); });
-    navResultados.addEventListener('click', ()=> showPage('resultados'));
-
-function showPage(p){
-  pageEntrada.classList.add('hidden');
-  pageVoltasMtb.classList.add('hidden');
-  pageVoltasDuathlon.classList.add('hidden');
-  pageListagem.classList.add('hidden');
-  pageLargadas.classList.add('hidden');
-  pageResultados.classList.add('hidden');
-  disableEntradaFocus();
-  entradaSuccess.style.display = 'none';
-  entradaError.style.display = 'none';
-  entradaWarning.style.display = 'none';
-  
-  if(p==='entrada'){ 
-    if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; }
-    pageEntrada.classList.remove('hidden'); enableEntradaFocus(); 
-  }
-  if(p==='voltas-mtb'){ if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; } pageVoltasMtb.classList.remove('hidden'); }
-  if(p==='voltas-duathlon'){ if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; } pageVoltasDuathlon.classList.remove('hidden'); }
-  if(p==='listagem'){ if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; } pageListagem.classList.remove('hidden'); }
-  if(p==='largadas'){ if(isVisitor){ alert('Modo visitante: apenas Resultados disponíveis.'); showPage('resultados'); return; } pageLargadas.classList.remove('hidden'); }
-  if(p==='resultados') {
-    pageResultados.classList.remove('hidden');
-    // ATUALIZAR OS RESULTADOS SEMPRE QUE A PÁGINA FOR ACESSADA
-    renderResultados(latestResultados);
-  }
-}
-    // Enter registers arrival
-    numeroInput.addEventListener('keydown', (e) => {
-      if(e.key === 'Enter'){
-        e.preventDefault();
-        registrarChegada();
-      }
-    });
-    btnLimpar.addEventListener('click', ()=>{ numeroInput.value = ''; numeroInput.focus(); });
-
-    // Filtro de voltas MTB
-    filtroVoltasNumero.addEventListener('input', () => {
-      renderVoltasMtb(latestVoltasMtb);
-    });
-
-    btnLimparFiltroVoltas.addEventListener('click', () => {
-      filtroVoltasNumero.value = '';
-      renderVoltasMtb(latestVoltasMtb);
-    });
-
-    // Filtro de voltas Duathlon
-    filtroVoltasDuathlonNumero.addEventListener('input', () => {
-      renderVoltasDuathlon(latestVoltasDuathlon);
-    });
-
-    btnLimparFiltroVoltasDuathlon.addEventListener('click', () => {
-      filtroVoltasDuathlonNumero.value = '';
-      renderVoltasDuathlon(latestVoltasDuathlon);
-    });
-    // ========== FUNÇÕES DE LIMPEZA TRANSFERIDAS DO OFFLINE ==========
-
-    // Botão para limpar TODOS os resultados (incluindo MTB e Duathlon)
-    btnLimparResultados.addEventListener('click', async () => {
-      if (isVisitor || !auth.currentUser) {
-        alert('Ação proibida: modo visitante. Faça login para limpar resultados.');
-        return;
-      }
-      
-      if (!confirm('Tem certeza que deseja apagar TODOS os resultados registrados? Isso inclui:\n\n- Resultados de chegada\n- Voltas MTB\n- Voltas Duathlon\n\nEssa ação não pode ser desfeita.')) return;
-      
-      try {
-        // Limpar resultados de chegada
-        await remove(ref(db, 'resultados'));
-        
-        // Limpar voltas MTB
-        await remove(ref(db, 'voltasMtb'));
-        
-        // Limpar voltas Duathlon
-        await remove(ref(db, 'voltasDuathlon'));
-        
-        // Limpar cache de resultados filtrados
-        filteredResultadosCache = [];
-        
-        // Atualizar todas as visualizações
-        renderResultados([]);
-        renderVoltasMtb({});
-        renderVoltasDuathlon({});
-        
-        alert('Todos os resultados foram apagados com sucesso!');
-      } catch (err) {
-        console.error('Erro ao apagar resultados:', err);
-        alert('Erro ao limpar resultados: ' + (err.message || err));
-      }
-    });
-
-    // Botão para limpar todos os registros de voltas MTB
-    btnLimparVoltas.addEventListener('click', async () => {
-      if (isVisitor || !auth.currentUser) {
-        alert('Ação proibida: modo visitante. Faça login para limpar voltas.');
-        return;
-      }
-      if (!confirm('Tem certeza que deseja apagar TODOS os registros de voltas MTB? Essa ação não pode ser desfeita.')) return;
-      try {
-        await remove(ref(db, 'voltasMtb'));
-        // Atualizar resultados para remover os resultados de MTB
-        renderResultados(latestResultados);
-        alert('Todos os registros de voltas MTB foram apagados com sucesso.');
-      } catch (err) {
-        console.error('Erro ao apagar voltas MTB:', err);
-        alert('Erro ao limpar voltas MTB: ' + (err.message || err));
-      }
-    });
-
-    // Botão para limpar todos os registros de voltas Duathlon
-    btnLimparVoltasDuathlon.addEventListener('click', async () => {
-      if (isVisitor || !auth.currentUser) {
-        alert('Ação proibida: modo visitante. Faça login para limpar voltas.');
-        return;
-      }
-      if (!confirm('Tem certeza que deseja apagar TODOS os registros de voltas Duathlon? Essa ação não pode ser desfeita.')) return;
-      try {
-        await remove(ref(db, 'voltasDuathlon'));
-        // Atualizar resultados para remover os resultados de Duathlon
-        renderResultados(latestResultados);
-        alert('Todos os registros de voltas Duathlon foram apagados com sucesso.');
-      } catch (err) {
-        console.error('Erro ao apagar voltas Duathlon:', err);
-        alert('Erro ao limpar voltas Duathlon: ' + (err.message || err));
-      }
-    });
-
-    // Botão para limpar lista completa de atletas
-    btnLimparListagem.addEventListener('click', async () => {
-      if (isVisitor || !auth.currentUser) {
-        alert('Ação proibida: modo visitante. Faça login para limpar a listagem.');
-        return;
-      }
-      if (!confirm('Tem certeza que deseja apagar TODOS os atletas registrados? Essa ação não pode ser desfeita.')) return;
-      try {
-        await remove(ref(db, 'listagem'));
-        alert('Todos os atletas foram apagados com sucesso.');
-      } catch (err) {
-        console.error('Erro ao apagar lista de atletas:', err);
-        alert('Erro ao limpar lista: ' + (err.message || err));
-      }
-    });
-
-    // Botão para limpar o histórico dos últimos 10 atletas registrados
-    btnLimparUltimos.addEventListener('click', async () => {
-      if (isVisitor || !auth.currentUser) {
-        alert('Ação proibida: modo visitante. Faça login para limpar o histórico.');
-        return;
-      }
-      if (!confirm('Tem certeza que deseja apagar o histórico dos últimos 10 atletas registrados?')) return;
-      try {
-        await remove(ref(db, 'ultimosRegistrados'));
-        alert('Histórico apagado com sucesso.');
-      } catch (err) {
-        console.error('Erro ao apagar últimos registrados:', err);
-        alert('Erro ao limpar histórico: ' + (err.message || err));
-      }
-    });
-
-    // Botão para imprimir resultados filtrados
-    btnImprimirResultados.addEventListener('click', () => {
-      // Verifica se há resultados exibidos
-      if (!filteredResultadosCache || filteredResultadosCache.length === 0) {
-        alert('Nenhum resultado disponível para impressão.');
-        return;
-      }
-
-      // Monta HTML de impressão
-      const win = window.open('', '_blank');
-      win.document.write(`
-        <html>
-          <head>
-            <title>Resultados Filtrados</title>
-            <style>
-              body { font-family: Arial, sans-serif; margin: 20px; }
-              h2 { text-align: center; }
-              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-              th, td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 14px; }
-              th { background: #f0f0f0; }
-              tr:nth-child(even) { background: #fafafa; }
-              @media print {
-                button { display: none; }
-              }
-            </style>
-          </head>
-          <body>
-            <h2>Resultados Filtrados</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>Posição</th>
-                  <th>Número</th>
-                  <th>Atleta</th>
-                  <th>Modalidade</th>
-                  <th>Categoria</th>
-                  <th>Gênero</th>
-                  <th>Chegada</th>
-                  <th>Tempo</th>
-                  <th>Voltas</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${filteredResultadosCache.map((r, i) => `
-                  <tr>
-                    <td>${i + 1}º</td>
-                    <td>${r.numero}</td>
-                    <td>${r.atleta || ''}</td>
-                    <td>${r.modalidade || ''}</td>
-                    <td>${r.categoria || ''}</td>
-                    <td>${r.genero || ''}</td>
-                    <td>${r.chegada || ''}</td>
-                    <td>${r.tempo || ''}</td>
-                    <td>${r.totalVoltas ? r.totalVoltas : ''}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-            <div style="text-align:center;margin-top:30px;">
-              <button onclick="window.print()">🖨️ Imprimir</button>
-            </div>
-          </body>
-        </html>
-      `);
-      win.document.close();
-      win.focus();
-    });
-
-    btnAplicarFiltro.addEventListener('click', () => {
-      renderResultados(latestResultados);
-    });
-
-    // ========== FIM DAS FUNÇÕES DE LIMPEZA ==========
-    async function registrarChegada(){
-      if(isVisitor || !auth.currentUser){
-        alert('Ação proibida: modo visitante ou não autenticado. Faça login para registrar chegadas.');
-        return;
-      }
-      const raw = (numeroInput.value || '').trim();
-      if(!raw){ numeroInput.focus(); return; }
-      const numero = padNum(raw.replace(/\D/g,''));
-      
-      try{
-        // Verificar se atleta existe
-        const athleteSnap = await get(child(ref(db), `listagem/${numero}`));
-        if(!athleteSnap.exists()){
-          if(!confirm(`Atleta ${numero} não encontrado. Deseja cadastrar rapidamente?`)) {
-            numeroInput.value=''; numeroInput.focus(); return;
-          }
-          await quickRegisterAthlete(numero);
-        }
-        
-        const athlete = (await get(child(ref(db), `listagem/${numero}`))).val();
-        
-        // VERIFICAR DUPLICAÇÃO (exceto MTB e Duathlon Cross)
-        if(athlete.modalidade !== 'MTB' && athlete.modalidade !== 'DUATHLON CROSS'){
-          const resultadoSnap = await get(child(ref(db), `resultados/${numero}`));
-          if(resultadoSnap.exists()){
-            entradaError.textContent = `Atleta ${numero} já possui chegada registrada!`;
-            entradaError.style.display = 'block';
-            numeroInput.value = '';
-            numeroInput.focus();
-            return;
-          }
-        }
-
-let largadaInicioStr = null;
-
-if(athlete && athlete.modalidade_original) {
-  const modalidadeParaPath = processarModalidadeParaStorage(athlete.modalidade_original);
-  const largSnap = await get(child(ref(db), `largadas/${modalidadeParaPath}/inicio`));
-  if(largSnap.exists()) largadaInicioStr = largSnap.val();
-
-} else if(athlete && athlete.modalidade) {
-  const modalidadeParaPath = processarModalidadeParaStorage(athlete.modalidade);
-  console.log('Buscando largada para modalidade (fallback):', athlete.modalidade, '-> path:', modalidadeParaPath);
-  const largSnap = await get(child(ref(db), `largadas/${modalidadeParaPath}/inicio`));
-  if(largSnap.exists()) largadaInicioStr = largSnap.val();
-}
-        const chegadaDt = new Date();
-        const chegadaStr = formatDMYTime(chegadaDt);
-        let tempoStr = null;
-        
-        if(largadaInicioStr){
-          const largDt = parseDMYTime(largadaInicioStr);
-console.log("largadaInicioStr:", largadaInicioStr);
-console.log("largDt:", largDt);
-console.log("chegadaDt:", chegadaDt);
-          const diffSec = Math.round((chegadaDt.getTime() - largDt.getTime())/1000);
-          tempoStr = formatTempoFromSeconds(diffSec);
-        }
-
-        // Se for MTB ou Duathlon Cross, registrar como volta especial
-        if(athlete.modalidade === 'MTB' || athlete.modalidade === 'DUATHLON CROSS'){
-          // Verificar intervalo mínimo para MTB e Duathlon
-          let voltasAtleta = [];
-          if(athlete.modalidade === 'MTB') {
-            voltasAtleta = latestVoltasMtb[numero] || [];
-          } else if(athlete.modalidade === 'DUATHLON CROSS') {
-            voltasAtleta = latestVoltasDuathlon[numero] || [];
-          }
-          
-          const podeRegistrar = verificarIntervaloMinimo(voltasAtleta);
-          
-          if (!podeRegistrar) {
-            entradaWarning.textContent = `Aguarde 3 minutos entre as voltas! Atleta ${numero} registrou volta recentemente.`;
-            entradaWarning.style.display = 'block';
-            numeroInput.value = '';
-            numeroInput.focus();
-            return;
-          }
-          
-          if(athlete.modalidade === 'MTB') {
-            await registrarVoltaMtbFirebase(numero, athlete, chegadaStr, tempoStr);
-            entradaSuccess.textContent = `Volta registrada para atleta ${numero} (MTB)`;
-          } else {
-            await registrarVoltaDuathlonFirebase(numero, athlete, chegadaStr, tempoStr);
-            entradaSuccess.textContent = `Volta registrada para atleta ${numero} (Duathlon Cross)`;
-          }
-          entradaSuccess.style.display = 'block';
-        } else {
-          // Outras modalidades: registro normal
-          await set(ref(db, `resultados/${numero}`), {
-  chegada: chegadaStr,
-  tempo: tempoStr || '',
-  atleta: (athlete && athlete.atleta) || '',
-  genero: (athlete && athlete.genero) || '',
-  modalidade: (athlete && athlete.modalidade) || '',
-  modalidade_original: (athlete && athlete.modalidade_original) || (athlete && athlete.modalidade) || '', // Adicionar esta linha
-  categoria: (athlete && athlete.categoria) || '',
-  data_nascimento: (athlete && athlete.data_nascimento) || '',
-  idade: (athlete && athlete.idade) || '',
-  registradoPor: auth.currentUser ? auth.currentUser.email : null,
-  registradaEmISO: new Date().toISOString()
-});
-          entradaSuccess.textContent = `Chegada registrada para atleta ${numero}`;
-          entradaSuccess.style.display = 'block';
-        }
-        
-        pushLastRegistrado(numero);
-        numeroInput.value = '';
-        numeroInput.focus();
-        
-        // ATUALIZAR RESULTADOS AUTOMATICAMENTE APÓS REGISTRO
-        atualizarResultadosAutomaticamente();
-        
-      }catch(err){
-        console.error('Erro registrar chegada:', err);
-        entradaError.textContent = 'Erro ao registrar chegada: ' + (err.message||err);
-        entradaError.style.display = 'block';
-      }
-    }
-
-    // Função para atualizar resultados automaticamente
-    function atualizarResultadosAutomaticamente() {
-      renderResultados(latestResultados);
-    }
-
-    async function registrarVoltaMtbFirebase(numero, athlete, dataHora, tempo){
-      const voltaRef = push(ref(db, `voltasMtb/${numero}`));
-      await set(voltaRef, {
-        numero: numero,
-        atleta: athlete.atleta || '',
-        genero: athlete.genero || '',
-        categoria: athlete.categoria || '',
-        dataHora: dataHora,
-        tempo: tempo || '',
-        registradoPor: auth.currentUser ? auth.currentUser.email : null,
-        registradaEmISO: new Date().toISOString()
-      });
-    }
-
-    async function registrarVoltaDuathlonFirebase(numero, athlete, dataHora, tempo){
-      const voltaRef = push(ref(db, `voltasDuathlon/${numero}`));
-      await set(voltaRef, {
-        numero: numero,
-        atleta: athlete.atleta || '',
-        genero: athlete.genero || '',
-        categoria: athlete.categoria || '',
-        dataHora: dataHora,
-        tempo: tempo || '',
-        registradoPor: auth.currentUser ? auth.currentUser.email : null,
-        registradaEmISO: new Date().toISOString()
-      });
-    }
-
-    // Quick register modal
-    async function quickRegisterAthlete(numero){
-      if(isVisitor || !auth.currentUser) {
-        alert('Ação proibida: modo visitante. Faça login para cadastrar atletas.');
-        return;
-      }
-      return new Promise((resolve, reject)=>{
-        const overlay = document.createElement('div'); overlay.className='overlay';
-        const form = document.createElement('form'); form.className='modal';
-        form.innerHTML = `
-          <h4>Cadastro Rápido - ${numero}</h4>
-          <input id="q_atleta" placeholder="Nome (Atleta)" required />
-          <input id="q_genero" placeholder="Gênero (ex: Feminino)" />
-          <select id="q_modalidade">
-            <option value="">Selecione a modalidade</option>
-            <option value="MTB">MTB</option>
-            <option value="TRAIL RUN">TRAIL RUN</option>
-            <option value="DUATHLON CROSS">DUATHLON CROSS</option>
-          </select>
-          <input id="q_categoria" placeholder="Categoria" />
-          <input id="q_data_nasc" placeholder="Data Nascimento (DD/MM/YYYY)" />
-          <input id="q_idade" placeholder="Idade" type="number" />
-          <div class="form-actions">
-            <button type="button" id="q_cancel" class="ghost">Cancelar</button>
-            <button type="submit">Salvar</button>
-          </div>
-        `;
-        document.body.appendChild(overlay); document.body.appendChild(form);
-        form.q_atleta.focus();
-        form.q_cancel.onclick = ()=>{ form.remove(); overlay.remove(); resolve(); };
-        form.onsubmit = async (e)=>{
-          e.preventDefault();
-          try{
-const modalidadeOriginal = form.q_modalidade.value;
-const modalidadeSanitizada = processarModalidadeParaStorage(modalidadeOriginal);
-
-await set(ref(db, `listagem/${numero}`), {
-  atleta: form.q_atleta.value,
-  genero: form.q_genero.value,
-  modalidade: modalidadeSanitizada,
-  modalidade_original: modalidadeOriginal, // Opcional
-  categoria: form.q_categoria.value,
-  data_nascimento: form.q_data_nasc.value,
-  idade: form.q_idade.value
-});
-            form.remove(); overlay.remove(); resolve();
-          }catch(err){ form.remove(); overlay.remove(); reject(err); }
-        };
-      });
-    }
-
-// CSV upload (listagem)
-csvUpload.addEventListener('change', (e)=>{
-  if(isVisitor || !auth.currentUser){
-    alert('Ação proibida: modo visitante. Faça login para importar CSV.');
-    csvUpload.value = '';
-    return;
-  }
-  const file = e.target.files[0];
-  if(!file) return;
-  
-  // Salvar o nome da prova no Firebase
-  const nomeProva = extrairNomeProva(file.name);
-  set(ref(db, 'config/nomeProva'), nomeProva)
-    .catch(err => console.error('Erro ao salvar nome da prova:', err));
-  
-  const reader = new FileReader();
-  reader.onload = async () => {
-    const text = reader.result;
-    const lines = text.split(/\r?\n/).filter(Boolean);
-    
-    // Detectar o separador (; ou ,)
-    let separator = ',';
-    if (lines.length > 0) {
-      if (lines[0].includes(';')) separator = ';';
-    }
-    
-    let start = 0;
-    if(lines.length>0){
-      const firstCols = lines[0].split(separator);
-      if(isNaN(Number(firstCols[0].replace(/\D/g,'')))) start = 1;
-    }
-    
-    // Mapa para armazenar modalidades encontradas no CSV
-    const modalidadesNoCSV = new Set();
-    
-    try{
-      // Primeira passada: identificar todas as modalidades
-      for(let i=start; i<lines.length; i++){
-        const cols = lines[i].split(separator).map(c=>c.trim().replace(/^"|"$/g, ''));
-        if(cols.length < 2) continue;
-        
-        const modalidadeOriginal = cols[3] || '';
-        if (modalidadeOriginal) {
-          modalidadesNoCSV.add(modalidadeOriginal.trim());
-        }
-      }
-      
-      console.log('Modalidades encontradas no CSV:', [...modalidadesNoCSV]);
-      
-      // Verificar largadas para cada modalidade encontrada
-      const largadasSnapshot = await get(ref(db, 'largadas'));
-      const largadasExistentes = largadasSnapshot.exists() ? largadasSnapshot.val() : {};
-      
-      // Mapa de modalidades que precisam de largada
-      const modalidadesSemLargada = [];
-      
-      for (const modalidade of modalidadesNoCSV) {
-        const modalidadePath = processarModalidadeParaStorage(modalidade);
-        let largadaEncontrada = false;
-        
-        // Verificar se existe largada para esta modalidade
-        if (largadasExistentes[modalidadePath] && largadasExistentes[modalidadePath].inicio) {
-          largadaEncontrada = true;
-        } else {
-          // Verificar também por aproximação (ignorando underscores)
-          for (const [key, value] of Object.entries(largadasExistentes)) {
-            const keyNormalizada = key.replace(/_/g, ' ').toLowerCase();
-            const modalidadeNormalizada = modalidade.replace(/_/g, ' ').toLowerCase();
-            
-            if (keyNormalizada === modalidadeNormalizada || 
-                keyNormalizada.includes(modalidadeNormalizada) || 
-                modalidadeNormalizada.includes(keyNormalizada)) {
-              largadaEncontrada = true;
-              break;
-            }
-          }
-        }
-        
-        if (!largadaEncontrada) {
-          modalidadesSemLargada.push(modalidade);
-        }
-      }
-      
-      // Se houver modalidades sem largada, mostrar alerta
-      if (modalidadesSemLargada.length > 0) {
-        const mensagem = `
-⚠️ ATENÇÃO: Foram encontradas modalidades sem largada cadastrada!
-
-${modalidadesSemLargada.map(m => `• ${m}`).join('\n')}
-
-Para que o tempo seja calculado corretamente durante o registro de chegadas, 
-você precisa cadastrar a largada para cada uma destas modalidades na seção "Largadas".
-
-Deseja continuar com o upload mesmo assim?
-        `;
-        
-        if (!confirm(mensagem)) {
-          csvUpload.value = '';
-          return;
-        }
-      }
-      
-      // Segunda passada: importar os dados
-      let contadorImportados = 0;
-      for(let i=start; i<lines.length; i++){
-        const cols = lines[i].split(separator).map(c=>c.trim().replace(/^"|"$/g, ''));
-        if(cols.length < 2) continue;
-        
-        const rawNumero = cols[0].replace(/\D/g,'');
-        if(!rawNumero) continue;
-        const numero = padNum(rawNumero);
-        
-        const modalidadeOriginal = cols[3] || '';
-        const modalidadeSanitizada = processarModalidadeParaStorage(modalidadeOriginal);
-        
-        const data = {
-          atleta: cols[1] || '',
-          genero: cols[2] || '',
-          modalidade: modalidadeSanitizada,
-          modalidade_original: modalidadeOriginal,
-          categoria: cols[4] || '',
-          data_nascimento: cols[5] || '',
-          idade: cols[5] || ''
-        };
-        
-        await set(ref(db, `listagem/${numero}`), data);
-        contadorImportados++;
-      }
-      
-      // Mostrar resumo final
-      if (modalidadesSemLargada.length > 0) {
-        alert(`✅ Upload concluído! ${contadorImportados} atletas importados.\n\n` +
-              `📋 Lembre-se de cadastrar as largadas para:\n` +
-              modalidadesSemLargada.map(m => `   • ${m}`).join('\n'));
-      } else {
-        alert(`✅ Upload concluído! ${contadorImportados} atletas importados.\n` +
-              `✅ Todas as modalidades já possuem largada cadastrada.`);
-      }
-      
-      csvUpload.value = '';
-    }catch(err){
-      console.error('Erro importar CSV', err);
-      alert('Erro ao importar CSV: ' + (err.message||err));
-    }
-  };
-  reader.readAsText(file, 'utf-8');
-});
-
-    btnAddAthlete.onclick = ()=>{
-      if(isVisitor || !auth.currentUser){ alert('Ação proibida: modo visitante. Faça login para adicionar atletas.'); return; }
-      const overlay = document.createElement('div'); overlay.className='overlay';
-      const form = document.createElement('form'); form.className='modal';
-      form.innerHTML = `
-        <h4>Novo Atleta</h4>
-        <input id="a_numero" placeholder="Número (ex: 1 ou 0001)" required />
-        <input id="a_nome" placeholder="Nome" required />
-        <input id="a_genero" placeholder="Gênero" />
-        <select id="a_modalidade">
-          <option value="">Selecione a modalidade</option>
-          <option value="MTB">MTB</option>
-          <option value="TRAIL RUN">TRAIL RUN</option>
-          <option value="DUATHLON CROSS">DUATHLON CROSS</option>
-        </select>
-        <input id="a_categoria" placeholder="Categoria" />
-        <input id="a_data_nasc" placeholder="Data Nascimento (DD/MM/YYYY)" />
-        <input id="a_idade" placeholder="Idade" type="number" />
-        <div class="form-actions">
-          <button type="button" id="a_cancel" class="ghost">Cancelar</button>
-          <button type="submit">Salvar</button>
-        </div>
-      `;
-      document.body.appendChild(overlay); document.body.appendChild(form);
-      form.a_numero.focus();
-      form.a_cancel.onclick = ()=>{ form.remove(); overlay.remove(); };
-      form.onsubmit = async (e)=>{
-        e.preventDefault();
-        const raw = form.a_numero.value.replace(/\D/g,'');
-        if(!raw){ alert('Número inválido'); return; }
-        const numero = padNum(raw);
-        try{
-const modalidadeOriginal = form.a_modalidade.value;
-const modalidadeSanitizada = processarModalidadeParaStorage(modalidadeOriginal);
-
-await set(ref(db, `listagem/${numero}`), {
-  atleta: form.a_nome.value,
-  genero: form.a_genero.value,
-  modalidade: modalidadeSanitizada,
-  modalidade_original: modalidadeOriginal, // Opcional
-  categoria: form.a_categoria.value,
-  data_nascimento: form.a_data_nasc.value,
-  idade: form.a_idade.value
-});
-          form.remove(); overlay.remove();
-        }catch(err){ console.error(err); alert('Erro ao salvar: '+(err.message||err)); }
-      };
-    };
-
-
-// New largada modal
-btnAddLargada.onclick = ()=>{
-  if(isVisitor || !auth.currentUser){ alert('Ação proibida: modo visitante. Faça login para adicionar largadas.'); return; }
-  const overlay = document.createElement('div'); overlay.className='overlay';
-  const form = document.createElement('form'); form.className='modal';
-  form.innerHTML = `
-    <h4>Nova Largada</h4>
-    <input id="l_modalidade" placeholder="Modalidade (ex: MTB)" required />
-    <label class="small">Início (DD/MM/YYYY HH:MM:SS)</label>
-    <input id="l_inicio" placeholder="22/10/2025 08:00:00" required />
-    <div class="form-actions">
-      <button type="button" id="l_cancel" class="ghost">Cancelar</button>
-      <button type="submit">Salvar</button>
-    </div>
-  `;
-  document.body.appendChild(overlay); document.body.appendChild(form);
-  form.l_modalidade.focus();
-  form.l_cancel.onclick = ()=>{ form.remove(); overlay.remove(); };
-  form.onsubmit = async (e)=>{
-    e.preventDefault();
-    const modalidadeOriginal = form.l_modalidade.value.trim();
-    const modalidadeSanitizada = processarModalidadeParaStorage(modalidadeOriginal);
-    const inicioStr = form.l_inicio.value.trim();
-    
-    if(!modalidadeOriginal || !inicioStr){ alert('Preencha todos os campos'); return; }
-    
-    // VALIDAÇÃO DO FORMATO DA DATA/HORA
-    const regexDataHoraCompleta = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}$/;
-    if (!regexDataHoraCompleta.test(inicioStr)) {
-      alert('Formato de data/hora inválido! Use o formato: DD/MM/AAAA HH:MM:SS (com segundos)');
-      return;
-    }
-    
-    // Validação adicional para verificar se a data é válida
-    const [dataPart, horaPart] = inicioStr.split(' ');
-    const [dia, mes, ano] = dataPart.split('/').map(Number);
-    const [hora, minuto, segundo] = horaPart.split(':').map(Number);
-    
-    const dataObj = new Date(ano, mes-1, dia, hora, minuto, segundo);
-    if (dataObj.getFullYear() !== ano || 
-        dataObj.getMonth() !== mes-1 || 
-        dataObj.getDate() !== dia ||
-        dataObj.getHours() !== hora ||
-        dataObj.getMinutes() !== minuto ||
-        dataObj.getSeconds() !== segundo) {
-      alert('Data inválida! Verifique se o dia, mês e ano estão corretos.');
-      return;
-    }
-    
-    try{
-      await set(ref(db, `largadas/${modalidadeSanitizada}/inicio`), inicioStr);
-      // Opcional: guardar o nome original
-      await set(ref(db, `largadas/${modalidadeSanitizada}/modalidade_original`), modalidadeOriginal);
-      form.remove(); overlay.remove();
-    }catch(err){ console.error(err); alert('Erro ao salvar largada: '+(err.message||err)); }
-  };
-};
-
-    // Real-time listeners and state
-    function startRealtimeListeners(){
-      renderUltimosRegistrados();
-      
-      onValue(ref(db, 'listagem'), (snap)=>{
-        const data = snap.val() || {};
-        latestListagem = Object.keys(data).map(k => Object.assign({numero: k}, data[k]));
-        renderListagem(latestListagem);
-        rebuildResultFilters();
-      }, (err)=>{ console.error('Erro listener listagem:', err); });
-
-      onValue(ref(db, 'largadas'), (snap)=>{
-        const data = snap.val() || {};
-        latestLargadas = Object.keys(data).map(k => ({modalidade: k, inicio: data[k].inicio || ''}));
-        renderLargadas(latestLargadas);
-        rebuildResultFilters();
-      }, (err)=>{ console.error('Erro listener largadas:', err); });
-
-      onValue(ref(db, 'resultados'), (snap)=>{
-  const data = snap.val() || {};
-  latestResultados = Object.keys(data).map(k => Object.assign({numero: k}, data[k]));
-  // ATUALIZAR SE A PÁGINA DE RESULTADOS ESTIVER VISÍVEL
-  if(!pageResultados.classList.contains('hidden')) {
-    renderResultados(latestResultados);
-  }
-}, (err)=>{ console.error('Erro listener resultados:', err); });
-
-      onValue(ref(db, 'voltasMtb'), (snap)=>{
-        const data = snap.val() || {};
-        const voltasPorAtleta = {};
-        Object.keys(data).forEach(numero => {
-          const voltasAtleta = data[numero];
-          if(voltasAtleta && typeof voltasAtleta === 'object'){
-            voltasPorAtleta[numero] = Object.keys(voltasAtleta).map(key => {
-              return Object.assign({id: key}, voltasAtleta[key]);
-            });
-          }
-        });
-        latestVoltasMtb = voltasPorAtleta;
-        renderVoltasMtb(voltasPorAtleta);
-        rebuildResultFilters();
-      }, (err)=>{ console.error('Erro listener voltas MTB:', err); });
-
-      onValue(ref(db, 'voltasDuathlon'), (snap)=>{
-        const data = snap.val() || {};
-        const voltasPorAtleta = {};
-        Object.keys(data).forEach(numero => {
-          const voltasAtleta = data[numero];
-          if(voltasAtleta && typeof voltasAtleta === 'object'){
-            voltasPorAtleta[numero] = Object.keys(voltasAtleta).map(key => {
-              return Object.assign({id: key}, voltasAtleta[key]);
-            });
-          }
-        });
-        latestVoltasDuathlon = voltasPorAtleta;
-        renderVoltasDuathlon(voltasPorAtleta);
-        rebuildResultFilters();
-      }, (err)=>{ console.error('Erro listener voltas Duathlon:', err); });
-    }
-
-    function renderListagem(rows){
-  const q = (searchListagem.value || '').trim().toLowerCase();
-  const filtered = rows.filter(r => !q || (r.numero && r.numero.toLowerCase().includes(q)) || (r.atleta && r.atleta.toLowerCase().includes(q)));
-  let html = `<table><thead><tr><th>Número</th><th>Nome</th><th>Gênero</th><th>Modalidade</th><th>Categoria</th><th>Idade</th><th>Ações</th></tr></thead><tbody>`;
-  filtered.forEach(r=>{
-    // Pega o nome original se existir, senão usa o sanitizado mesmo
-    // Função para garantir que a modalidade seja exibida corretamente
-function getModalidadeParaExibicao(r) {
-  if (r.modalidade_original) {
-    return r.modalidade_original;
-  }
-  if (r.modalidade) {
-    // Converte _ para . em números (ex: "Trail_Run_6_5K" -> "Trail Run 6.5K")
-    return r.modalidade
-      .replace(/_/g, ' ')
-      .replace(/(\d+)\s+(\d+)/g, '$1.$2')
-      .replace(/\s+/g, ' ')
-      .trim();
-  }
-  return '';
-}
-
-// No loop de renderização, use:
-const modalidadeExibicao = getModalidadeParaExibicao(r);
-    
-    html += `<tr>
-      <td>${r.numero}</td>
-      <td>${escapeHtml(r.atleta||'')}</td>
-      <td>${escapeHtml(r.genero||'')}</td>
-      <td>${escapeHtml(modalidadeExibicao)}</td>  <!-- LINHA ALTERADA -->
-      <td>${escapeHtml(r.categoria||'')}</td>
-      <td>${escapeHtml(r.idade||'')}</td>
-      <td>`;
-        if(!isVisitor && auth.currentUser){
-          html += `<button data-num="${r.numero}" class="btn-edit">Editar</button>
-                   <button data-num="${r.numero}" class="btn-delete ghost">Apagar</button>`;
-        } else {
-          html += `<span class="small" style="color:#666">Somente leitura</span>`;
-        }
-        html += `</td></tr>`;
-      });
-      html += `</tbody></table>`;
-      tableListagem.innerHTML = html;
-      if(!isVisitor && auth.currentUser){
-        tableListagem.querySelectorAll('.btn-edit').forEach(btn=> btn.onclick = ()=> openEditAthlete(btn.dataset.num) );
-        tableListagem.querySelectorAll('.btn-delete').forEach(btn=> btn.onclick = async ()=>{ if(!confirm(`Apagar atleta ${btn.dataset.num}?`)) return; try{ await remove(ref(db, `listagem/${btn.dataset.num}`)); alert('Apagado'); }catch(err){ console.error(err); alert('Erro: '+(err.message||err)); } });
-      }
-    }
-
-    function renderVoltasMtb(voltasPorAtleta){
-      const filtroNumero = (filtroVoltasNumero.value || '').trim().toLowerCase();
-      
-      let html = `<table><thead><tr><th>Número</th><th>Atleta</th><th>Volta #</th><th>Data/Hora</th><th>Tempo</th><th>Registrado Por</th></tr></thead><tbody>`;
-      
-      const numerosOrdenados = Object.keys(voltasPorAtleta).sort((a, b) => {
-        return parseInt(a) - parseInt(b);
-      });
-      
-      numerosOrdenados.forEach(numero => {
-        if(filtroNumero && !numero.includes(filtroNumero)) return;
-        
-        const voltas = voltasPorAtleta[numero];
-        if(voltas && voltas.length > 0){
-          voltas.sort((a, b) => {
-            const dtA = parseDMYTime(a.dataHora) || new Date(a.registradaEmISO);
-            const dtB = parseDMYTime(b.dataHora) || new Date(b.registradaEmISO);
-            return dtA - dtB;
-          });
-          
-          voltas.forEach((volta, index) => {
-            html += `<tr>
-              <td>${numero}</td>
-              <td>${escapeHtml(volta.atleta||'')}</td>
-              <td><strong>${index + 1}</strong></td>
-              <td>${escapeHtml(volta.dataHora||'')}</td>
-              <td>${escapeHtml(volta.tempo||'')}</td>
-              <td class="small">${escapeHtml(volta.registradoPor||'')}</td>
-            </tr>`;
-          });
-        }
-      });
-      
-      html += `</tbody></table>`;
-      tableVoltasMtb.innerHTML = html;
-    }
-
-    function renderVoltasDuathlon(voltasPorAtleta){
-      const filtroNumero = (filtroVoltasDuathlonNumero.value || '').trim().toLowerCase();
-      
-      let html = `<table><thead><tr><th>Número</th><th>Atleta</th><th>Volta #</th><th>Data/Hora</th><th>Tempo</th><th>Registrado Por</th></tr></thead><tbody>`;
-      
-      const numerosOrdenados = Object.keys(voltasPorAtleta).sort((a, b) => {
-        return parseInt(a) - parseInt(b);
-      });
-      
-      numerosOrdenados.forEach(numero => {
-        if(filtroNumero && !numero.includes(filtroNumero)) return;
-        
-        const voltas = voltasPorAtleta[numero];
-        if(voltas && voltas.length > 0){
-          voltas.sort((a, b) => {
-            const dtA = parseDMYTime(a.dataHora) || new Date(a.registradaEmISO);
-            const dtB = parseDMYTime(b.dataHora) || new Date(b.registradaEmISO);
-            return dtA - dtB;
-          });
-          
-          voltas.forEach((volta, index) => {
-            html += `<tr>
-              <td>${numero}</td>
-              <td>${escapeHtml(volta.atleta||'')}</td>
-              <td><strong>${index + 1}</strong></td>
-              <td>${escapeHtml(volta.dataHora||'')}</td>
-              <td>${escapeHtml(volta.tempo||'')}</td>
-              <td class="small">${escapeHtml(volta.registradoPor||'')}</td>
-            </tr>`;
-          });
-        }
-      });
-      
-      html += `</tbody></table>`;
-      tableVoltasDuathlon.innerHTML = html;
-    }
-
-    // Edit athlete from Listagem
-    function openEditAthlete(numero){
-      if(isVisitor || !auth.currentUser){ alert('Ação proibida: modo visitante. Faça login para editar.'); return; }
-      get(child(ref(db), `listagem/${numero}`)).then(snap=>{
-        const data = snap.exists() ? snap.val() : {};
-        const overlay = document.createElement('div'); overlay.className='overlay';
-        const form = document.createElement('form'); form.className='modal';
-        form.innerHTML = `
-          <h4>Editar Atleta - ${numero}</h4>
-          <label class="small">Número</label>
-          <input id="e_numero" placeholder="Número" value="${escapeAttr(numero)}" />
-          <input id="e_nome" placeholder="Nome" value="${escapeAttr(data.atleta||'')}" />
-          <input id="e_genero" placeholder="Gênero" value="${escapeAttr(data.genero||'')}" />
-          <select id="e_modalidade">
-            <option value="">Selecione a modalidade</option>
-            <option value="MTB" ${data.modalidade==='MTB'?'selected':''}>MTB</option>
-            <option value="TRAIL RUN" ${data.modalidade==='TRAIL RUN'?'selected':''}>TRAIL RUN</option>
-            <option value="DUATHLON CROSS" ${data.modalidade==='DUATHLON CROSS'?'selected':''}>DUATHLON CROSS</option>
-          </select>
-          <input id="e_categoria" placeholder="Categoria" value="${escapeAttr(data.categoria||'')}" />
-          <input id="e_data_nasc" placeholder="Data Nascimento (DD/MM/YYYY)" value="${escapeAttr(data.data_nascimento||'')}" />
-          <input id="e_idade" placeholder="Idade" type="number" value="${escapeAttr(data.idade||'')}" />
-          <div class="form-actions">
-            <button type="button" id="e_cancel" class="ghost">Cancelar</button>
-            <button type="submit">Salvar</button>
-          </div>
-        `;
-        document.body.appendChild(overlay); document.body.appendChild(form);
-        form.e_cancel.onclick = ()=>{ form.remove(); overlay.remove(); };
-        form.onsubmit = async (e)=>{
-          e.preventDefault();
-          try{
-            const rawNew = (form.e_numero.value || '').replace(/\D/g,'');
-            if(!rawNew){ alert('Número inválido'); return; }
-            const newNumero = padNum(rawNew);
-const modalidadeOriginal = form.e_modalidade.value;
-const modalidadeSanitizada = processarModalidadeParaStorage(modalidadeOriginal);
-
-const payload = {
-  atleta: form.e_nome.value,
-  genero: form.e_genero.value,
-  modalidade: modalidadeSanitizada,
-  modalidade_original: modalidadeOriginal, // Opcional
-  categoria: form.e_categoria.value,
-  data_nascimento: form.e_data_nasc.value,
-  idade: form.e_idade.value
-};
-            if(newNumero === numero){
-              await update(ref(db, `listagem/${numero}`), payload);
-            } else {
-              const existsNew = (await get(child(ref(db), `listagem/${newNumero}`))).exists();
-              if(existsNew){
-                if(!confirm(`Já existe atleta com número ${newNumero}. Deseja sobrescrever?`)) { return; }
-              }
-              await set(ref(db, `listagem/${newNumero}`), payload);
-              await remove(ref(db, `listagem/${numero}`));
-              const resSnap = await get(child(ref(db), `resultados/${numero}`));
-              if(resSnap.exists()){
-                const resData = resSnap.val();
-                await set(ref(db, `resultados/${newNumero}`), Object.assign({}, resData, {
-                  atleta: payload.atleta || resData.atleta,
-                  modalidade: payload.modalidade || resData.modalidade,
-                  categoria: payload.categoria || resData.categoria,
-                  genero: payload.genero || resData.genero
-                }));
-                await remove(ref(db, `resultados/${numero}`));
-              }
-            }
-            form.remove(); overlay.remove();
-          }catch(err){ console.error(err); alert('Erro salvar: '+(err.message||err)); }
-        };
-      });
-    }
-
-    function renderLargadas(rows){
-      let html = `<table><thead><tr><th>Modalidade</th><th>Início</th><th>Ações</th></tr></thead><tbody>`;
-      rows.forEach(r=>{
-        html += `<tr>
-          <td>${escapeHtml(r.modalidade||'')}</td>
-          <td>${escapeHtml(r.inicio||'')}</td>
-          <td>`;
-        if(!isVisitor && auth.currentUser){
-          html += `<button data-mod="${r.modalidade}" class="btn-edit-l">Editar</button>
-                   <button data-mod="${r.modalidade}" class="btn-del-l ghost">Apagar</button>`;
-        } else {
-          html += `<span class="small" style="color:#666">Somente leitura</span>`;
-        }
-        html += `</td></tr>`;
-      });
-      html += `</tbody></table>`;
-      tableLargadas.innerHTML = html;
-      if(!isVisitor && auth.currentUser){
-        tableLargadas.querySelectorAll('.btn-edit-l').forEach(btn=> btn.onclick = ()=> openEditLargada(btn.dataset.mod) );
-        tableLargadas.querySelectorAll('.btn-del-l').forEach(btn=> btn.onclick = async ()=>{ if(!confirm(`Apagar largada ${btn.dataset.mod}?`)) return; try{ await remove(ref(db, `largadas/${btn.dataset.mod}`)); alert('Apagado'); }catch(err){ console.error(err); alert('Erro: '+(err.message||err)); } });
-      }
-    }
-
-    function openEditLargada(modalidade){
-      if(isVisitor || !auth.currentUser){ alert('Ação proibida: modo visitante. Faça login para editar largadas.'); return; }
-      get(child(ref(db), `largadas/${modalidade}/inicio`)).then(snap=>{
-        const inicio = snap.exists() ? snap.val() : '';
-        const overlay = document.createElement('div'); overlay.className='overlay';
-        const form = document.createElement('form'); form.className='modal';
-        form.innerHTML = `
-          <h4>Editar Largada - ${modalidade}</h4>
-          <label class="small">Início (DD/MM/YYYY HH:MM:SS)</label>
-          <input id="el_inicio" value="${escapeAttr(inicio||'')}" />
-          <div class="form-actions">
-            <button type="button" id="el_cancel" class="ghost">Cancelar</button>
-            <button type="submit">Salvar</button>
-          </div>
-        `;
-        document.body.appendChild(overlay); document.body.appendChild(form);
-        form.el_cancel.onclick = ()=>{ form.remove(); overlay.remove(); };
-        form.onsubmit = async (e)=>{
-          e.preventDefault();
-          try{
-            await set(ref(db, `largadas/${modalidade}/inicio`), form.el_inicio.value);
-            form.remove(); overlay.remove();
-          }catch(err){ console.error(err); alert('Erro salvar: '+(err.message||err)); }
-        };
-      });
-    }
-
-    // Sistema de Comprovantes
-    btnComprovante.addEventListener('click', () => {
-      if (isVisitor) {
-        if (filteredResultadosCache.length === 0) {
-          alert('Nenhum resultado disponível para gerar comprovante.');
-          return;
-        }
-        alert('Clique no botão "Comprovante" de qualquer atleta na lista para gerar seu comprovante personalizado.');
-      } else {
-        alert('Esta funcionalidade está disponível apenas no modo visitante para geração de comprovantes pessoais.');
-      }
-    });
-
-function abrirModalComprovante() {
-  if (filteredResultadosCache.length === 0) {
-    alert('Nenhum resultado disponível para gerar comprovante.');
-    return;
-  }
-  
-  // Buscar o nome da prova do Firebase
-  get(ref(db, 'config/nomeProva')).then((snap) => {
-    const nomeProva = snap.exists() ? snap.val() : '4 HORAS MATA ATLÂNTICA';
-    
-    // Armazenar o nome da prova em uma variável global ou no próprio modal
-    window.nomeProvaAtual = nomeProva;
-    
-    atualizarPreviewComprovante();
-    modalComprovante.style.display = 'flex';
-  }).catch(err => {
-    console.error('Erro ao buscar nome da prova:', err);
-    window.nomeProvaAtual = '4 HORAS MATA ATLÂNTICA';
-    atualizarPreviewComprovante();
-    modalComprovante.style.display = 'flex';
-  });
-}
-
-function atualizarPreviewComprovante() {
-  if (!atletaSelecionadoComprovante) return;
-  
-  // Usar o nome da prova armazenado ou o padrão
-  const nomeProva = window.nomeProvaAtual || '4 HORAS MATA ATLÂNTICA';
-  
-  const atletasMesmaCategoria = filteredResultadosCache.filter(a => 
-    a.categoria === atletaSelecionadoComprovante.categoria && 
-    a.modalidade === atletaSelecionadoComprovante.modalidade
-  );
-  const posicaoCategoria = atletasMesmaCategoria.findIndex(a => a.numero === atletaSelecionadoComprovante.numero) + 1;
-  
-  const posicaoGeral = filteredResultadosCache.findIndex(a => a.numero === atletaSelecionadoComprovante.numero) + 1;
-  
-  // EXTRAIR PRIMEIRO E ÚLTIMO NOME
-  const nomeCompleto = atletaSelecionadoComprovante.atleta || '';
-  const partesNome = nomeCompleto.split(' ').filter(part => part.trim() !== '');
-  const nomeSimplificado = partesNome.length > 1 
-    ? `${partesNome[0]} ${partesNome[partesNome.length - 1]}`
-    : partesNome[0] || '';
-  
-  // Atualizar o título do comprovante
-  const comprovanteTitle = document.querySelector('.comprovante-title');
-  if (comprovanteTitle) {
-    comprovanteTitle.textContent = nomeProva;
-  }
-  
-  comprovanteData.innerHTML = `
-    <div class="comprovante-item">
-      <span class="comprovante-item-label">Atleta:</span>
-      <span>${escapeHtml(nomeSimplificado)}</span>
-    </div>
-    <div class="comprovante-item">
-      <span class="comprovante-item-label">Modalidade:</span>
-      <span>${escapeHtml(atletaSelecionadoComprovante.modalidade || '')}</span>
-    </div>
-    <div class="comprovante-item">
-      <span class="comprovante-item-label">Categoria:</span>
-      <span>${escapeHtml(atletaSelecionadoComprovante.categoria || '')}</span>
-    </div>
-    <div class="comprovante-item">
-      <span class="comprovante-item-label">Tempo Final:</span>
-      <span>${escapeHtml(atletaSelecionadoComprovante.tempo || '')}</span>
-    </div>
-    ${atletaSelecionadoComprovante.totalVoltas ? `
-    <div class="comprovante-item">
-      <span class="comprovante-item-label">Voltas:</span>
-      <span>${atletaSelecionadoComprovante.totalVoltas}</span>
-    </div>
-    ` : ''}
-    <div class="comprovante-item">
-      <span class="comprovante-item-label">Posição Geral:</span>
-      <span>${posicaoGeral}º</span>
-    </div>
-    <div class="comprovante-item">
-      <span class="comprovante-item-label">Posição Categoria:</span>
-      <span>${posicaoCategoria}º</span>
-    </div>
-    <div class="comprovante-item-centralizado">
-      <span>${new Date().toLocaleDateString('pt-BR')}</span>
-    </div>
-  `;
-  
-  comprovanteTexto.textContent = ` ${atletaSelecionadoComprovante.tempo || '--:--:--'}`;
-}
-
-    // Event listeners para comprovante
-    btnComprovanteStory.addEventListener('click', (e) => {
-      e.stopPropagation();
-      formatoComprovanteAtual = 'story';
-      comprovantePreview.className = 'comprovante-story';
-      atualizarPreviewComprovante();
-    });
-
-    btnComprovanteFeed.addEventListener('click', (e) => {
-      e.stopPropagation();
-      formatoComprovanteAtual = 'feed';
-      comprovantePreview.className = 'comprovante-feed';
-      atualizarPreviewComprovante();
-    });
-
-    btnFecharComprovante.addEventListener('click', (e) => {
-      e.stopPropagation();
-      modalComprovante.style.display = 'none';
-    });
-
-    btnDownloadComprovante.addEventListener('click', (e) => {
-      e.stopPropagation();
-      // Verificar se html2canvas está disponível
-      if (typeof html2canvas === 'undefined') {
-        // Tentar carregar a biblioteca dinamicamente
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-        script.onload = () => {
-          baixarComprovante();
-        };
-        script.onerror = () => {
-          alert('Funcionalidade de download temporariamente indisponível. Tente novamente em alguns instantes.');
-        };
-        document.head.appendChild(script);
-      } else {
-        baixarComprovante();
-      }
-    });
-
-    function baixarComprovante() {
-      if (window.html2canvas) {
-        const comprovante = document.getElementById('comprovante-preview');
-        const scale = 3;
-        
-        html2canvas(comprovante, {
-          scale: scale,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: null
-        }).then(canvas => {
-          const link = document.createElement('a');
-          link.download = `comprovante-${atletaSelecionadoComprovante?.numero || 'atleta'}.png`;
-          link.href = canvas.toDataURL('image/png', 1.0);
-          link.click();
-        }).catch(err => {
-          console.error('Erro ao gerar comprovante:', err);
-          alert('Erro ao gerar comprovante. Tente novamente.');
-        });
-      } else {
-        alert('Funcionalidade de download temporariamente indisponível');
-      }
-    }
-
-    // Fechar modal clicando no overlay
-    modalComprovante.addEventListener('click', (e) => {
-      if (e.target === modalComprovante) {
-        modalComprovante.style.display = 'none';
-      }
-    });
-
-    // utils
-    function padNum(n){ return String(n).padStart(4,'0'); }
-    function parseDMYTime(s){
-      if(!s) return null;
-      const [datePart, timePart] = s.split(' ');
-      const [d,m,y] = datePart.split('/').map(Number);
-      let hh=0, mm=0, ss=0;
-      if(timePart){
-        [hh,mm,ss] = timePart.split(':').map(x=>Number(x));
-      }
-      return new Date(y, m-1, d, hh, mm, ss);
-    }
-    function formatDMYTime(dt){
-      if(!dt) return '';
-      const d = String(dt.getDate()).padStart(2,'0');
-      const m = String(dt.getMonth()+1).padStart(2,'0');
-      const y = String(dt.getFullYear());
-      const hh = String(dt.getHours()).padStart(2,'0');
-      const mm = String(dt.getMinutes()).padStart(2,'0');
-      const ss = String(dt.getSeconds()).padStart(2,'0');
-      return `${d}/${m}/${y} ${hh}:${mm}:${ss}`;
-    }
-    function formatTempoFromSeconds(totalSeconds){
-      if(totalSeconds == null) return '';
-      if(totalSeconds < 0) totalSeconds = 0;
-      const hh = Math.floor(totalSeconds/3600);
-      const mm = Math.floor((totalSeconds%3600)/60);
-      const ss = Math.floor(totalSeconds%60);
-      return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
-    }
-
-    // Função para verificar intervalo mínimo entre voltas
-    function verificarIntervaloMinimo(voltasAtleta) {
-      if (!voltasAtleta || voltasAtleta.length === 0) return true; // Sem voltas anteriores, pode registrar
-      
-      const ultimaVolta = voltasAtleta[voltasAtleta.length - 1];
-      const agora = new Date();
-      const ultimaVoltaDt = parseDMYTime(ultimaVolta.dataHora) || new Date(ultimaVolta.registradaEmISO);
-      
-      const diferencaMs = agora.getTime() - ultimaVoltaDt.getTime();
-      const diferencaMinutos = diferencaMs / (1000 * 60);
-      
-      return diferencaMinutos >= 3; // Retorna true se passaram 3 minutos ou mais
-    }
-
-// Função para sanitizar nomes de modalidade (remover caracteres proibidos)
-function sanitizarModalidade(modalidade) {
-  if (!modalidade) return '';
-  // Substitui caracteres proibidos por underscore
-  return modalidade
-    .replace(/\./g, '_')     // Ponto vira underscore
-    .replace(/#/g, '_')      // # vira underscore
-    .replace(/\$/g, '_')     // $ vira underscore
-    .replace(/\[/g, '_')     // [ vira underscore
-    .replace(/\]/g, '_')     // ] vira underscore
-    .trim();
-}
-
-// Função para restaurar o nome original para exibição (se necessário)
-function restaurarModalidade(modalidadeSanitizada) {
-  if (!modalidadeSanitizada) return '';
-  // Aqui você pode adicionar regras de restauração se precisar
-  // Por enquanto, só retorna o mesmo valor com _ no lugar do .
-  return modalidadeSanitizada.replace(/_/g, '.');
-}
-
-// Função para processar modalidade antes de salvar no Firebase
-function processarModalidadeParaStorage(modalidade) {
-  return sanitizarModalidade(modalidade);
-}
-
-// Função para extrair nome da prova do nome do arquivo
-function extrairNomeProva(nomeArquivo) {
-  if (!nomeArquivo) return '4 HORAS MATA ATLÂNTICA'; // Nome padrão
-  
-  // Remove a extensão .csv
-  let nomeSemExtensao = nomeArquivo.replace(/\.csv$/i, '');
-  
-  // Substitui underlines por espaços e remove caracteres especiais
-  let nomeFormatado = nomeSemExtensao
-    .replace(/_/g, ' ')
-    .replace(/-/g, ' ')
-    .replace(/\s+/g, ' ') // Remove espaços extras
-    .trim()
-    .toUpperCase(); // Deixa em maiúsculas como no original
-  
-  return nomeFormatado || '4 HORAS MATA ATLÂNTICA';
-}
-
-// Função para processar modalidade ao exibir para o usuário
-function processarModalidadeParaExibicao(modalidade) {
-  return modalidade; // Por enquanto, mantém como está
-}    
-
-// Últimos 10 números compartilhados via Firebase
-    function pushLastRegistrado(num) {
-      const lastRef = ref(db, 'ultimosRegistrados');
-      get(lastRef).then((snap) => {
-        let arr = snap.exists() ? snap.val() : [];
-        arr = arr.filter(x => x !== num);
-        arr.unshift(num);
-        arr = arr.slice(0, 10);
-        set(lastRef, arr);
-      });
-    }
-
-    function renderUltimosRegistrados() {
-      const el = document.getElementById('last5');
-      const lastRef = ref(db, 'ultimosRegistrados');
-      onValue(lastRef, (snap) => {
-        el.innerHTML = '';
-        const arr = snap.exists() ? snap.val() : [];
-        if (!arr.length) {
-          el.innerHTML = `<span class="small" style="color:#666">Nenhum registro ainda</span>`;
-          return;
-        }
-        arr.forEach(x => {
-          const div = document.createElement('div');
-          div.className = 'pill';
-          div.textContent = x;
-          div.onclick = () => { 
-            if(pageEntrada.classList.contains('hidden')) {
-              numeroInput.value = x; 
-              numeroInput.focus(); 
-            }
-          };
-          el.appendChild(div);
-        });
-      });
-    }
-
-    function rebuildResultFilters() {
-  const modalidades = new Map(); // Usa Map para manter a versão original
-  const categorias = new Map();
-  const generos = new Map();
-  
-  function normalizarParaComparacao(str) {
-    return str.toLowerCase().trim().replace(/\s+/g, ' ');
-  }
-
-  // APENAS da listagem
-  latestListagem.forEach(atleta => {
-    // Categorias
-    if (atleta.categoria && atleta.categoria.trim() !== '') {
-      const normalizada = normalizarParaComparacao(atleta.categoria);
-      if (!categorias.has(normalizada)) {
-        categorias.set(normalizada, atleta.categoria.trim());
-      }
-    }
-    
-    // Modalidades
-    let modalidadeOriginal = '';
-    if (atleta.modalidade_original && atleta.modalidade_original.trim() !== '') {
-      modalidadeOriginal = atleta.modalidade_original.trim();
-    } else if (atleta.modalidade && atleta.modalidade.trim() !== '') {
-      modalidadeOriginal = padronizarModalidadeParaExibicao(atleta.modalidade);
-    }
-    
-    if (modalidadeOriginal) {
-      const normalizada = normalizarParaComparacao(modalidadeOriginal);
-      if (!modalidades.has(normalizada)) {
-        modalidades.set(normalizada, modalidadeOriginal);
-      }
-    }
-    
-    // Gêneros
-    if (atleta.genero && atleta.genero.trim() !== '') {
-      const normalizada = normalizarParaComparacao(atleta.genero);
-      if (!generos.has(normalizada)) {
-        generos.set(normalizada, atleta.genero.trim());
-      }
-    }
-  });
-
-  // Extrair os valores originais dos Maps e ordenar
-  fillSelect(fModalidade, [...modalidades.values()].sort((a, b) => a.localeCompare(b, 'pt-BR')), 'Todas');
-  fillSelect(fCategoria, [...categorias.values()].sort((a, b) => a.localeCompare(b, 'pt-BR')), 'Todas');
-  fillSelect(fGenero, [...generos.values()].sort((a, b) => a.localeCompare(b, 'pt-BR')), 'Todos');
-}
-
-    function fillSelect(selectEl, arr, firstLabel){
-      selectEl.innerHTML = `<option value="">${firstLabel||'Todos'}</option>`;
-      arr.forEach(x=>{ const o=document.createElement('option'); o.value=x; o.textContent=x; selectEl.appendChild(o); });
-    }
-
-    btnAplicarFiltro.onclick = ()=> renderResultados(latestResultados);
-
-    function tempoToSeconds(t){
-      if(!t) return Infinity;
-      const parts = t.split(':').map(x=>Number(x));
-      if(parts.length===3){
-        return parts[0]*3600 + parts[1]*60 + parts[2];
-      }
-      if(parts.length===2){
-        return parts[0]*60 + parts[1];
-      }
+    function tempoToSeconds(t) {
+      if (!t) return Infinity;
+      const parts = t.split(':').map(Number);
+      if (parts.length === 3) return parts[0]*3600 + parts[1]*60 + parts[2];
+      if (parts.length === 2) return parts[0]*60 + parts[1];
       return Number(t) || Infinity;
     }
 
-    function calcularResultadosMtb(){
-      const resultadosMtb = [];
+    function parseCSV(csvText) {
+      const lines = csvText.split(/\r?\n/).filter(l => l.trim());
+      if (lines.length < 2) return [];
+      let start = 0;
+      const firstLine = lines[0].toLowerCase();
+      if (firstLine.includes('numero') || firstLine.includes('atleta')) start = 1;
       
-      Object.keys(latestVoltasMtb).forEach(numero => {
-        const voltas = latestVoltasMtb[numero];
-        if(voltas && voltas.length > 0){
-          const primeiraVolta = voltas[0];
-          const ultimaVolta = voltas[voltas.length - 1];
-          
-          resultadosMtb.push({
-            numero: numero,
-            atleta: primeiraVolta.atleta || '',
-            modalidade: 'MTB',
-            categoria: primeiraVolta.categoria || '',
-            genero: primeiraVolta.genero || '',
-            chegada: ultimaVolta.dataHora || '',
-            tempo: ultimaVolta.tempo || '',
-            totalVoltas: voltas.length,
-            tempoTotal: tempoToSeconds(ultimaVolta.tempo)
+      const results = [];
+      for (let i = start; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+        if (values.length >= 8 && values[0]) {
+          results.push({
+            numero: values[0],
+            atleta: values[1] || '',
+            modalidade: values[2] || '',
+            categoria: values[3] || '',
+            genero: values[4] || '',
+            chegada: values[5] || '',
+            tempo: values[6] || '',
+            voltas: values[7] || ''
           });
         }
+      }
+      return results;
+    }
+
+    function loadEvents() {
+      onValue(ref(db, PATH_EVENTS), (snapshot) => {
+        const data = snapshot.val() || {};
+        eventsList = Object.keys(data).map(key => ({
+          id: key,
+          info: data[key].info || {},
+          resultsCount: (data[key].results || []).length
+        }));
+        renderEventsList();
       });
-      
-      resultadosMtb.sort((a, b) => {
-        if(b.totalVoltas !== a.totalVoltas){
-          return b.totalVoltas - a.totalVoltas;
-        }
-        return a.tempoTotal - b.tempoTotal;
-      });
-      
-      return resultadosMtb;
     }
 
-    function calcularResultadosDuathlon(){
-      const resultadosDuathlon = [];
-      
-      Object.keys(latestVoltasDuathlon).forEach(numero => {
-        const voltas = latestVoltasDuathlon[numero];
-        if(voltas && voltas.length > 0){
-          const primeiraVolta = voltas[0];
-          const ultimaVolta = voltas[voltas.length - 1];
-          
-          resultadosDuathlon.push({
-            numero: numero,
-            atleta: primeiraVolta.atleta || '',
-            modalidade: 'DUATHLON CROSS',
-            categoria: primeiraVolta.categoria || '',
-            genero: primeiraVolta.genero || '',
-            chegada: ultimaVolta.dataHora || '',
-            tempo: ultimaVolta.tempo || '',
-            totalVoltas: voltas.length,
-            tempoTotal: tempoToSeconds(ultimaVolta.tempo)
-          });
-        }
-      });
-      
-      resultadosDuathlon.sort((a, b) => {
-        if(b.totalVoltas !== a.totalVoltas){
-          return b.totalVoltas - a.totalVoltas;
-        }
-        return a.tempoTotal - b.tempoTotal;
-      });
-      
-      return resultadosDuathlon;
-    }
-
-function renderResultados(rows){
-  const fm = fModalidade.value;
-  const fc = fCategoria.value;
-  const fg = fGenero.value;
-  
-  // Função para normalizar strings para comparação (remover acentos, espaços extras, maiúsculas/minúsculas)
-  function normalizarString(str) {
-    if (!str) return '';
-    return str
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // Remove acentos
-      .replace(/\s+/g, ' ') // Remove espaços extras
-      .trim();
-  }
-
-  // Função para normalizar modalidade específica para comparação
-  function normalizarModalidadeParaFiltro(modalidade) {
-    if (!modalidade) return '';
-    // Converte para minúsculo e remove espaços extras
-    let normalizada = modalidade.toLowerCase().trim();
-    // Substitui espaços por underscore (para corresponder ao formato salvo)
-    normalizada = normalizada.replace(/\s+/g, '_');
-    // Substitui pontos por underscore
-    normalizada = normalizada.replace(/\./g, '_');
-    return normalizada;
-  }
-
-  let filtered = rows.filter(r => {
-    // FILTRO POR MODALIDADE (CORRIGIDO)
-    if (fm && fm !== '') {
-      // Normalizar o valor do filtro
-      const filtroNormalizado = normalizarModalidadeParaFiltro(fm);
-      
-      // Obter a modalidade do atleta (priorizar modalidade_original)
-      let modalidadeAtleta = '';
-      if (r.modalidade_original) {
-        modalidadeAtleta = r.modalidade_original;
-      } else if (r.modalidade) {
-        modalidadeAtleta = r.modalidade;
+    function renderEventsList() {
+      if (eventsList.length === 0) {
+        eventsGrid.innerHTML = `<div class="card" style="text-align: center; padding: 40px;"><p>Nenhum evento cadastrado.</p>${isAdmin ? '<button class="btn btn-primary" id="btn-criar-primeiro">➕ Criar primeiro evento</button>' : ''}</div>`;
+        if (isAdmin) document.getElementById('btn-criar-primeiro')?.addEventListener('click', () => openEventModal());
+        return;
       }
       
-      // Normalizar a modalidade do atleta para comparação
-      const modalidadeAtletaNormalizada = normalizarModalidadeParaFiltro(modalidadeAtleta);
-      
-      // Comparar (normalizada vs normalizada OU valor original vs filtro original)
-      const correspondeModalidade = 
-        modalidadeAtletaNormalizada === filtroNormalizado ||
-        modalidadeAtleta === fm ||
-        r.modalidade === fm ||
-        modalidadeAtleta.toLowerCase() === fm.toLowerCase();
-      
-      if (!correspondeModalidade) return false;
-    }
-    
-    // FILTRO POR CATEGORIA
-    if (fc && fc !== '') {
-      const categoriaFiltroNormalizada = normalizarString(fc);
-      const categoriaRowNormalizada = normalizarString(r.categoria || '');
-      
-      if (categoriaRowNormalizada !== categoriaFiltroNormalizada) return false;
-    }
-    
-    // FILTRO POR GÊNERO
-    if (fg && fg !== '') {
-      const generoFiltroNormalizado = normalizarString(fg);
-      const generoRowNormalizado = normalizarString(r.genero || '');
-      
-      if (generoRowNormalizado !== generoFiltroNormalizado) return false;
-    }
-    
-    return true;
-  });
-
-  // Adicionar resultados de MTB com voltas
-  if((!fm || fm === 'MTB' || fm === 'MTB' || normalizarModalidadeParaFiltro(fm) === 'mtb') && latestVoltasMtb && Object.keys(latestVoltasMtb).length > 0){
-    const resultadosMtb = calcularResultadosMtb();
-    // Filtrar resultados MTB existentes que não são de MTB
-    filtered = filtered.filter(r => {
-      let modalidadeAtleta = '';
-      if (r.modalidade_original) {
-        modalidadeAtleta = r.modalidade_original;
-      } else if (r.modalidade) {
-        modalidadeAtleta = r.modalidade;
-      }
-      return normalizarModalidadeParaFiltro(modalidadeAtleta) !== 'mtb';
-    });
-    
-    resultadosMtb.forEach(rm => {
-      // Aplicar filtros aos resultados MTB
-      let passaFiltro = true;
-      
-      // Verificar filtro de modalidade (já garantido pelo if acima)
-      if (fm && fm !== '') {
-        const filtroNormalizado = normalizarModalidadeParaFiltro(fm);
-        const modalidadeMtbNormalizada = normalizarModalidadeParaFiltro('MTB');
-        if (filtroNormalizado !== modalidadeMtbNormalizada) passaFiltro = false;
-      }
-      
-      // Verificar filtro de categoria
-      if (passaFiltro && fc && fc !== '') {
-        const categoriaFiltroNormalizada = normalizarString(fc);
-        const categoriaMtbNormalizada = normalizarString(rm.categoria);
-        if (categoriaMtbNormalizada !== categoriaFiltroNormalizada) passaFiltro = false;
-      }
-      
-      // Verificar filtro de gênero
-      if (passaFiltro && fg && fg !== '') {
-        const generoFiltroNormalizado = normalizarString(fg);
-        const generoMtbNormalizado = normalizarString(rm.genero);
-        if (generoMtbNormalizado !== generoFiltroNormalizado) passaFiltro = false;
-      }
-      
-      if(passaFiltro){
-        filtered.push(rm);
-      }
-    });
-  }
-
-  // Adicionar resultados de Duathlon Cross com voltas
-  if((!fm || fm === 'DUATHLON CROSS' || fm === 'DUATHLON_CROSS' || normalizarModalidadeParaFiltro(fm) === 'duathlon_cross') && latestVoltasDuathlon && Object.keys(latestVoltasDuathlon).length > 0){
-    const resultadosDuathlon = calcularResultadosDuathlon();
-    // Filtrar resultados Duathlon existentes que não são de Duathlon
-    filtered = filtered.filter(r => {
-      let modalidadeAtleta = '';
-      if (r.modalidade_original) {
-        modalidadeAtleta = r.modalidade_original;
-      } else if (r.modalidade) {
-        modalidadeAtleta = r.modalidade;
-      }
-      return normalizarModalidadeParaFiltro(modalidadeAtleta) !== 'duathlon_cross';
-    });
-    
-    resultadosDuathlon.forEach(rd => {
-      // Aplicar filtros aos resultados Duathlon
-      let passaFiltro = true;
-      
-      // Verificar filtro de modalidade
-      if (fm && fm !== '') {
-        const filtroNormalizado = normalizarModalidadeParaFiltro(fm);
-        const modalidadeDuathlonNormalizada = normalizarModalidadeParaFiltro('DUATHLON CROSS');
-        if (filtroNormalizado !== modalidadeDuathlonNormalizada) passaFiltro = false;
-      }
-      
-      // Verificar filtro de categoria
-      if (passaFiltro && fc && fc !== '') {
-        const categoriaFiltroNormalizada = normalizarString(fc);
-        const categoriaDuathlonNormalizada = normalizarString(rd.categoria);
-        if (categoriaDuathlonNormalizada !== categoriaFiltroNormalizada) passaFiltro = false;
-      }
-      
-      // Verificar filtro de gênero
-      if (passaFiltro && fg && fg !== '') {
-        const generoFiltroNormalizado = normalizarString(fg);
-        const generoDuathlonNormalizado = normalizarString(rd.genero);
-        if (generoDuathlonNormalizado !== generoFiltroNormalizado) passaFiltro = false;
-      }
-      
-      if(passaFiltro){
-        filtered.push(rd);
-      }
-    });
-  }
-
-  // Ordenar resultados
-  filtered.sort((a,b)=>{
-    // Para MTB e Duathlon Cross, ordenar por voltas primeiro
-    let isAVolta = (a.modalidade === 'MTB' || a.modalidade === 'DUATHLON CROSS' || a.totalVoltas);
-    let isBVolta = (b.modalidade === 'MTB' || b.modalidade === 'DUATHLON CROSS' || b.totalVoltas);
-    
-    if(isAVolta && isBVolta && a.totalVoltas && b.totalVoltas){
-      if(b.totalVoltas !== a.totalVoltas){
-        return b.totalVoltas - a.totalVoltas;
-      }
-      return (a.tempoTotal || Infinity) - (b.tempoTotal || Infinity);
-    }
-    
-    // Para outras modalidades, ordenar por tempo
-    const ta = tempoToSeconds(a.tempo);
-    const tb = tempoToSeconds(b.tempo);
-    if(ta === tb) {
-      const da = a.registradaEmISO ? new Date(a.registradaEmISO) : (a.chegada ? parseDMYTime(a.chegada) : new Date(0));
-      const dbb = b.registradaEmISO ? new Date(b.registradaEmISO) : (b.chegada ? parseDMYTime(b.chegada) : new Date(0));
-      return da - dbb;
-    }
-    return ta - tb;
-  });
-
-  filteredResultadosCache = filtered;
-
-  let html = `<table class="resultados-table"><thead><tr>
-    <th>Posição</th>
-    <th>Número</th>
-    <th>Atleta</th>
-    <th>Modalidade</th>
-    <th>Categoria</th>
-    <th>Gênero</th>
-    <th>Chegada</th>
-    <th>Tempo</th>
-    <th>Voltas</th>
-    <th>Ações</th>
-  </tr></thead><tbody>`;
-
-  filtered.forEach((r, i)=>{
-    const pos = (r.tempo || r.totalVoltas) ? `${i+1}º` : '';
-    const voltasInfo = r.totalVoltas ? `${r.totalVoltas} volta(s)` : '';
-    
-    // Função para exibir modalidade corretamente
-    function getModalidadeParaExibicao(r) {
-      if (r.modalidade_original) {
-        return r.modalidade_original;
-      }
-      if (r.modalidade) {
-        // Converte _ para . em números (ex: "Trail_Run_6_5K" -> "Trail Run 6.5K")
-        return r.modalidade
-          .replace(/_/g, ' ')
-          .replace(/(\d+)\s+(\d+)/g, '$1.$2')
-          .replace(/\s+/g, ' ')
-          .trim();
-      }
-      return '';
-    }
-
-    const modalidadeExibicao = getModalidadeParaExibicao(r);
-    
-    html += `<tr>
-      <td><strong>${pos}</strong></td>
-      <td>${r.numero}</td>
-      <td>${escapeHtml(r.atleta||'')}</td>
-      <td>${escapeHtml(modalidadeExibicao)}</td>
-      <td>${escapeHtml(r.categoria||'')}</td>
-      <td>${escapeHtml(r.genero||'')}</td>
-      <td>${escapeHtml(r.chegada||'')}</td>
-      <td>${escapeHtml(r.tempo||'')}</td>
-      <td>${voltasInfo}</td>
-      <td>`;
-        if(!isVisitor && auth.currentUser){
-          html += `<button data-num="${r.numero}" class="btn-edit-res">Editar</button>`;
-        } else {
-          html += `<button data-num="${r.numero}" class="btn-comprovante-res secondary">Comprovante</button>`;
-        }
-        html += `</td>
-    </tr>`;
-  });
-
-  html += `</tbody></table>`;
-  tableResultados.innerHTML = html;
-  
-  if(!isVisitor && auth.currentUser){
-    tableResultados.querySelectorAll('.btn-edit-res').forEach(btn=> btn.onclick = ()=> openEditResultado(btn.dataset.num) );
-  } else {
-    tableResultados.querySelectorAll('.btn-comprovante-res').forEach(btn=> {
-      btn.onclick = () => {
-        const numero = btn.dataset.num;
-        const atleta = filteredResultadosCache.find(a => a.numero === numero);
-        if (atleta) {
-          atletaSelecionadoComprovante = atleta;
-          abrirModalComprovante();
-        }
-      };
-    });
-  }
-}
-
-    // Edit resultado modal
-    async function openEditResultado(numero){
-      if(isVisitor || !auth.currentUser){ alert('Ação proibida: modo visitante. Faça login para editar resultados.'); return; }
-      const snap = await get(child(ref(db), `resultados/${numero}`));
-      const data = snap.exists() ? snap.val() : {};
-      const athleteSnap = await get(child(ref(db), `listagem/${numero}`));
-      const athlete = athleteSnap.exists() ? athleteSnap.val() : {};
-      const overlay = document.createElement('div'); overlay.className='overlay';
-      const form = document.createElement('form'); form.className='modal';
-      form.innerHTML = `
-        <h4>Editar Resultado - ${numero}</h4>
-        <label class="small">Número</label>
-        <input id="r_numero" placeholder="Número" value="${escapeAttr(numero)}" />
-        <input id="r_nome" placeholder="Nome" value="${escapeAttr(data.atleta || athlete.atleta || '')}" />
-        <input id="r_modalidade" placeholder="Modalidade" value="${escapeAttr(data.modalidade || athlete.modalidade || '')}" />
-        <input id="r_categoria" placeholder="Categoria" value="${escapeAttr(data.categoria || athlete.categoria || '')}" />
-        <input id="r_genero" placeholder="Gênero" value="${escapeAttr(data.genero || athlete.genero || '')}" />
-        <input id="r_data_nasc" placeholder="Data Nascimento (DD/MM/YYYY)" value="${escapeAttr(data.data_nascimento || athlete.data_nascimento || '')}" />
-        <input id="r_idade" placeholder="Idade" value="${escapeAttr(data.idade || athlete.idade || '')}" />
-        <label class="small">Chegada (DD/MM/YYYY HH:MM:SS)</label>
-        <input id="r_chegada" value="${escapeAttr(data.chegada||'')}" />
-        <label class="small">Tempo (HH:MM:SS)</label>
-        <input id="r_tempo" value="${escapeAttr(data.tempo||'')}" />
-        <div class="form-actions">
-          <button type="button" id="r_cancel" class="ghost">Cancelar</button>
-          <button type="submit">Salvar</button>
+      eventsGrid.innerHTML = eventsList.map(event => `
+        <div class="event-card" data-id="${event.id}">
+          <div class="event-card-header">
+            <h3>${escapeHtml(event.info.nome || 'Evento sem nome')}</h3>
+            <div class="event-date">${event.info.data || 'Data não definida'}</div>
+          </div>
+          <div class="event-card-body">
+            <div class="event-stats">
+              <div class="event-stat">
+                <div class="event-stat-value">${event.resultsCount}</div>
+                <div class="event-stat-label">Atletas</div>
+              </div>
+            </div>
+            <div class="event-card-actions">
+              <button class="btn btn-primary btn-sm btn-ver-resultados" data-id="${event.id}">📊 Ver Resultados</button>
+              ${isAdmin ? `<button class="btn btn-outline btn-sm btn-editar-evento" data-id="${event.id}">✏️ Editar</button>
+                           <button class="btn btn-danger btn-sm btn-excluir-evento" data-id="${event.id}">🗑️ Excluir</button>` : ''}
+            </div>
+          </div>
         </div>
-      `;
-      document.body.appendChild(overlay); document.body.appendChild(form);
-      form.r_cancel.onclick = ()=>{ form.remove(); overlay.remove(); };
-      form.onsubmit = async (e)=>{
-        e.preventDefault();
-        try{
-          const rawNew = (form.r_numero.value || '').replace(/\D/g,'');
-          if(!rawNew){ alert('Número inválido'); return; }
-          const newNumero = padNum(rawNew);
-          const payloadRes = {
-            atleta: form.r_nome.value,
-            modalidade: form.r_modalidade.value,
-            categoria: form.r_categoria.value,
-            genero: form.r_genero.value,
-            data_nascimento: form.r_data_nasc.value,
-            idade: form.r_idade.value,
-            chegada: form.r_chegada.value,
-            tempo: form.r_tempo.value,
-            registradaEmISO: new Date().toISOString()
-          };
-          const payloadList = {
-            atleta: form.r_nome.value,
-            modalidade: form.r_modalidade.value,
-            categoria: form.r_categoria.value,
-            genero: form.r_genero.value,
-            data_nascimento: form.r_data_nasc.value,
-            idade: form.r_idade.value
-          };
-          if(newNumero === numero){
-            await update(ref(db, `resultados/${numero}`), payloadRes);
-            await update(ref(db, `listagem/${numero}`), payloadList);
-          } else {
-            const existsNewList = (await get(child(ref(db), `listagem/${newNumero}`))).exists();
-            if(existsNewList){
-              if(!confirm(`Já existe atleta com número ${newNumero} em listagem. Deseja sobrescrever?`)) { return; }
+      `).join('');
+      
+      document.querySelectorAll('.btn-ver-resultados').forEach(btn => {
+        btn.onclick = () => loadEventResults(btn.dataset.id);
+      });
+      if (isAdmin) {
+        document.querySelectorAll('.btn-editar-evento').forEach(btn => {
+          btn.onclick = () => openEventModal(btn.dataset.id);
+        });
+        document.querySelectorAll('.btn-excluir-evento').forEach(btn => {
+          btn.onclick = async () => {
+            if (confirm('Tem certeza que deseja excluir este evento?')) {
+              await remove(ref(db, `${PATH_EVENTS}/${btn.dataset.id}`));
+              loadEvents();
             }
-            const existsNewRes = (await get(child(ref(db), `resultados/${newNumero}`))).exists();
-            if(existsNewRes){
-              if(!confirm(`Já existe resultado com número ${newNumero}. Deseja sobrescrever?`)) { return; }
-            }
-            await set(ref(db, `listagem/${newNumero}`), payloadList);
-            await remove(ref(db, `listagem/${numero}`));
-            await set(ref(db, `resultados/${newNumero}`), Object.assign({}, payloadRes, { registradoPor: auth.currentUser ? auth.currentUser.email : null }));
-            await remove(ref(db, `resultados/${numero}`));
-          }
-          form.remove(); overlay.remove();
-        }catch(err){ console.error(err); alert('Erro ao salvar: '+(err.message||err)); }
-      };
+          };
+        });
+      }
     }
 
-    // Export CSV
-    btnExport.onclick = ()=>{
-      const rows = filteredResultadosCache.length ? filteredResultadosCache : latestResultados;
-      if(!rows || !rows.length){ alert('Nenhum resultado para exportar'); return; }
-      const header = ['numero','atleta','modalidade','categoria','genero','chegada','tempo','voltas'];
-      const csv = [header.join(',')].concat(rows.map(r=> {
-        const rowData = [
-          r.numero || '',
-          r.atleta || '',
-          r.modalidade || '',
-          r.categoria || '',
-          r.genero || '',
-          r.chegada || '',
-          r.tempo || '',
-          r.totalVoltas || ''
-        ];
-        return rowData.map(cell => `"${String(cell).replace(/"/g,'""')}"`).join(',');
-      })).join('\n');
-      const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'resultados_export.csv';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    };
-
-    // search handler and utils
-    searchListagem.addEventListener('input', ()=> renderListagem(latestListagem) );
-
-    function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, (m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-    function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
-
-// Upload de Resultados via CSV
-btnUploadResultados.onclick = () => {
-  if(isVisitor || !auth.currentUser) {
-    alert('Ação proibida: modo visitante. Faça login para importar resultados.');
-    return;
-  }
-  csvUploadResultados.click();
-};
-
-csvUploadResultados.addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if(!file) return;
-  
-  if(!confirm('⚠️ ATENÇÃO: Isso irá SOBRESCREVER todos os resultados atuais com os dados do arquivo CSV.\n\nDeseja continuar?')) {
-    csvUploadResultados.value = '';
-    return;
-  }
-  
-  const reader = new FileReader();
-  reader.onload = async () => {
-    const text = reader.result;
-    const lines = text.split(/\r?\n/).filter(Boolean);
-    
-    if(lines.length === 0) {
-      alert('Arquivo vazio!');
-      csvUploadResultados.value = '';
-      return;
-    }
-    
-    // Detectar separador (; ou ,)
-    let separador = ',';
-    if (lines[0].includes(';')) separador = ';';
-    
-    // Ler cabeçalho
-    const cabecalho = lines[0].split(separador).map(h => h.replace(/^"|"$/g, '').toLowerCase().trim());
-    
-    // Mapear índices das colunas
-    const indice = {
-      numero: cabecalho.findIndex(h => h === 'numero' || h === 'number'),
-      atleta: cabecalho.findIndex(h => h === 'atleta' || h === 'athlete' || h === 'nome'),
-      modalidade: cabecalho.findIndex(h => h === 'modalidade' || h === 'modality'),
-      categoria: cabecalho.findIndex(h => h === 'categoria' || h === 'category'),
-      genero: cabecalho.findIndex(h => h === 'genero' || h === 'gender'),
-      chegada: cabecalho.findIndex(h => h === 'chegada' || h === 'arrival'),
-      tempo: cabecalho.findIndex(h => h === 'tempo' || h === 'time'),
-      voltas: cabecalho.findIndex(h => h === 'voltas' || h === 'laps')
-    };
-    
-    let importados = 0;
-    let erros = 0;
-    let errosLista = [];
-    
-    for(let i = 1; i < lines.length; i++) {
-      const colunas = lines[i].split(separador).map(c => c.trim().replace(/^"|"$/g, ''));
-      if(colunas.length < 2) continue;
-      
-      const numeroRaw = colunas[indice.numero]?.replace(/\D/g, '') || '';
-      const numero = padNum(numeroRaw);
-      
-      if(!numero) {
-        erros++;
-        errosLista.push(`Linha ${i+1}: Número inválido`);
-        continue;
+    async function loadEventResults(eventId) {
+      currentEventId = eventId;
+      const snapshot = await get(ref(db, `${PATH_EVENTS}/${eventId}`));
+      if (snapshot.exists()) {
+        currentEventData = snapshot.val();
       }
       
-      // Montar objeto do resultado
-      const resultadoData = {
-        chegada: colunas[indice.chegada] || '',
-        tempo: colunas[indice.tempo] || '',
-        atleta: colunas[indice.atleta] || '',
-        genero: colunas[indice.genero] || '',
-        modalidade: colunas[indice.modalidade] || '',
-        modalidade_original: colunas[indice.modalidade] || '',
-        categoria: colunas[indice.categoria] || '',
-        registradoPor: auth.currentUser ? auth.currentUser.email : 'upload_csv',
-        registradaEmISO: new Date().toISOString()
-      };
+      eventTitle.textContent = currentEventData.info?.nome || 'Resultados';
+      renderFilters();
+      renderResultsTable(currentEventData.results || []);
       
-      // Adicionar informação de voltas se presente
-      if(indice.voltas >= 0 && colunas[indice.voltas]) {
-        const voltasStr = colunas[indice.voltas].toString();
-        const voltasNum = parseInt(voltasStr);
-        if(!isNaN(voltasNum) && voltasNum > 0) {
-          resultadoData.totalVoltas = voltasNum;
+      eventsListContainer.classList.add('hidden');
+      eventResultsContainer.classList.remove('hidden');
+      
+      btnEditEventAdmin.style.display = isAdmin ? 'inline-flex' : 'none';
+    }
+
+    function renderFilters() {
+      const results = currentEventData.results || [];
+      const modalidades = [...new Set(results.map(r => r.modalidade).filter(m => m))];
+      const categorias = [...new Set(results.map(r => r.categoria).filter(c => c))];
+      const generos = [...new Set(results.map(r => r.genero).filter(g => g))];
+      
+      fModalidade.innerHTML = '<option value="">Todas</option>' + modalidades.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+      fCategoria.innerHTML = '<option value="">Todas</option>' + categorias.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+      fGenero.innerHTML = '<option value="">Todos</option>' + generos.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
+    }
+
+    function renderResultsTable(results) {
+      const modalidade = fModalidade.value;
+      const categoria = fCategoria.value;
+      const genero = fGenero.value;
+      
+      let filtered = [...results];
+      if (modalidade) filtered = filtered.filter(r => r.modalidade === modalidade);
+      if (categoria) filtered = filtered.filter(r => r.categoria === categoria);
+      if (genero) filtered = filtered.filter(r => r.genero === genero);
+      
+      filtered.sort((a, b) => tempoToSeconds(a.tempo) - tempoToSeconds(b.tempo));
+      filteredResults = filtered;
+      
+      let html = `<table class="results-table"><thead><tr>
+        <th>Pos</th><th>Nº</th><th>Atleta</th><th>Modalidade</th><th>Categoria</th><th>Gênero</th><th>Chegada</th><th>Tempo</th><th>Voltas</th><th>Ações</th>
+       </tr></thead><tbody>`;
+      
+      filtered.forEach((r, idx) => {
+        html += `<tr>
+          <td><strong>${idx+1}º</strong></td>
+          <td>${escapeHtml(r.numero)}</td>
+          <td>${escapeHtml(r.atleta)}</td>
+          <td>${escapeHtml(r.modalidade)}</td>
+          <td>${escapeHtml(r.categoria)}</td>
+          <td>${escapeHtml(r.genero)}</td>
+          <td>${escapeHtml(r.chegada)}</td>
+          <td>${escapeHtml(r.tempo)}</td>
+          <td>${escapeHtml(r.voltas)}</td>
+          <td><button class="btn-comprovante-table btn-sm btn-outline" data-idx="${idx}">📄 Comprovante</button></td>
+        </tr>`;
+      });
+      html += `</tbody></table>`;
+      tableResultados.innerHTML = html;
+      
+      document.querySelectorAll('.btn-comprovante-table').forEach(btn => {
+        btn.onclick = () => {
+          const idx = parseInt(btn.dataset.idx);
+          atletaSelecionadoComprovante = filtered[idx];
+          abrirModalComprovante();
+        };
+      });
+    }
+
+    function abrirModalComprovante() {
+      if (!atletaSelecionadoComprovante) return;
+      const atleta = atletaSelecionadoComprovante;
+      const nomeProva = currentEventData.info?.nome || 'RC4 Sports';
+      
+      document.getElementById('comprovante-prova-nome').textContent = nomeProva;
+      document.getElementById('comprovante-data').innerHTML = `
+        <div class="comprovante-item"><span>Atleta:</span><span>${escapeHtml(atleta.atleta)}</span></div>
+        <div class="comprovante-item"><span>Nº:</span><span>${escapeHtml(atleta.numero)}</span></div>
+        <div class="comprovante-item"><span>Modalidade:</span><span>${escapeHtml(atleta.modalidade)}</span></div>
+        <div class="comprovante-item"><span>Categoria:</span><span>${escapeHtml(atleta.categoria)}</span></div>
+        <div class="comprovante-item"><span>Tempo:</span><span>${escapeHtml(atleta.tempo)}</span></div>
+        <div class="comprovante-item-centralizado"><span>${new Date().toLocaleDateString('pt-BR')}</span></div>
+      `;
+      document.getElementById('modal-comprovante').style.display = 'flex';
+    }
+
+    function downloadComprovante() {
+      const elemento = document.getElementById('comprovante-preview');
+      html2canvas(elemento, { scale: 3, useCORS: true }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `comprovante_${atletaSelecionadoComprovante?.numero || 'atleta'}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      }).catch(() => alert('Erro ao gerar imagem.'));
+    }
+
+    function openEventModal(eventId = null) {
+      const modal = document.getElementById('modal-evento');
+      document.getElementById('modal-evento-titulo').textContent = eventId ? 'Editar Evento' : 'Novo Evento';
+      document.getElementById('evento-nome').value = '';
+      document.getElementById('evento-data').value = '';
+      document.getElementById('csv-preview').innerHTML = '';
+      pendingCSVData = null;
+      
+      if (eventId) {
+        const event = eventsList.find(e => e.id === eventId);
+        if (event) {
+          document.getElementById('evento-nome').value = event.info.nome || '';
+          document.getElementById('evento-data').value = event.info.data || '';
         }
       }
+      modal.style.display = 'flex';
+    }
+
+    const uploadArea = document.getElementById('upload-area-evento');
+    const csvInput = document.getElementById('evento-csv');
+    if (uploadArea) {
+      uploadArea.onclick = () => csvInput.click();
+      uploadArea.ondragover = (e) => { e.preventDefault(); uploadArea.style.borderColor = 'var(--primary-color)'; };
+      uploadArea.ondragleave = () => uploadArea.style.borderColor = '#ddd';
+      uploadArea.ondrop = (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#ddd';
+        if (e.dataTransfer.files[0]?.name.endsWith('.csv')) processCSVFile(e.dataTransfer.files[0]);
+      };
+    }
+    csvInput.onchange = (e) => { if (e.target.files[0]) processCSVFile(e.target.files[0]); };
+    
+    function processCSVFile(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const atletas = parseCSV(e.target.result);
+        if (atletas.length === 0) {
+          document.getElementById('csv-preview').innerHTML = '<span style="color: red;">Erro: Nenhum dado válido</span>';
+          return;
+        }
+        pendingCSVData = atletas;
+        document.getElementById('csv-preview').innerHTML = `<span style="color: green;">✅ ${atletas.length} atletas carregados</span>`;
+      };
+      reader.readAsText(file, 'UTF-8');
+    }
+
+    async function saveEvent() {
+      const nome = document.getElementById('evento-nome').value.trim();
+      if (!nome) { alert('Digite o nome do evento'); return; }
+      if (!pendingCSVData) { alert('Carregue um arquivo CSV com os resultados'); return; }
+      
+      const eventData = {
+        info: { nome: nome, data: document.getElementById('evento-data').value || new Date().toISOString().split('T')[0], createdAt: Date.now() },
+        results: pendingCSVData,
+        updatedAt: Date.now()
+      };
       
       try {
-        await set(ref(db, `resultados/${numero}`), resultadoData);
-        importados++;
-      } catch(err) {
-        console.error(`Erro ao importar ${numero}:`, err);
-        erros++;
-        errosLista.push(`Linha ${i+1}: ${err.message}`);
+        await set(ref(db, `${PATH_EVENTS}/${push(ref(db, PATH_EVENTS)).key}`), eventData);
+        alert('Evento salvo com sucesso!');
+        document.getElementById('modal-evento').style.display = 'none';
+        loadEvents();
+      } catch (err) {
+        alert('Erro ao salvar: ' + err.message);
       }
     }
-    
-    // Mostrar resumo da importação
-    let mensagem = `✅ Upload concluído!\n\n📊 Importados: ${importados} resultados\n❌ Erros: ${erros}`;
-    
-    if(errosLista.length > 0 && errosLista.length <= 5) {
-      mensagem += `\n\nDetalhes:\n${errosLista.join('\n')}`;
-    } else if(errosLista.length > 5) {
-      mensagem += `\n\nÚltimos erros:\n${errosLista.slice(0, 5).join('\n')}\n... e mais ${errosLista.length - 5} erros.`;
-    }
-    
-    alert(mensagem);
-    csvUploadResultados.value = '';
-    
-    // Atualizar a exibição dos resultados
-    renderResultados(latestResultados);
-  };
-  
-  reader.onerror = () => {
-    alert('Erro ao ler o arquivo CSV. Verifique se o arquivo não está corrompido.');
-    csvUploadResultados.value = '';
-  };
-  
-  reader.readAsText(file, 'utf-8');
-});
 
-// Função para normalizar modalidade para comparação (mesma lógica usada no sistema)
-function normalizarModalidadeParaComparacao(modalidade) {
-  if (!modalidade) return '';
-  
-  // Primeiro, garantir que estamos trabalhando com o formato original se disponível
-  // Se for uma modalidade com ponto (ex: "Trail Run 6.5K"), queremos comparar com a versão com underscore
-  // Se for uma modalidade com underscore (ex: "Trail_Run_6_5K"), também precisamos normalizar
-  
-  // Passo 1: Remover espaços extras e converter para maiúsculas para comparação case-insensitive
-  let normalizada = modalidade.trim().toUpperCase();
-  
-  // Passo 2: Substituir pontos por underscores (para corresponder ao formato de storage)
-  normalizada = normalizada.replace(/\./g, '_');
-  
-  // Passo 3: Substituir espaços por underscores (para corresponder ao formato de storage)
-  normalizada = normalizada.replace(/\s+/g, '_');
-  
-  // Passo 4: Remover underscores múltiplos
-  normalizada = normalizada.replace(/_+/g, '_');
-  
-  return normalizada;
-}
-
-// Função para extrair o nome original da modalidade (para exibição)
-function extrairModalidadeOriginal(modalidade) {
-  if (!modalidade) return '';
-  
-  // Se já tem modalidade_original, usar ela
-  if (modalidade.modalidade_original) {
-    return modalidade.modalidade_original;
-  }
-  
-  // Se é uma string, tentar converter de volta para formato de exibição
-  if (typeof modalidade === 'string') {
-    return modalidade
-      .replace(/_/g, ' ')
-      .replace(/(\d+)\s+(\d+)/g, '$1.$2')
-      .replace(/\s+/g, ' ')
-      .trim();
-  }
-  
-  return '';
-}
-
-// Função para verificar largadas pendentes e datas (VERSÃO CORRIGIDA)
-function verificarLargadasPendentes() {
-  if (!latestListagem || !latestLargadas) return { pendentes: [], todasCadastradas: false };
-  
-  console.log('Verificando largadas pendentes...');
-  console.log('Modalidades na listagem:', latestListagem.map(a => a.modalidade_original || a.modalidade));
-  console.log('Modalidades nas largadas:', latestLargadas.map(l => l.modalidade));
-  
-  // Coletar todas as modalidades únicas da listagem (usando a versão original para exibição)
-  const modalidadesListagem = new Map(); // Mapa de normalizada -> original
-  
-  latestListagem.forEach(atleta => {
-    // Priorizar modalidade_original se disponível
-    const modalidadeOriginal = atleta.modalidade_original || atleta.modalidade;
-    if (modalidadeOriginal) {
-      const modalidadeNormalizada = normalizarModalidadeParaComparacao(modalidadeOriginal);
-      
-      // Guardar a versão original para exibição posterior
-      if (!modalidadesListagem.has(modalidadeNormalizada)) {
-        modalidadesListagem.set(modalidadeNormalizada, modalidadeOriginal);
-      }
-    }
-  });
-  
-  // Coletar todas as modalidades que já têm largada cadastrada
-  const modalidadesComLargada = new Map(); // Mapa de normalizada -> objeto largada
-  
-  latestLargadas.forEach(largada => {
-    if (largada.modalidade) {
-      const modalidadeNormalizada = normalizarModalidadeParaComparacao(largada.modalidade);
-      modalidadesComLargada.set(modalidadeNormalizada, largada);
-    }
-  });
-  
-  // Encontrar modalidades que estão na listagem mas não têm largada
-  const modalidadesPendentes = [];
-  
-  modalidadesListagem.forEach((original, normalizada) => {
-    if (!modalidadesComLargada.has(normalizada)) {
-      modalidadesPendentes.push(original); // Usar a versão original para exibição
-    }
-  });
-  
-  // Verificar se TODAS as modalidades da listagem têm largada cadastrada
-  const todasCadastradas = modalidadesPendentes.length === 0 && modalidadesListagem.size > 0;
-  
-  const resultado = {
-    pendentes: modalidadesPendentes,
-    todasCadastradas: todasCadastradas
-  };
-  
-  console.log('Resultado da verificação:', resultado);
-  
-  return resultado;
-}
-
-// Função para criar/atualizar o alerta de largadas (VERSÃO CORRIGIDA)
-function atualizarAlertaLargadas() {
-  const { pendentes, todasCadastradas } = verificarLargadasPendentes();
-  
-  // Remover alerta existente se houver
-  const alertaExistente = document.getElementById('alerta-largadas');
-  if (alertaExistente) {
-    alertaExistente.remove();
-  }
-  
-  // Se não houver modalidades na listagem, não mostrar alerta
-  if (latestListagem.length === 0) {
-    return;
-  }
-  
-  // Se houver pendências, mostrar alerta vermelho
-  if (pendentes.length > 0) {
-    criarAlertaVermelho(pendentes);
-  } 
-  // Se todas as modalidades estiverem cadastradas, mostrar alerta laranja (SEMPRE)
-  else if (todasCadastradas) {
-    criarAlertaLaranja();
-  }
-}
-
-// Função para criar alerta vermelho (faltam largadas)
-function criarAlertaVermelho(pendentes) {
-  const alerta = document.createElement('div');
-  alerta.id = 'alerta-largadas';
-  
-  alerta.style.cssText = `
-    background-color: #ff6b6b;
-    color: white;
-    padding: 12px 20px;
-    margin: 10px auto;
-    border-radius: 8px;
-    font-weight: bold;
-    text-align: center;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    max-width: 1100px;
-    animation: slideDown 0.3s ease-out;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  `;
-  
-  // Adicionar animação se não existir
-  adicionarAnimacaoSeNecessario();
-  
-  // Conteúdo do alerta
-  const conteudo = document.createElement('div');
-  conteudo.style.cssText = `
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-    flex: 1;
-  `;
-  
-  conteudo.innerHTML = `
-    <span style="font-size: 20px;">⚠️</span>
-    <span style="font-weight: 600;">Falta cadastrar largadas!</span>
-    <span style="flex: 1;">Faltam:</span>
-    <span style="font-family: monospace; background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 20px; font-size: 14px;">
-      ${pendentes.join(' | ')}
-    </span>
-  `;
-  
-  alerta.appendChild(conteudo);
-  adicionarBotaoFechar(alerta);
-  inserirAlertaNaPagina(alerta);
-}
-
-// Função para criar alerta laranja (verificar datas)
-function criarAlertaLaranja() {
-  const alerta = document.createElement('div');
-  alerta.id = 'alerta-largadas';
-  
-  alerta.style.cssText = `
-    background-color: #ffa500;
-    color: white;
-    padding: 12px 20px;
-    margin: 10px auto;
-    border-radius: 8px;
-    font-weight: bold;
-    text-align: center;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    max-width: 1100px;
-    animation: slideDown 0.3s ease-out;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  `;
-  
-  // Adicionar animação se não existir
-  adicionarAnimacaoSeNecessario();
-  
-  // Listar todas as modalidades cadastradas
-  const modalidadesCadastradas = latestLargadas.map(l => l.modalidade_original || l.modalidade).join(', ');
-  
-  // Conteúdo do alerta
-  const conteudo = document.createElement('div');
-  conteudo.style.cssText = `
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-    flex: 1;
-  `;
-  
-  conteudo.innerHTML = `
-    <span style="font-size: 20px;">🔍</span>
-    <span style="font-weight: 600;">Verifique as largadas!</span>
-    <span style="flex: 1;">Confira se todas as datas e horários estão corretos:</span>
-    <span style="font-family: monospace; background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 20px; font-size: 14px; cursor: help;" 
-          title="Modalidades cadastradas: ${modalidadesCadastradas}">
-      ${latestLargadas.length} modalidade(s)
-    </span>
-  `;
-  
-  alerta.appendChild(conteudo);
-  adicionarBotaoFechar(alerta);
-  inserirAlertaNaPagina(alerta);
-}
-
-// Função auxiliar para adicionar animação
-function adicionarAnimacaoSeNecessario() {
-  if (!document.querySelector('style[data-alerta="true"]')) {
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes slideDown {
-        from {
-          opacity: 0;
-          transform: translateY(-20px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-    `;
-    style.setAttribute('data-alerta', 'true');
-    document.head.appendChild(style);
-  }
-}
-
-// Função auxiliar para adicionar botão de fechar
-function adicionarBotaoFechar(alerta) {
-  const fecharBtn = document.createElement('button');
-  fecharBtn.innerHTML = 'ok';
-  fecharBtn.style.cssText = `
-    background: none;
-    border: none;
-    color: white;
-    font-size: 24px;
-    cursor: pointer;
-    padding: 0 5px;
-    margin-left: 10px;
-    opacity: 0.8;
-    transition: opacity 0.2s;
-  `;
-  fecharBtn.onmouseover = () => fecharBtn.style.opacity = '1';
-  fecharBtn.onmouseout = () => fecharBtn.style.opacity = '0.8';
-  fecharBtn.onclick = (e) => {
-    e.stopPropagation();
-    alerta.remove();
-  };
-  fecharBtn.title = 'Fechar alerta';
-  alerta.appendChild(fecharBtn);
-}
-
-// Função auxiliar para inserir alerta na página
-function inserirAlertaNaPagina(alerta) {
-  const container = document.querySelector('.container');
-  const header = document.querySelector('header');
-  if (header && container) {
-    header.parentNode.insertBefore(alerta, container);
-  }
-}
-
-// Modificar a função startRealtimeListeners para incluir a verificação
-const originalStartRealtimeListeners = startRealtimeListeners;
-startRealtimeListeners = function() {
-  originalStartRealtimeListeners();
-  
-  // Adicionar listeners adicionais para atualizar o alerta quando os dados mudarem
-  onValue(ref(db, 'listagem'), (snap) => {
-    setTimeout(atualizarAlertaLargadas, 100);
-  }, (err) => console.error('Erro listener listagem:', err));
-
-  onValue(ref(db, 'largadas'), (snap) => {
-    setTimeout(atualizarAlertaLargadas, 100);
-  }, (err) => console.error('Erro listener largadas:', err));
-};
-
-// Chamar a verificação inicial após carregar os dados
-setTimeout(() => {
-  if (latestListagem.length > 0 || latestLargadas.length > 0) {
-    atualizarAlertaLargadas();
-  }
-}, 2000);
-
-// ========== MÁSCARA PARA DATA/HORA NAS LARGADAS ==========
-
-// Função para aplicar máscara de data/hora
-function aplicarMascaraDataHora(input) {
-  input.addEventListener('input', function(e) {
-    let valor = this.value.replace(/\D/g, ''); // Remove tudo que não é dígito
-    
-    if (valor.length <= 8) {
-      // Máscara para data: DDMMAAAA
-      if (valor.length > 2) {
-        valor = valor.substring(0, 2) + '/' + valor.substring(2);
-      }
-      if (valor.length > 5) {
-        valor = valor.substring(0, 5) + '/' + valor.substring(5);
-      }
-      this.value = valor;
-    } else {
-      // Máscara para data + hora: DDMMAAAAHHMMSS
-      if (valor.length > 2) {
-        valor = valor.substring(0, 2) + '/' + valor.substring(2);
-      }
-      if (valor.length > 5) {
-        valor = valor.substring(0, 5) + '/' + valor.substring(5);
-      }
-      if (valor.length > 10) {
-        valor = valor.substring(0, 10) + ' ' + valor.substring(10);
-      }
-      if (valor.length > 13) {
-        valor = valor.substring(0, 13) + ':' + valor.substring(13);
-      }
-      if (valor.length > 16) {
-        valor = valor.substring(0, 16) + ':' + valor.substring(16);
-      }
-      this.value = valor;
-    }
-    
-    // Limitar o tamanho máximo (10 caracteres para data + 1 espaço + 8 para hora = 19)
-    if (this.value.length > 19) {
-      this.value = this.value.substring(0, 19);
-    }
-  });
-  
-  // Adicionar tecla de atalho para apagar
-  input.addEventListener('keydown', function(e) {
-    // Se pressionar Backspace e o campo estiver vazio ou com máscara parcial
-    if (e.key === 'Backspace') {
-      const pos = this.selectionStart;
-      const valor = this.value;
-      
-      // Se estiver em posições de caracteres especiais, apagar também
-      if (pos === 3 || pos === 6) { // Posições das barras
-        this.value = valor.substring(0, pos-1) + valor.substring(pos);
-        this.setSelectionRange(pos-1, pos-1);
-        e.preventDefault();
-      } else if (pos === 11) { // Posição do espaço
-        this.value = valor.substring(0, pos-1) + valor.substring(pos);
-        this.setSelectionRange(pos-1, pos-1);
-        e.preventDefault();
-      } else if (pos === 14 || pos === 17) { // Posições dos dois pontos
-        this.value = valor.substring(0, pos-1) + valor.substring(pos);
-        this.setSelectionRange(pos-1, pos-1);
-        e.preventDefault();
-      }
-    }
-  });
-  
-  // Colocar o cursor no final do campo
-  input.addEventListener('focus', function() {
-    setTimeout(() => {
-      this.setSelectionRange(this.value.length, this.value.length);
-    }, 0);
-  });
-}
-
-// SUBSTITUIR o btnAddLargada.onclick original
-btnAddLargada.onclick = function() {
-  if(isVisitor || !auth.currentUser){ 
-    alert('Ação proibida: modo visitante. Faça login para adicionar largadas.'); 
-    return; 
-  }
-  
-  const overlay = document.createElement('div'); 
-  overlay.className = 'overlay';
-  
-  const form = document.createElement('form'); 
-  form.className = 'modal';
-  
-  form.innerHTML = `
-    <h4>Nova Largada</h4>
-    <input id="l_modalidade" placeholder="Modalidade (ex: MTB)" required />
-    <label class="small">Início (DD/MM/AAAA HH:MM:SS)</label>
-    <div style="position: relative; margin-bottom: 10px;">
-      <input id="l_inicio" 
-             placeholder="Digite a data e hora" 
-             style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-family: monospace; font-size: 16px;" 
-             autocomplete="off" />
-      <small style="display: block; margin-top: 5px; color: #666;">
-        Digite: DDMMAAAAHHMMSS (ex: 08032026120000 = 08/03/2026 12:00:00)
-      </small>
-    </div>
-    <div class="form-actions">
-      <button type="button" id="l_cancel" class="ghost">Cancelar</button>
-      <button type="submit">Salvar</button>
-    </div>
-  `;
-  
-  document.body.appendChild(overlay); 
-  document.body.appendChild(form);
-  
-  const modalidadeInput = document.getElementById('l_modalidade');
-  const dataHoraInput = document.getElementById('l_inicio');
-  
-  modalidadeInput.focus();
-  
-  // Aplicar máscara ao campo de data/hora
-  aplicarMascaraDataHora(dataHoraInput);
-  
-  // Cancelar
-  document.getElementById('l_cancel').onclick = () => { 
-    form.remove(); 
-    overlay.remove(); 
-  };
-  
-  // Salvar
-  form.onsubmit = async (e) => {
-    e.preventDefault();
-    
-    const modalidadeOriginal = modalidadeInput.value.trim();
-    const modalidadeSanitizada = processarModalidadeParaStorage(modalidadeOriginal);
-    const inicioStr = dataHoraInput.value.trim();
-    
-    if(!modalidadeOriginal || !inicioStr){ 
-      alert('Preencha todos os campos'); 
-      return; 
-    }
-    
-    // VALIDAÇÃO DO FORMATO DA DATA/HORA
-    const regexDataHoraCompleta = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}$/;
-    if (!regexDataHoraCompleta.test(inicioStr)) {
-      alert('Formato de data/hora inválido! Use o formato: DD/MM/AAAA HH:MM:SS');
-      return;
-    }
-    
-    // Validação adicional para verificar se a data é válida
-    const [dataPart, horaPart] = inicioStr.split(' ');
-    const [dia, mes, ano] = dataPart.split('/').map(Number);
-    const [hora, minuto, segundo] = horaPart.split(':').map(Number);
-    
-    const dataObj = new Date(ano, mes-1, dia, hora, minuto, segundo);
-    if (dataObj.getFullYear() !== ano || 
-        dataObj.getMonth() !== mes-1 || 
-        dataObj.getDate() !== dia ||
-        dataObj.getHours() !== hora ||
-        dataObj.getMinutes() !== minuto ||
-        dataObj.getSeconds() !== segundo) {
-      alert('Data inválida! Verifique se o dia, mês e ano estão corretos.');
-      return;
-    }
-    
-    try{
-      await set(ref(db, `largadas/${modalidadeSanitizada}/inicio`), inicioStr);
-      await set(ref(db, `largadas/${modalidadeSanitizada}/modalidade_original`), modalidadeOriginal);
-      form.remove(); 
-      overlay.remove();
-    } catch(err){ 
-      console.error(err); 
-      alert('Erro ao salvar largada: '+(err.message||err)); 
-    }
-  };
-};
-
-// SUBSTITUIR a função openEditLargada original
-openEditLargada = function(modalidade) {
-  if(isVisitor || !auth.currentUser){ 
-    alert('Ação proibida: modo visitante. Faça login para editar largadas.'); 
-    return; 
-  }
-  
-  get(child(ref(db), `largadas/${modalidade}/inicio`)).then(snap => {
-    const inicio = snap.exists() ? snap.val() : '';
-    const overlay = document.createElement('div'); 
-    overlay.className = 'overlay';
-    
-    const form = document.createElement('form'); 
-    form.className = 'modal';
-    
-    form.innerHTML = `
-      <h4>Editar Largada - ${modalidade}</h4>
-      <label class="small">Início (DD/MM/AAAA HH:MM:SS)</label>
-      <div style="position: relative; margin-bottom: 10px;">
-        <input id="el_inicio" 
-               value="${escapeAttr(inicio)}" 
-               style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-family: monospace; font-size: 16px;" 
-               autocomplete="off" />
-        <small style="display: block; margin-top: 5px; color: #666;">
-          Digite: DDMMAAAAHHMMSS (ex: 08032026120000 = 08/03/2026 12:00:00)
-        </small>
-      </div>
-      <div class="form-actions">
-        <button type="button" id="el_cancel" class="ghost">Cancelar</button>
-        <button type="submit">Salvar</button>
-      </div>
-    `;
-    
-    document.body.appendChild(overlay); 
-    document.body.appendChild(form);
-    
-    const dataHoraInput = document.getElementById('el_inicio');
-    
-    // Aplicar máscara ao campo de data/hora
-    aplicarMascaraDataHora(dataHoraInput);
-    
-    dataHoraInput.focus();
-    
-    document.getElementById('el_cancel').onclick = () => { 
-      form.remove(); 
-      overlay.remove(); 
+    // Event Listeners
+    document.getElementById('btn-voltar-lista').onclick = () => {
+      eventsListContainer.classList.remove('hidden');
+      eventResultsContainer.classList.add('hidden');
+      loadEvents();
     };
     
-    form.onsubmit = async (e) => {
-      e.preventDefault();
-      
-      const inicioStr = dataHoraInput.value.trim();
-      
-      if(!inicioStr){ 
-        alert('Preencha o campo de data/hora'); 
-        return; 
-      }
-      
-      // VALIDAÇÃO DO FORMATO DA DATA/HORA
-      const regexDataHoraCompleta = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2}$/;
-      if (!regexDataHoraCompleta.test(inicioStr)) {
-        alert('Formato de data/hora inválido! Use o formato: DD/MM/AAAA HH:MM:SS');
-        return;
-      }
-      
-      // Validação adicional para verificar se a data é válida
-      const [dataPart, horaPart] = inicioStr.split(' ');
-      const [dia, mes, ano] = dataPart.split('/').map(Number);
-      const [hora, minuto, segundo] = horaPart.split(':').map(Number);
-      
-      const dataObj = new Date(ano, mes-1, dia, hora, minuto, segundo);
-      if (dataObj.getFullYear() !== ano || 
-          dataObj.getMonth() !== mes-1 || 
-          dataObj.getDate() !== dia ||
-          dataObj.getHours() !== hora ||
-          dataObj.getMinutes() !== minuto ||
-          dataObj.getSeconds() !== segundo) {
-        alert('Data inválida! Verifique se o dia, mês e ano estão corretos.');
-        return;
-      }
-      
-      try{
-        await set(ref(db, `largadas/${modalidade}/inicio`), inicioStr);
-        form.remove(); 
-        overlay.remove();
-      } catch(err){ 
-        console.error(err); 
-        alert('Erro ao salvar largada: '+(err.message||err)); 
+    document.getElementById('btn-print-results').onclick = () => {
+      const win = window.open('', '_blank');
+      win.document.write(`<html><head><title>${escapeHtml(currentEventData.info?.nome)}</title>
+        <style>body{font-family:Arial;margin:20px}table{border-collapse:collapse;width:100%}
+        th,td{border:1px solid #ccc;padding:8px;text-align:left}th{background:#f0f0f0}</style>
+        </head><body><h2>${escapeHtml(currentEventData.info?.nome)}</h2>
+        ${tableResultados.innerHTML}<button onclick="window.print()">Imprimir</button></body></html>`);
+      win.document.close();
+    };
+    
+    document.getElementById('btn-export-csv').onclick = () => {
+      if (!filteredResults.length) { alert('Nenhum resultado para exportar'); return; }
+      const headers = ['numero','atleta','modalidade','categoria','genero','chegada','tempo','voltas'];
+      const csv = [headers.join(';')].concat(filteredResults.map(r => 
+        headers.map(h => `"${String(r[h] || '').replace(/"/g, '""')}"`).join(';')
+      )).join('\n');
+      const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `${currentEventData.info?.nome || 'resultados'}.csv`;
+      a.click(); URL.revokeObjectURL(url);
+    };
+    
+    document.getElementById('btn-aplicar-filtro').onclick = () => renderResultsTable(currentEventData.results || []);
+    document.getElementById('btn-limpar-filtros').onclick = () => {
+      fModalidade.value = ''; fCategoria.value = ''; fGenero.value = '';
+      renderResultsTable(currentEventData.results || []);
+    };
+    
+    btnEditEventAdmin.onclick = () => openEventModal(currentEventId);
+    
+    // Login/Logout
+    const footerLoginBtn = document.getElementById('footer-login-btn');
+    const adminEmail = document.getElementById('admin-email');
+    const adminPassword = document.getElementById('admin-password');
+    const adminLoginBtn = document.getElementById('admin-login-btn');
+    const adminLoginError = document.getElementById('admin-login-error');
+    const btnLogoutAdmin = document.getElementById('btn-logout-admin');
+    const btnVoltarMain = document.getElementById('btn-voltar-main');
+    
+    // Mostrar tela principal SEMPRE (para todos)
+    mainContent.style.display = 'block';
+    adminLoginCard.style.display = 'none';
+    
+    footerLoginBtn.onclick = () => {
+      mainContent.style.display = 'none';
+      adminLoginCard.style.display = 'block';
+    };
+    
+    btnVoltarMain.onclick = () => {
+      mainContent.style.display = 'block';
+      adminLoginCard.style.display = 'none';
+      adminLoginError.classList.add('hidden');
+    };
+    
+    adminLoginBtn.onclick = async () => {
+      try {
+        await signInWithEmailAndPassword(auth, adminEmail.value, adminPassword.value);
+        mainContent.style.display = 'block';
+        adminLoginCard.style.display = 'none';
+        adminEmail.value = ''; adminPassword.value = '';
+        adminLoginError.classList.add('hidden');
+      } catch (err) {
+        adminLoginError.classList.remove('hidden');
+        adminLoginError.textContent = 'Email ou senha incorretos';
       }
     };
-  });
-};
-
-// ========== FIM DA MÁSCARA ==========
-
-    // initial UI
-    showPage('entrada');
-
+    
+    btnLogoutAdmin.onclick = async () => { await signOut(auth); };
+    
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        isAdmin = true;
+        adminNav.style.display = 'flex';
+        loadEvents();
+      } else {
+        isAdmin = false;
+        adminNav.style.display = 'none';
+        loadEvents();
+      }
+    });
+    
+    document.getElementById('btn-novo-evento')?.addEventListener('click', () => openEventModal());
+    document.getElementById('btn-atualizar-eventos')?.addEventListener('click', loadEvents);
+    document.getElementById('btn-salvar-evento')?.addEventListener('click', saveEvent);
+    document.getElementById('btn-cancelar-evento')?.addEventListener('click', () => document.getElementById('modal-evento').style.display = 'none');
+    
+    document.querySelectorAll('.close, .close-evento, .close-comprovante, #btn-fechar-comprovante').forEach(el => {
+      if (el) el.onclick = () => document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+    });
+    
+    document.getElementById('btn-comprovante-story')?.addEventListener('click', () => {
+      document.getElementById('comprovante-preview').className = 'comprovante-story';
+      abrirModalComprovante();
+    });
+    document.getElementById('btn-comprovante-feed')?.addEventListener('click', () => {
+      document.getElementById('comprovante-preview').className = 'comprovante-feed';
+      abrirModalComprovante();
+    });
+    document.getElementById('btn-download-comprovante')?.addEventListener('click', downloadComprovante);
+    
+    // Carregar eventos ao iniciar
+    loadEvents();
   </script>
 </body>
 </html>
