@@ -112,6 +112,8 @@
     .btn-outline { background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); }
     .btn-outline:hover { background: var(--primary-color); color: white; }
     .btn-sm { padding: 6px 12px; font-size: 0.75rem; }
+    .btn-secondary { background: #6c757d; color: white; }
+    .btn-secondary:hover { background: #5a6268; }
     
     .events-grid {
       display: grid;
@@ -259,21 +261,173 @@
     }
     .upload-area:hover { border-color: var(--primary-color); background: #f0f8ff; }
     
-    .comprovante-container { position: relative; width: 100%; margin: 20px 0; display: flex; justify-content: center; }
-    .comprovante-story { width: 270px; height: 480px; background: linear-gradient(135deg, #1a252f 0%, var(--dark-color) 100%); border-radius: 20px; overflow: hidden; color: white; }
-    .comprovante-feed { width: 400px; height: 400px; background: linear-gradient(135deg, #1a252f 0%, var(--dark-color) 100%); border-radius: 20px; overflow: hidden; color: white; }
-    .comprovante-content { padding: 20px; height: 100%; display: flex; flex-direction: column; justify-content: space-between; position: relative; z-index: 1; }
-    .comprovante-title { font-size: 18px; font-weight: bold; margin-bottom: 4px; font-family: 'Montserrat', sans-serif; }
-    .comprovante-data { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 10px; font-size: 12px; }
-    .comprovante-item { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.2); padding: 6px 0; }
-    .comprovante-item-centralizado { display: flex; justify-content: center; border-bottom: 1px solid rgba(255,255,255,0.2); padding: 6px 0; text-align: center; }
-    .comprovante-logo { position: absolute; bottom: 12px; right: 12px; width: 35px; height: 35px; background: white; border-radius: 6px; display: flex; align-items: center; justify-content: center; padding: 5px; }
-    .comprovante-logo img { width: 100%; height: 100%; object-fit: contain; }
-    .comprovante-formatos { display: flex; gap: 12px; margin: 15px 0; justify-content: center; }
+    .comprovante-container { 
+      position: relative; 
+      width: 100%; 
+      margin: 20px 0; 
+      display: flex; 
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .comprovante-wrapper {
+      position: relative;
+    }
+    
+    .comprovante-story { 
+      width: 270px; 
+      height: 480px; 
+      border-radius: 20px; 
+      overflow: hidden; 
+      color: white;
+      position: relative;
+    }
+    
+    .comprovante-feed { 
+      width: 400px; 
+      height: 400px; 
+      border-radius: 20px; 
+      overflow: hidden; 
+      color: white;
+      position: relative;
+    }
+    
+    .comprovante-background {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 0;
+    }
+    
+    .comprovante-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.4);
+      z-index: 1;
+    }
+    
+    .comprovante-content { 
+      padding: 20px; 
+      height: 100%; 
+      display: flex; 
+      flex-direction: column; 
+      justify-content: space-between; 
+      position: relative; 
+      z-index: 2; 
+    }
+    
+    .comprovante-title { 
+      font-size: 18px; 
+      font-weight: bold; 
+      margin-bottom: 4px; 
+      font-family: 'Montserrat', sans-serif;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .comprovante-data { 
+      flex-grow: 1; 
+      display: flex; 
+      flex-direction: column; 
+      justify-content: center; 
+      gap: 10px; 
+      font-size: 12px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .comprovante-item { 
+      display: flex; 
+      justify-content: space-between; 
+      border-bottom: 1px solid rgba(255,255,255,0.2); 
+      padding: 6px 0; 
+    }
+    
+    .comprovante-item-centralizado { 
+      display: flex; 
+      justify-content: center; 
+      border-bottom: 1px solid rgba(255,255,255,0.2); 
+      padding: 6px 0; 
+      text-align: center; 
+    }
+    
+    .comprovante-logo { 
+      position: relative; 
+      width: 35px; 
+      height: 35px; 
+      background: white; 
+      border-radius: 6px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      padding: 5px; 
+    }
+    
+    .comprovante-logo img { 
+      width: 100%; 
+      height: 100%; 
+      object-fit: contain; 
+    }
+    
+    .comprovante-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .comprovante-formatos { 
+      display: flex; 
+      gap: 12px; 
+      margin: 15px 0; 
+      justify-content: center; 
+      flex-wrap: wrap;
+    }
+    
+    .upload-background-area {
+      border: 2px dashed #ddd;
+      border-radius: var(--border-radius);
+      padding: 15px;
+      text-align: center;
+      background: #fafafa;
+      cursor: pointer;
+      transition: var(--transition);
+      margin: 10px 0;
+    }
+    
+    .upload-background-area:hover { 
+      border-color: var(--primary-color); 
+      background: #f0f8ff; 
+    }
+    
+    .upload-background-area img {
+      max-width: 100%;
+      max-height: 60px;
+      border-radius: 4px;
+      margin-top: 8px;
+    }
+    
+    .background-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin: 10px 0;
+    }
+    
+    .background-controls input[type="range"] {
+      flex: 1;
+      min-width: 100px;
+    }
     
     .hidden { display: none !important; }
     .alert { padding: 12px 16px; border-radius: var(--border-radius); margin-bottom: 20px; font-size: 0.85rem; }
     .alert-error { background: #ffebee; color: #c62828; border-left: 3px solid #c62828; }
+    .alert-success { background: #e8f5e9; color: #2e7d32; border-left: 3px solid #2e7d32; }
     
     .footer-login-btn {
       background: transparent;
@@ -303,7 +457,12 @@
       margin-top: 4px;
     }
     
-    @media (max-width: 768px) { .events-grid { grid-template-columns: 1fr; } .filters-bar { flex-direction: column; } }
+    @media (max-width: 768px) { 
+      .events-grid { grid-template-columns: 1fr; } 
+      .filters-bar { flex-direction: column; }
+      .comprovante-feed { width: 100%; height: auto; aspect-ratio: 1/1; }
+      .comprovante-story { width: 100%; height: auto; aspect-ratio: 9/16; }
+    }
   </style>
 </head>
 <body>
@@ -399,23 +558,48 @@
 
   <!-- Modal Comprovante -->
   <div id="modal-comprovante" class="modal">
-    <div class="modal-content" style="max-width: 500px;">
+    <div class="modal-content" style="max-width: 550px;">
       <div class="modal-header"><h3>🏅 Comprovante de Participação</h3><span class="close close-comprovante">&times;</span></div>
       <div class="modal-body">
         <div class="comprovante-formatos">
           <button class="btn btn-sm btn-primary" id="btn-comprovante-story">Story (9:16)</button>
           <button class="btn btn-sm btn-primary" id="btn-comprovante-feed">Feed (1:1)</button>
         </div>
+        
+        <!-- Upload de imagem de fundo -->
+        <div style="margin: 10px 0;">
+          <div class="upload-background-area" id="upload-background-area">
+            <p>🖼️ Clique para adicionar imagem de fundo (marca d'água)</p>
+            <p style="font-size: 11px; color: #999;">JPG, PNG ou GIF - A imagem será usada como fundo do comprovante</p>
+            <input type="file" id="background-image-input" accept="image/*" style="display: none;">
+            <div id="background-preview" style="margin-top: 8px;"></div>
+          </div>
+          
+          <div class="background-controls" id="background-controls" style="display: none;">
+            <label style="font-size: 0.8rem;">Opacidade do fundo:</label>
+            <input type="range" id="background-opacity" min="0" max="100" value="40">
+            <span id="opacity-value" style="font-size: 0.8rem; min-width: 35px;">40%</span>
+            <button class="btn btn-sm btn-danger" id="btn-remove-background">✕ Remover</button>
+          </div>
+        </div>
+        
         <div class="comprovante-container">
-          <div id="comprovante-preview" class="comprovante-story">
-            <div class="comprovante-content">
-              <div class="comprovante-title" id="comprovante-prova-nome">Carregando...</div>
-              <div class="comprovante-data" id="comprovante-data"></div>
-              <div class="comprovante-logo"><img src="https://www.rc4sports.com.br/assets/img/Logo-RC4-Sports.png" alt="Logo"></div>
+          <div class="comprovante-wrapper">
+            <div id="comprovante-preview" class="comprovante-story">
+              <!-- A imagem de fundo será inserida aqui via JavaScript -->
+              <div class="comprovante-content">
+                <div class="comprovante-title" id="comprovante-prova-nome">Carregando...</div>
+                <div class="comprovante-data" id="comprovante-data"></div>
+                <div class="comprovante-footer">
+                  <div style="font-size: 10px; opacity: 0.8;">RC4 Sports</div>
+                  <div class="comprovante-logo"><img src="https://www.rc4sports.com.br/assets/img/Logo-RC4-Sports.png" alt="Logo"></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        
+        <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
           <button class="btn btn-outline" id="btn-fechar-comprovante">Fechar</button>
           <button class="btn btn-primary" id="btn-download-comprovante">📸 Baixar</button>
         </div>
@@ -451,6 +635,8 @@
     let filteredResults = [];
     let pendingCSVData = null;
     let atletaSelecionadoComprovante = null;
+    let backgroundImageData = null;
+    let backgroundOpacity = 40;
 
     // DOM Elements
     const eventsGrid = document.getElementById('events-grid');
@@ -505,7 +691,6 @@
     function loadEvents() {
       onValue(ref(db, PATH_EVENTS), (snapshot) => {
         const data = snapshot.val() || {};
-        // Ordenar: do mais recente (maior createdAt) para o mais antigo (menor createdAt)
         eventsList = Object.keys(data)
           .map(key => ({
             id: key,
@@ -637,31 +822,147 @@
       });
     }
 
+    // Função para calcular a posição do atleta com base nos filtros
+    function calcularPosicao(atleta, categoriaFiltro, generoFiltro) {
+      const results = currentEventData.results || [];
+      
+      // Filtra os resultados com base nos mesmos critérios
+      let filtered = [...results];
+      
+      // Filtra por modalidade (sempre a mesma do atleta)
+      if (atleta.modalidade) {
+        filtered = filtered.filter(r => r.modalidade === atleta.modalidade);
+      }
+      
+      // Filtra por categoria se não for "Todas"
+      if (categoriaFiltro && categoriaFiltro !== '') {
+        filtered = filtered.filter(r => r.categoria === categoriaFiltro);
+      }
+      
+      // Filtra por gênero se não for "Todos"
+      if (generoFiltro && generoFiltro !== '') {
+        filtered = filtered.filter(r => r.genero === generoFiltro);
+      }
+      
+      // Ordena por tempo
+      filtered.sort((a, b) => tempoToSeconds(a.tempo) - tempoToSeconds(b.tempo));
+      
+      // Encontra a posição do atleta
+      const posicao = filtered.findIndex(r => r.numero === atleta.numero && r.atleta === atleta.atleta) + 1;
+      
+      return {
+        posicao: posicao > 0 ? posicao : null,
+        total: filtered.length,
+        categoriaExibicao: categoriaFiltro && categoriaFiltro !== '' ? categoriaFiltro : 'Todas'
+      };
+    }
+
+    function aplicarBackgroundComprovante() {
+      const preview = document.getElementById('comprovante-preview');
+      
+      const oldBg = preview.querySelector('.comprovante-background');
+      if (oldBg) oldBg.remove();
+      
+      const oldOverlay = preview.querySelector('.comprovante-overlay');
+      if (oldOverlay) oldOverlay.remove();
+      
+      if (backgroundImageData) {
+        const img = document.createElement('img');
+        img.src = backgroundImageData;
+        img.className = 'comprovante-background';
+        img.style.opacity = backgroundOpacity / 100;
+        preview.insertBefore(img, preview.firstChild);
+        
+        const overlay = document.createElement('div');
+        overlay.className = 'comprovante-overlay';
+        overlay.style.background = `rgba(0,0,0,${0.3 + (1 - backgroundOpacity/100) * 0.3})`;
+        preview.insertBefore(overlay, img.nextSibling);
+        
+        preview.style.background = 'transparent';
+      } else {
+        preview.style.background = 'linear-gradient(135deg, #1a252f 0%, #2c3e50 100%)';
+      }
+      
+      const previewDiv = document.getElementById('background-preview');
+      if (backgroundImageData) {
+        previewDiv.innerHTML = `<img src="${backgroundImageData}" alt="Background" style="max-width: 100%; max-height: 60px; border-radius: 4px;">`;
+        document.getElementById('background-controls').style.display = 'flex';
+        document.querySelector('#upload-background-area p:first-child').textContent = '🖼️ Imagem de fundo carregada!';
+      } else {
+        previewDiv.innerHTML = '';
+        document.getElementById('background-controls').style.display = 'none';
+        document.querySelector('#upload-background-area p:first-child').textContent = '🖼️ Clique para adicionar imagem de fundo (marca d\'água)';
+      }
+    }
+
     function abrirModalComprovante() {
       if (!atletaSelecionadoComprovante) return;
       const atleta = atletaSelecionadoComprovante;
       const nomeProva = currentEventData.info?.nome || 'RC4 Sports';
       
+      // Obtém os filtros atuais
+      const categoriaFiltro = fCategoria.value;
+      const generoFiltro = fGenero.value;
+      
+      // Calcula a posição
+      const { posicao, total, categoriaExibicao } = calcularPosicao(atleta, categoriaFiltro, generoFiltro);
+      
       document.getElementById('comprovante-prova-nome').textContent = nomeProva;
-      document.getElementById('comprovante-data').innerHTML = `
+      
+      let htmlData = `
         <div class="comprovante-item"><span>Atleta:</span><span>${escapeHtml(atleta.atleta)}</span></div>
-        <div class="comprovante-item"><span>Nº:</span><span>${escapeHtml(atleta.numero)}</span></div>
         <div class="comprovante-item"><span>Modalidade:</span><span>${escapeHtml(atleta.modalidade)}</span></div>
-        <div class="comprovante-item"><span>Categoria:</span><span>${escapeHtml(atleta.categoria)}</span></div>
+        <div class="comprovante-item"><span>Categoria:</span><span>${escapeHtml(categoriaExibicao)}</span></div>
+      `;
+      
+      if (posicao) {
+        htmlData += `<div class="comprovante-item"><span>Posição:</span><span>${posicao}º (de ${total})</span></div>`;
+      } else {
+        htmlData += `<div class="comprovante-item"><span>Posição:</span><span>Não classificado</span></div>`;
+      }
+      
+      htmlData += `
         <div class="comprovante-item"><span>Tempo:</span><span>${escapeHtml(atleta.tempo)}</span></div>
         <div class="comprovante-item-centralizado"><span>${new Date().toLocaleDateString('pt-BR')}</span></div>
       `;
+      
+      document.getElementById('comprovante-data').innerHTML = htmlData;
+      
+      aplicarBackgroundComprovante();
+      
       document.getElementById('modal-comprovante').style.display = 'flex';
     }
 
     function downloadComprovante() {
       const elemento = document.getElementById('comprovante-preview');
-      html2canvas(elemento, { scale: 3, useCORS: true }).then(canvas => {
+      const bgImg = elemento.querySelector('.comprovante-background');
+      if (bgImg) {
+        if (!bgImg.complete) {
+          bgImg.onload = () => {
+            gerarDownloadComprovante(elemento);
+          };
+          return;
+        }
+      }
+      gerarDownloadComprovante(elemento);
+    }
+
+    function gerarDownloadComprovante(elemento) {
+      html2canvas(elemento, { 
+        scale: 3, 
+        useCORS: true,
+        backgroundColor: null,
+        allowTaint: true,
+        logging: false
+      }).then(canvas => {
         const link = document.createElement('a');
         link.download = `comprovante_${atletaSelecionadoComprovante?.numero || 'atleta'}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
-      }).catch(() => alert('Erro ao gerar imagem.'));
+      }).catch(err => {
+        console.error('Erro ao gerar imagem:', err);
+        alert('Erro ao gerar imagem. Tente novamente.');
+      });
     }
 
     function openEventModal(eventId = null) {
@@ -777,7 +1078,6 @@
     const btnLogoutAdmin = document.getElementById('btn-logout-admin');
     const btnVoltarMain = document.getElementById('btn-voltar-main');
     
-    // Mostrar tela principal SEMPRE (para todos)
     mainContent.style.display = 'block';
     adminLoginCard.style.display = 'none';
     
@@ -837,6 +1137,52 @@
       abrirModalComprovante();
     });
     document.getElementById('btn-download-comprovante')?.addEventListener('click', downloadComprovante);
+    
+    // Manipulação da imagem de fundo
+    const uploadBackgroundArea = document.getElementById('upload-background-area');
+    const backgroundInput = document.getElementById('background-image-input');
+    const opacitySlider = document.getElementById('background-opacity');
+    const opacityValue = document.getElementById('opacity-value');
+    const btnRemoveBackground = document.getElementById('btn-remove-background');
+    
+    uploadBackgroundArea.onclick = () => backgroundInput.click();
+    
+    backgroundInput.onchange = (e) => {
+      if (e.target.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          backgroundImageData = ev.target.result;
+          aplicarBackgroundComprovante();
+          if (atletaSelecionadoComprovante) {
+            abrirModalComprovante();
+          }
+        };
+        reader.readAsDataURL(e.target.files[0]);
+      }
+    };
+    
+    opacitySlider.oninput = () => {
+      backgroundOpacity = parseInt(opacitySlider.value);
+      opacityValue.textContent = backgroundOpacity + '%';
+      if (backgroundImageData) {
+        aplicarBackgroundComprovante();
+        if (atletaSelecionadoComprovante) {
+          abrirModalComprovante();
+        }
+      }
+    };
+    
+    btnRemoveBackground.onclick = () => {
+      backgroundImageData = null;
+      backgroundOpacity = 40;
+      opacitySlider.value = 40;
+      opacityValue.textContent = '40%';
+      backgroundInput.value = '';
+      aplicarBackgroundComprovante();
+      if (atletaSelecionadoComprovante) {
+        abrirModalComprovante();
+      }
+    };
     
     // Carregar eventos ao iniciar
     loadEvents();
